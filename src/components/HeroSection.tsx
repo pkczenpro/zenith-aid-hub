@@ -55,6 +55,29 @@ const HeroSection = () => {
             ))}
           </div>
 
+          {/* Admin Actions */}
+          <div className="flex justify-center gap-4 mt-8 animate-slide-up">
+            <Button 
+              asChild 
+              variant="outline" 
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur"
+            >
+              <a href="/clients">
+                <Users className="mr-2 h-4 w-4" />
+                Manage Clients
+              </a>
+            </Button>
+            <Button 
+              asChild 
+              className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
+            >
+              <a href="/product/mobile">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Create Documentation
+              </a>
+            </Button>
+          </div>
+
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 animate-slide-up">
             {stats.map((stat, index) => (
