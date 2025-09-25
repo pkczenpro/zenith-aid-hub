@@ -142,7 +142,7 @@ const ProductEditor = () => {
     'align', 'script', 'code-block'
   ];
 
-  const handleVideoEmbed = () => {
+  const handleVideoEmbedInSection = (sectionId: string, videoUrl: string) => {
     if (!videoUrl) return;
     
     let embedCode = '';
@@ -150,15 +150,14 @@ const ProductEditor = () => {
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
       const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
       if (videoId) {
-        embedCode = `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="max-width: 560px;"></iframe>`;
+        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
       }
     } else if (videoUrl.includes('loom.com')) {
       const videoId = videoUrl.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] || videoUrl.split('/').pop();
       if (videoId) {
-        embedCode = `<iframe width="100%" height="315" src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen style="max-width: 560px;"></iframe>`;
+        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
       }
     } else if (videoUrl.includes('heygen.com')) {
-      // Handle different HeyGen URL patterns
       let videoId = '';
       if (videoUrl.includes('/share/')) {
         videoId = videoUrl.match(/\/share\/([^/?#]+)/)?.[1];
@@ -167,29 +166,25 @@ const ProductEditor = () => {
       }
       
       if (videoId) {
-        embedCode = `<iframe width="100%" height="315" src="https://share-prod.heygen.com/${videoId}" frameborder="0" allowfullscreen style="max-width: 560px;"></iframe>`;
+        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://share-prod.heygen.com/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
       } else {
-        // Fallback to the original URL if we can't parse it
-        embedCode = `<iframe width="100%" height="315" src="${videoUrl}" frameborder="0" allowfullscreen style="max-width: 560px;"></iframe>`;
+        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="${videoUrl}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
       }
-    } else {
-      embedCode = `<video controls width="100%" style="max-width: 560px;"><source src="${videoUrl}" type="video/mp4">Your browser does not support the video tag.</video>`;
     }
     
-    // Add video to the current active section
-    if (sections.length > 0) {
-      const updatedSections = [...sections];
-      const lastSectionIndex = updatedSections.length - 1;
-      updatedSections[lastSectionIndex].content += `<br/>${embedCode}<br/>`;
+    if (embedCode) {
+      const updatedSections = sections.map(section => 
+        section.id === sectionId 
+          ? { ...section, content: section.content + '<br/>' + embedCode + '<br/>' }
+          : section
+      );
       setSections(updatedSections);
+      
+      toast({
+        title: "Video embedded successfully!",
+        description: "Your video has been added to the section.",
+      });
     }
-    
-    setVideoUrl('');
-    
-    toast({
-      title: "Video embedded successfully!",
-      description: "Your video has been added to the current section.",
-    });
   };
 
   const addSection = () => {
@@ -514,24 +509,54 @@ const ProductEditor = () => {
                             )}
                           </div>
                           
-                          {/* Rich Text Editor */}
-                          <div className="p-0 bg-background rounded-b-xl overflow-hidden">
-                            <div className="editor-container" style={{ minHeight: '300px' }}>
+                          {/* Rich Text Editor - Always Visible */}
+                          <div className="bg-background">
+                            <div className="editor-wrapper" style={{ minHeight: '400px' }}>
                               <ReactQuill
                                 theme="snow"
                                 value={section.content}
                                 onChange={(content) => updateSectionContent(section.id, content)}
                                 modules={modules}
                                 formats={formats}
-                                placeholder={`Start writing content for "${section.title}"...`}
-                                className="professional-editor"
+                                placeholder={`Start writing content for "${section.title || `Section ${index + 1}`}"...`}
+                                className="section-editor"
                                 style={{
-                                  '--ql-editor-min-height': '250px',
-                                  '--ql-toolbar-bg': 'hsl(var(--muted))',
-                                  '--ql-border-color': 'hsl(var(--border))',
-                                  '--ql-color': 'hsl(var(--foreground))',
+                                  height: '350px',
+                                  '--ql-editor-min-height': '300px',
                                 } as React.CSSProperties}
                               />
+                            </div>
+                            
+                            {/* Quick Tools Bar */}
+                            <div className="flex items-center justify-between p-4 bg-muted/20 border-t border-border/30">
+                              <div className="flex items-center space-x-2">
+                                <div className="text-xs text-muted-foreground">Quick tools:</div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const url = prompt('Enter video URL (YouTube, Loom, HeyGen):');
+                                    if (url) {
+                                      handleVideoEmbedInSection(section.id, url);
+                                    }
+                                  }}
+                                  className="text-primary hover:text-primary hover:bg-primary/10 h-7 px-2"
+                                >
+                                  <Video className="h-3 w-3 mr-1" />
+                                  Video
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-accent hover:text-accent hover:bg-accent/10 h-7 px-2"
+                                >
+                                  <Image className="h-3 w-3 mr-1" />
+                                  Image
+                                </Button>
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {section.content.replace(/<[^>]*>/g, '').length} characters
+                              </div>
                             </div>
                           </div>
                         </div>
