@@ -38,6 +38,18 @@ interface Product {
   updated_at: string;
 }
 
+interface DatabaseProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  status: string;
+  icon_url: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const ProductManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -68,6 +80,11 @@ const ProductManagement = () => {
     fetchProducts();
   }, [isAdmin, navigate]);
 
+  const transformProduct = (dbProduct: DatabaseProduct): Product => ({
+    ...dbProduct,
+    status: (dbProduct.status as 'draft' | 'published' | 'archived') || 'draft'
+  });
+
   const fetchProducts = async () => {
     try {
       const { data, error } = await supabase
@@ -76,10 +93,7 @@ const ProductManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts((data || []).map(product => ({
-        ...product,
-        icon_url: product.icon_url || null
-      })));
+      setProducts((data || []).map(transformProduct));
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({
@@ -155,7 +169,7 @@ const ProductManagement = () => {
 
       if (error) throw error;
 
-      const newProduct = { ...data, icon_url: data.icon_url || null };
+      const newProduct = transformProduct(data);
       setProducts([newProduct, ...products]);
       resetForm();
       setIsCreateDialogOpen(false);
@@ -206,7 +220,7 @@ const ProductManagement = () => {
 
       if (error) throw error;
 
-      const updatedProduct = { ...data, icon_url: data.icon_url || null };
+      const updatedProduct = transformProduct(data);
       setProducts(products.map(p => p.id === selectedProduct.id ? updatedProduct : p));
       resetForm();
       setIsCreateDialogOpen(false);

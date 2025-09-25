@@ -41,8 +41,6 @@ const ProductEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Load products from database instead of hardcoded data
-  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,10 +65,10 @@ const ProductEditor = () => {
   };
 
   const currentProduct = products.find(p => p.id === productId);
-  
+
   const [productInfo, setProductInfo] = useState({
     name: currentProduct?.name || "",
-    description: "",
+    description: currentProduct?.description || "",
     version: "1.0.0",
     status: "Active"
   });
@@ -86,11 +84,21 @@ const ProductEditor = () => {
   const [quillRefs, setQuillRefs] = useState<{ [key: string]: any }>({});
 
   useEffect(() => {
-    if (!currentProduct) {
-      navigate('/');
-      return;
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    if (currentProduct) {
+      setProductInfo({
+        name: currentProduct.name || "",
+        description: currentProduct.description || "",
+        version: "1.0.0",
+        status: currentProduct.status || "Active"
+      });
+    } else if (!loading) {
+      navigate('/products');
     }
-  }, [currentProduct, navigate]);
+  }, [currentProduct, loading, navigate]);
 
   // Enhanced Quill editor configuration
   const modules = {
