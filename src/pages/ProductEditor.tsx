@@ -405,240 +405,240 @@ const ProductEditor = () => {
 
             {/* Content Editor Tab */}
             <TabsContent value="editor">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Main Editor */}
-                <div className="lg:col-span-3 space-y-6">
-                  <Card className="shadow-card border-0 bg-gradient-card">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center space-x-2">
-                          <FileText className="h-5 w-5 text-primary" />
-                          <span>Content Editor</span>
-                        </CardTitle>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleViewArticle}
-                            className="bg-gradient-to-r from-secondary/10 to-accent/10 hover:from-secondary/20 hover:to-accent/20 border-secondary/20 hover:border-secondary/30"
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            View Docs
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsPreview(!isPreview)}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            {isPreview ? 'Edit' : 'Preview'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={handleSave}
-                            className="bg-gradient-button text-white border-0"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Save
-                          </Button>
-                        </div>
+              <div className="max-w-none">
+                {/* Document Header */}
+                <div className="bg-gradient-to-r from-background via-muted/10 to-background border border-border/50 rounded-lg p-6 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-3 rounded-lg bg-gradient-to-br ${currentProduct.color} text-white text-xl`}>
+                        {currentProduct.icon}
                       </div>
-                    </CardHeader>
+                      <div>
+                        <h2 className="text-xl font-semibold text-foreground">Document Editor</h2>
+                        <p className="text-sm text-muted-foreground">Create comprehensive documentation for {currentProduct.name}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleViewArticle}
+                        className="bg-gradient-to-r from-secondary/10 to-accent/10 hover:from-secondary/20 hover:to-accent/20 border-secondary/20 hover:border-secondary/30"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        View Published
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsPreview(!isPreview)}
+                        className="bg-gradient-to-r from-accent/10 to-primary/10 hover:from-accent/20 hover:to-primary/20 border-accent/20 hover:border-accent/30"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        {isPreview ? 'Edit Mode' : 'Preview'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSave}
+                        className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Publish Article
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Article Title Input */}
+                  <div>
+                    <Input 
+                      value={articleTitle}
+                      onChange={(e) => setArticleTitle(e.target.value)}
+                      placeholder="Enter your article title here..." 
+                      className="text-2xl font-bold border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0 py-2"
+                    />
+                  </div>
+                </div>
+
+                {!isPreview ? (
+                  /* Writing Mode */
+                  <div className="space-y-1">
+                    {/* Section Management */}
+                    <div className="flex items-center justify-between mb-6 px-4">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <span className="font-medium text-foreground">Document Sections</span>
+                        <span className="text-sm text-muted-foreground">({sections.length})</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={addSection}
+                        className="flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/20 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>New Section</span>
+                      </Button>
+                    </div>
                     
-                    <CardContent>
-                      {!isPreview ? (
-                        <div className="space-y-6">
-                          <div>
-                            <Label>Article Title</Label>
-                            <Input 
-                              value={articleTitle}
-                              onChange={(e) => setArticleTitle(e.target.value)}
-                              placeholder="Enter article title..." 
-                              className="mt-1 text-lg font-semibold"
-                            />
-                          </div>
-                          
-                          {/* Master Sections */}
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <Label className="text-base font-semibold">Article Sections</Label>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={addSection}
-                                className="flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/20 hover:border-primary/30 transition-all duration-300"
-                              >
-                                <Plus className="h-4 w-4" />
-                                <span>Add Section</span>
-                              </Button>
-                            </div>
-                            
-                            {sections.map((section, index) => (
-                              <Card key={section.id} className="border border-muted section-card hover-scale animate-fade-in">
-                                <CardHeader className="pb-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3 flex-1">
-                                      <div className="cursor-grab hover:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-                                        <GripVertical className="h-4 w-4" />
-                                      </div>
-                                      <Input
-                                        value={section.title}
-                                        onChange={(e) => updateSectionTitle(section.id, e.target.value)}
-                                        className="font-medium section-title-input border-0 bg-transparent text-lg"
-                                        placeholder="Section title..."
-                                      />
-                                    </div>
-                                    {sections.length > 1 && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => deleteSection(section.id)}
-                                        className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="border-2 border-dashed border-primary/20 rounded-lg overflow-hidden bg-gradient-to-br from-background to-muted/30 hover:border-primary/40 transition-colors duration-300">
-                                    <ReactQuill
-                                      theme="snow"
-                                      value={section.content}
-                                      onChange={(content) => updateSectionContent(section.id, content)}
-                                      modules={modules}
-                                      formats={formats}
-                                      placeholder={`Write content for ${section.title}...`}
-                                      className="animate-fade-in"
-                                      style={{
-                                        '--ql-toolbar-bg': 'linear-gradient(135deg, hsl(var(--muted)/0.5) 0%, hsl(var(--accent)/0.1) 100%)',
-                                      } as React.CSSProperties}
-                                    />
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="prose prose-lg max-w-none bg-gradient-to-br from-background to-muted/10 p-8 rounded-lg border border-border/50">
-                          <div className="text-center mb-8">
-                            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
-                              {articleTitle || 'Article Preview'}
-                            </h1>
-                            <div className="w-20 h-1 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
-                          </div>
-                          
-                          {sections.map((section, index) => (
-                            <div key={section.id} className="mb-12 animate-fade-in" style={{animationDelay: `${index * 0.1}s`}}>
-                              <div className="flex items-center mb-6">
-                                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-sm font-bold mr-4">
+                    {/* Document Sections */}
+                    <div className="space-y-6">
+                      {sections.map((section, index) => (
+                        <div key={section.id} className="group animate-fade-in bg-white dark:bg-gray-900/50 border border-border/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+                          {/* Section Header */}
+                          <div className="flex items-center justify-between p-4 border-b border-border/30 bg-gradient-to-r from-muted/30 via-muted/10 to-muted/30 rounded-t-xl">
+                            <div className="flex items-center space-x-3 flex-1">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-6 h-6 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-xs font-bold">
                                   {index + 1}
                                 </div>
-                                <h2 className="text-2xl font-semibold text-primary flex-1 border-b border-primary/20 pb-2">
-                                  {section.title}
-                                </h2>
+                                <div className="cursor-grab hover:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                                  <GripVertical className="h-4 w-4" />
+                                </div>
                               </div>
-                              <div 
-                                dangerouslySetInnerHTML={{ __html: section.content }}
-                                className="ml-12 space-y-4 text-foreground/90 leading-relaxed"
+                              <Input
+                                value={section.title}
+                                onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                                className="font-semibold text-lg border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0"
+                                placeholder={`Section ${index + 1} title...`}
                               />
                             </div>
-                          ))}
+                            {sections.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteSection(section.id)}
+                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                           
-                          {sections.length === 0 && (
-                            <div className="text-center py-12 text-muted-foreground">
-                              <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                              <p className="text-lg">No content yet. Start adding sections to see the preview.</p>
+                          {/* Rich Text Editor */}
+                          <div className="p-0 bg-background rounded-b-xl overflow-hidden">
+                            <div className="editor-container" style={{ minHeight: '300px' }}>
+                              <ReactQuill
+                                theme="snow"
+                                value={section.content}
+                                onChange={(content) => updateSectionContent(section.id, content)}
+                                modules={modules}
+                                formats={formats}
+                                placeholder={`Start writing content for "${section.title}"...`}
+                                className="professional-editor"
+                                style={{
+                                  '--ql-editor-min-height': '250px',
+                                  '--ql-toolbar-bg': 'hsl(var(--muted))',
+                                  '--ql-border-color': 'hsl(var(--border))',
+                                  '--ql-color': 'hsl(var(--foreground))',
+                                } as React.CSSProperties}
+                              />
                             </div>
-                          )}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Add First Section Prompt */}
+                      {sections.length === 0 && (
+                        <div className="text-center py-16 bg-gradient-to-br from-muted/20 to-muted/5 border-2 border-dashed border-border rounded-xl">
+                          <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                          <h3 className="text-lg font-semibold text-foreground mb-2">Start Your Documentation</h3>
+                          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                            Create structured sections to organize your content effectively
+                          </p>
+                          <Button
+                            onClick={addSection}
+                            className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create First Section
+                          </Button>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Sidebar Tools */}
-                <div className="space-y-6">
-                  {/* Video Embedding */}
-                  <Card className="shadow-card border-0 bg-gradient-card">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Video className="h-5 w-5 text-primary" />
-                        <span>Video Tours</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label>Video URL</Label>
-                        <Input
-                          value={videoUrl}
-                          onChange={(e) => setVideoUrl(e.target.value)}
-                          placeholder="Paste Loom, HeyGen, or YouTube URL..."
-                          className="mt-1"
-                        />
+                    </div>
+                  </div>
+                ) : (
+                  /* Preview Mode */
+                  <div className="max-w-4xl mx-auto">
+                    <div className="bg-white dark:bg-gray-900/50 border border-border/50 rounded-xl shadow-lg p-8">
+                      <div className="text-center mb-12">
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mb-4">
+                          {articleTitle || 'Untitled Article'}
+                        </h1>
+                        <div className="w-24 h-1 bg-gradient-to-r from-primary to-accent mx-auto rounded-full mb-6"></div>
+                        <div className="flex items-center justify-center space-x-4 text-sm text-muted-foreground">
+                          <div className="flex items-center space-x-1">
+                            <div className={`w-4 h-4 rounded ${currentProduct.color}`}></div>
+                            <span>{currentProduct.name}</span>
+                          </div>
+                          <span>•</span>
+                          <span>{sections.length} sections</span>
+                          <span>•</span>
+                          <span>Documentation</span>
+                        </div>
                       </div>
                       
-                      <Button 
-                        onClick={handleVideoEmbed}
-                        disabled={!videoUrl}
-                        className="w-full bg-gradient-button text-white border-0"
+                      {sections.map((section, index) => (
+                        <div key={section.id} className="mb-16 animate-fade-in" style={{animationDelay: `${index * 0.1}s`}}>
+                          <div className="flex items-start mb-6">
+                            <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-sm font-bold mr-6 mt-1">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1">
+                              <h2 className="text-3xl font-bold text-foreground mb-3">
+                                {section.title}
+                              </h2>
+                              <div className="w-16 h-0.5 bg-gradient-to-r from-primary to-accent rounded-full"></div>
+                            </div>
+                          </div>
+                          <div className="ml-16">
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: section.content }}
+                              className="prose prose-lg max-w-none text-foreground/90 leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {sections.length === 0 && (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                          <h3 className="text-xl font-semibold mb-2">No content to preview</h3>
+                          <p className="text-lg">Switch to edit mode and start adding sections.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Floating Toolbar for Writing Mode */}
+                {!isPreview && sections.length > 0 && (
+                  <div className="fixed bottom-6 right-6 bg-white dark:bg-gray-900 border border-border rounded-lg shadow-xl p-3 z-50">
+                    <div className="flex items-center space-x-2">
+                      <div className="text-sm text-muted-foreground px-2">
+                        {sections.length} sections
+                      </div>
+                      <div className="w-px h-6 bg-border"></div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={addSection}
+                        className="text-primary hover:text-primary hover:bg-primary/10"
                       >
-                        <Play className="h-4 w-4 mr-2" />
-                        Embed Video
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add
                       </Button>
-                      
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Supported platforms:</p>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary">YouTube</Badge>
-                          <Badge variant="secondary">Loom</Badge>
-                          <Badge variant="secondary">HeyGen</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Videos will be embedded in the last section of your article.
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Media Upload */}
-                  <Card className="shadow-card border-0 bg-gradient-card">
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <Image className="h-5 w-5 text-primary" />
-                        <span>Media Library</span>
-                      </CardTitle>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-4">
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                        <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Upload screenshots or images
-                        </p>
-                        <Button variant="outline" size="sm">
-                          Choose Files
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Quick Actions:</p>
-                        <div className="space-y-1">
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            <Image className="h-4 w-4 mr-2" />
-                            Insert Image
-                          </Button>
-                          <Button variant="ghost" size="sm" className="w-full justify-start">
-                            <Link className="h-4 w-4 mr-2" />
-                            Add Link
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSave}
+                        className="text-accent hover:text-accent hover:bg-accent/10"
+                      >
+                        <Save className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
