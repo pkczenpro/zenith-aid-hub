@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ProductEditor from "./pages/ProductEditor";
+import ProductManagement from "./pages/ProductManagement";
 import ArticleViewer from "./pages/ArticleViewer";
 import ClientManagement from "./pages/ClientManagement";
 import ClientDashboard from "./pages/ClientDashboard";
@@ -25,6 +26,11 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Index />} />
+            <Route path="/products" element={
+              <ProtectedRoute requireAdmin>
+                <ProductManagement />
+              </ProtectedRoute>
+            } />
             <Route path="/product/:productId" element={
               <ProtectedRoute requireAdmin>
                 <ProductEditor />

@@ -97,12 +97,14 @@ const HeroSection = () => {
                       Manage Clients
                     </Button>
                   </Link>
-                  <Button 
-                    className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Documentation
-                  </Button>
+                  <Link to="/products">
+                    <Button 
+                      className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Manage Products
+                    </Button>
+                  </Link>
                 </>
               ) : (
                 <>

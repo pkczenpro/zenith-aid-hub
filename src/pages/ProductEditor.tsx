@@ -26,6 +26,8 @@ import {
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 
 interface Section {
@@ -39,17 +41,32 @@ const ProductEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Product data - in a real app this would come from an API
-  const products = {
-    mobile: { name: "Mobile App", icon: "📱", color: "from-blue-500 to-blue-600" },
-    web: { name: "Web Platform", icon: "💻", color: "from-purple-500 to-purple-600" },
-    cloud: { name: "Cloud Services", icon: "☁️", color: "from-cyan-500 to-cyan-600" },
-    security: { name: "Security Suite", icon: "🛡️", color: "from-emerald-500 to-emerald-600" },
-    analytics: { name: "Analytics", icon: "📊", color: "from-orange-500 to-orange-600" },
-    api: { name: "API & Integrations", icon: "⚡", color: "from-violet-500 to-violet-600" }
+  // Load products from database instead of hardcoded data
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const currentProduct = products[productId as keyof typeof products];
+  const currentProduct = products.find(p => p.id === productId);
   
   const [productInfo, setProductInfo] = useState({
     name: currentProduct?.name || "",

@@ -56,10 +56,12 @@ const Header = () => {
                         Clients
                       </Button>
                     </Link>
-                    <Button variant="ghost" size="sm" className="hidden sm:flex">
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Article
-                    </Button>
+                    <Link to="/products">
+                      <Button variant="ghost" size="sm" className="hidden sm:flex">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Products
+                      </Button>
+                    </Link>
                   </>
                 )}
 
