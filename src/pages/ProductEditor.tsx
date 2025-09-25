@@ -74,20 +74,64 @@ const ProductEditor = () => {
     }
   }, [currentProduct, navigate]);
 
-  // Quill editor configuration
+  // Enhanced Quill editor configuration
   const modules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'align': [] }],
-      ['link', 'image', 'video'],
-      ['clean']
-    ],
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        [{ 'font': [] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'script': 'sub'}, { 'script': 'super' }],
+        ['blockquote', 'code-block'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        [{ 'align': [] }],
+        ['link', 'image', 'video'],
+        ['clean']
+      ],
+      handlers: {
+        'video': function() {
+          const range = this.quill.getSelection();
+          if (range) {
+            const url = prompt('Enter video URL (YouTube, Loom, HeyGen):');
+            if (url) {
+              let embedCode = '';
+              
+              if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+                if (videoId) {
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
+                }
+              } else if (url.includes('loom.com')) {
+                const videoId = url.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] || url.split('/').pop();
+                if (videoId) {
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
+                }
+              } else if (url.includes('heygen.com')) {
+                let videoId = '';
+                if (url.includes('/share/')) {
+                  videoId = url.match(/\/share\/([^/?#]+)/)?.[1];
+                } else if (url.includes('share-prod.heygen.com')) {
+                  videoId = url.split('/').pop()?.split('?')[0];
+                }
+                
+                if (videoId) {
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://share-prod.heygen.com/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
+                } else {
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="${url}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
+                }
+              }
+              
+              if (embedCode) {
+                this.quill.clipboard.dangerouslyPasteHTML(range.index, embedCode);
+              }
+            }
+          }
+        }
+      }
+    }
   };
 
   const formats = [
@@ -401,7 +445,7 @@ const ProductEditor = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={addSection}
-                                className="flex items-center space-x-2"
+                                className="flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/20 hover:border-primary/30 transition-all duration-300"
                               >
                                 <Plus className="h-4 w-4" />
                                 <span>Add Section</span>
@@ -409,15 +453,17 @@ const ProductEditor = () => {
                             </div>
                             
                             {sections.map((section, index) => (
-                              <Card key={section.id} className="border border-muted">
+                              <Card key={section.id} className="border border-muted section-card hover-scale animate-fade-in">
                                 <CardHeader className="pb-3">
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-2 flex-1">
-                                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                    <div className="flex items-center space-x-3 flex-1">
+                                      <div className="cursor-grab hover:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                                        <GripVertical className="h-4 w-4" />
+                                      </div>
                                       <Input
                                         value={section.title}
                                         onChange={(e) => updateSectionTitle(section.id, e.target.value)}
-                                        className="font-medium"
+                                        className="font-medium section-title-input border-0 bg-transparent text-lg"
                                         placeholder="Section title..."
                                       />
                                     </div>
@@ -426,7 +472,7 @@ const ProductEditor = () => {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => deleteSection(section.id)}
-                                        className="text-destructive hover:text-destructive"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
@@ -434,15 +480,18 @@ const ProductEditor = () => {
                                   </div>
                                 </CardHeader>
                                 <CardContent>
-                                  <div className="border rounded-lg overflow-hidden">
+                                  <div className="border-2 border-dashed border-primary/20 rounded-lg overflow-hidden bg-gradient-to-br from-background to-muted/30 hover:border-primary/40 transition-colors duration-300">
                                     <ReactQuill
                                       theme="snow"
                                       value={section.content}
                                       onChange={(content) => updateSectionContent(section.id, content)}
                                       modules={modules}
                                       formats={formats}
-                                      style={{ minHeight: '200px' }}
                                       placeholder={`Write content for ${section.title}...`}
+                                      className="animate-fade-in"
+                                      style={{
+                                        '--ql-toolbar-bg': 'linear-gradient(135deg, hsl(var(--muted)/0.5) 0%, hsl(var(--accent)/0.1) 100%)',
+                                      } as React.CSSProperties}
                                     />
                                   </div>
                                 </CardContent>
@@ -451,19 +500,37 @@ const ProductEditor = () => {
                           </div>
                         </div>
                       ) : (
-                        <div className="prose max-w-none">
-                          <h1 className="text-3xl font-bold mb-6">{articleTitle || 'Article Preview'}</h1>
-                          {sections.map((section) => (
-                            <div key={section.id} className="mb-8">
-                              <h2 className="text-2xl font-semibold mb-4 text-primary border-b border-border pb-2">
-                                {section.title}
-                              </h2>
+                        <div className="prose prose-lg max-w-none bg-gradient-to-br from-background to-muted/10 p-8 rounded-lg border border-border/50">
+                          <div className="text-center mb-8">
+                            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
+                              {articleTitle || 'Article Preview'}
+                            </h1>
+                            <div className="w-20 h-1 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
+                          </div>
+                          
+                          {sections.map((section, index) => (
+                            <div key={section.id} className="mb-12 animate-fade-in" style={{animationDelay: `${index * 0.1}s`}}>
+                              <div className="flex items-center mb-6">
+                                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-sm font-bold mr-4">
+                                  {index + 1}
+                                </div>
+                                <h2 className="text-2xl font-semibold text-primary flex-1 border-b border-primary/20 pb-2">
+                                  {section.title}
+                                </h2>
+                              </div>
                               <div 
                                 dangerouslySetInnerHTML={{ __html: section.content }}
-                                className="space-y-4"
+                                className="ml-12 space-y-4 text-foreground/90 leading-relaxed"
                               />
                             </div>
                           ))}
+                          
+                          {sections.length === 0 && (
+                            <div className="text-center py-12 text-muted-foreground">
+                              <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                              <p className="text-lg">No content yet. Start adding sections to see the preview.</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </CardContent>
