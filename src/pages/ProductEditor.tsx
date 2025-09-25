@@ -511,19 +511,23 @@ const ProductEditor = () => {
                           
                           {/* Rich Text Editor - Always Visible */}
                           <div className="bg-background">
-                            <div className="editor-wrapper" style={{ minHeight: '400px' }}>
+                            <div className="editor-wrapper" style={{ minHeight: '350px' }}>
                               <ReactQuill
                                 theme="snow"
                                 value={section.content}
-                                onChange={(content) => updateSectionContent(section.id, content)}
+                                onChange={(content) => {
+                                  console.log('Content changing for section:', section.id, content);
+                                  updateSectionContent(section.id, content);
+                                }}
                                 modules={modules}
                                 formats={formats}
                                 placeholder={`Start writing content for "${section.title || `Section ${index + 1}`}"...`}
                                 className="section-editor"
                                 style={{
                                   height: '350px',
-                                  '--ql-editor-min-height': '300px',
-                                } as React.CSSProperties}
+                                  backgroundColor: 'hsl(var(--background))',
+                                  color: 'hsl(var(--foreground))',
+                                }}
                               />
                             </div>
                             
