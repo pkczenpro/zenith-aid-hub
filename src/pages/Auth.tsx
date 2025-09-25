@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { Shield, Users, FileText, ArrowLeft } from 'lucide-react';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [signInData, setSignInData] = useState({ email: '', password: '' });
-  const [signUpData, setSignUpData] = useState({ email: '', password: '', fullName: '' });
+  const [signUpData, setSignUpData] = useState({ email: '', password: '', fullName: '', role: 'client' as 'admin' | 'client' });
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -38,7 +39,7 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    await signUp(signUpData.email, signUpData.password, signUpData.fullName);
+    await signUp(signUpData.email, signUpData.password, signUpData.fullName, signUpData.role);
     
     setIsLoading(false);
   };
@@ -158,6 +159,18 @@ const Auth = () => {
                         required
                         className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-role">Role</Label>
+                      <Select value={signUpData.role} onValueChange={(value: 'admin' | 'client') => setSignUpData({ ...signUpData, role: value })}>
+                        <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-primary/20">
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="client">Client</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-password">Password</Label>
