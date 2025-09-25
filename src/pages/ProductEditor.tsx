@@ -515,24 +515,36 @@ const ProductEditor = () => {
                           
                           {/* Rich Text Editor - Always Visible */}
                           <div className="bg-background border border-border/20 rounded-b-xl">
-                            <div className="editor-wrapper">
+                            <div className="editor-wrapper-stable">
                               <ReactQuill
-                                key={`editor-${section.id}`}
+                                key={`stable-editor-${section.id}`}
                                 theme="snow"
                                 value={section.content || ''}
-                                onChange={(content) => {
-                                  console.log('Content changing for section:', section.id, content);
+                                onChange={(content, delta, source, editor) => {
+                                  // Ensure content is always visible during typing
+                                  console.log('Content updating:', content.length, 'chars');
                                   updateSectionContent(section.id, content);
                                 }}
-                                modules={modules}
-                                formats={formats}
-                                placeholder={`Start writing content for "${section.title || `Section ${index + 1}`}"...`}
-                                className="section-editor"
-                                style={{
-                                  height: '350px',
-                                  minHeight: '350px',
+                                modules={{
+                                  toolbar: [
+                                    [{ 'header': [1, 2, 3, false] }],
+                                    ['bold', 'italic', 'underline', 'strike'],
+                                    [{ 'color': [] }, { 'background': [] }],
+                                    ['blockquote', 'code-block'],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    ['link', 'image', 'video'],
+                                    ['clean']
+                                  ]
                                 }}
-                                preserveWhitespace={true}
+                                formats={[
+                                  'header', 'bold', 'italic', 'underline', 'strike',
+                                  'list', 'bullet', 'link', 'image', 'video',
+                                  'blockquote', 'code-block', 'color', 'background'
+                                ]}
+                                placeholder={`Start writing content for "${section.title || `Section ${index + 1}`}"...`}
+                                className="stable-section-editor"
+                                bounds=".editor-wrapper-stable"
+                                scrollingContainer=".editor-wrapper-stable"
                               />
                             </div>
                             
@@ -543,7 +555,9 @@ const ProductEditor = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     const url = prompt('Enter video URL (YouTube, Loom, HeyGen):');
                                     if (url) {
                                       handleVideoEmbedInSection(section.id, url);
@@ -557,7 +571,9 @@ const ProductEditor = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     const url = prompt('Enter image URL:');
                                     if (url) {
                                       const imageEmbed = `<div class="image-embed-container"><img src="${url}" alt="Embedded image" style="max-width: 100%; height: auto; border-radius: 8px; margin: 1rem 0;" /></div>`;

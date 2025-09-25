@@ -337,97 +337,197 @@
   transform: scale(1.02);
   }
 
-  /* Section Editor Styles - Fixed for Better Visibility */
-  .section-editor {
+  /* Stable Section Editor Styles - Improved Visibility */
+  .stable-section-editor {
     background: hsl(var(--background)) !important;
     border: 1px solid hsl(var(--border)) !important;
     border-radius: 0 0 12px 12px !important;
+    position: relative !important;
+    z-index: 1 !important;
+    height: 400px !important;
   }
 
-  .section-editor .ql-toolbar {
+  .stable-section-editor .ql-toolbar {
     border: none !important;
     border-bottom: 1px solid hsl(var(--border)) !important;
-    background: hsl(var(--muted)/0.3) !important;
-    padding: 8px 16px !important;
+    background: hsl(var(--muted)/0.5) !important;
+    padding: 12px 16px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
   }
 
-  .section-editor .ql-container {
+  .stable-section-editor .ql-container {
     border: none !important;
     background: hsl(var(--background)) !important;
     font-family: inherit !important;
-    height: 300px !important;
+    height: 340px !important;
+    position: relative !important;
+    z-index: 1 !important;
   }
 
-  .section-editor .ql-editor {
+  .stable-section-editor .ql-editor {
     background: hsl(var(--background)) !important;
     color: hsl(var(--foreground)) !important;
     font-size: 16px !important;
     line-height: 1.6 !important;
-    padding: 20px !important;
-    height: 260px !important;
+    padding: 24px !important;
+    height: 316px !important;
     overflow-y: auto !important;
     border: none !important;
+    position: relative !important;
+    z-index: 1 !important;
   }
 
-  .section-editor .ql-editor.ql-blank::before {
+  .stable-section-editor .ql-editor.ql-blank::before {
     color: hsl(var(--muted-foreground)) !important;
-    opacity: 0.6 !important;
+    opacity: 0.7 !important;
     font-style: normal !important;
-    left: 20px !important;
-    right: 20px !important;
+    left: 24px !important;
+    right: 24px !important;
+    top: 24px !important;
+    position: absolute !important;
+    pointer-events: none !important;
   }
 
-  /* All text elements in editor */
-  .section-editor .ql-editor,
-  .section-editor .ql-editor p,
-  .section-editor .ql-editor div,
-  .section-editor .ql-editor span,
-  .section-editor .ql-editor li,
-  .section-editor .ql-editor h1,
-  .section-editor .ql-editor h2,
-  .section-editor .ql-editor h3,
-  .section-editor .ql-editor h4,
-  .section-editor .ql-editor h5,
-  .section-editor .ql-editor h6,
-  .section-editor .ql-editor strong,
-  .section-editor .ql-editor em,
-  .section-editor .ql-editor u {
+  /* Ensure all text elements are visible */
+  .stable-section-editor .ql-editor,
+  .stable-section-editor .ql-editor *,
+  .stable-section-editor .ql-editor p,
+  .stable-section-editor .ql-editor div,
+  .stable-section-editor .ql-editor span,
+  .stable-section-editor .ql-editor li,
+  .stable-section-editor .ql-editor h1,
+  .stable-section-editor .ql-editor h2,
+  .stable-section-editor .ql-editor h3,
+  .stable-section-editor .ql-editor h4,
+  .stable-section-editor .ql-editor h5,
+  .stable-section-editor .ql-editor h6,
+  .stable-section-editor .ql-editor strong,
+  .stable-section-editor .ql-editor em,
+  .stable-section-editor .ql-editor u,
+  .stable-section-editor .ql-editor s {
     color: hsl(var(--foreground)) !important;
+    background: transparent !important;
   }
 
-  .section-editor .ql-editor p {
+  .stable-section-editor .ql-editor p {
     margin-bottom: 1rem !important;
     color: hsl(var(--foreground)) !important;
+    line-height: 1.6 !important;
   }
 
-  .section-editor .ql-editor ul,
-  .section-editor .ql-editor ol {
+  .stable-section-editor .ql-editor ul,
+  .stable-section-editor .ql-editor ol {
     padding-left: 1.5rem !important;
     margin-bottom: 1rem !important;
+    color: hsl(var(--foreground)) !important;
   }
 
-  .section-editor .ql-editor li {
+  .stable-section-editor .ql-editor li {
     margin-bottom: 0.5rem !important;
     color: hsl(var(--foreground)) !important;
   }
 
-  .section-editor .ql-toolbar button {
-    color: hsl(var(--foreground)) !important;
-    border-radius: 4px !important;
+  .stable-section-editor .ql-editor blockquote {
+    border-left: 4px solid hsl(var(--primary)) !important;
+    margin: 1rem 0 !important;
+    padding-left: 1rem !important;
+    color: hsl(var(--muted-foreground)) !important;
+    font-style: italic !important;
   }
 
-  .section-editor .ql-toolbar button:hover {
+  /* Toolbar styling */
+  .stable-section-editor .ql-toolbar button {
+    color: hsl(var(--foreground)) !important;
+    border-radius: 4px !important;
+    padding: 6px !important;
+    margin: 0 2px !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .stable-section-editor .ql-toolbar button:hover {
     background: hsl(var(--accent)) !important;
     color: hsl(var(--accent-foreground)) !important;
   }
 
-  .section-editor .ql-toolbar button.ql-active {
+  .stable-section-editor .ql-toolbar button.ql-active {
     background: hsl(var(--primary)) !important;
     color: hsl(var(--primary-foreground)) !important;
   }
 
-  /* Video and Image Embeds */
-  .video-embed-container {
+  .stable-section-editor .ql-toolbar .ql-stroke {
+    stroke: hsl(var(--foreground)) !important;
+  }
+
+  .stable-section-editor .ql-toolbar .ql-fill {
+    fill: hsl(var(--foreground)) !important;
+  }
+
+  .stable-section-editor .ql-toolbar button:hover .ql-stroke {
+    stroke: hsl(var(--accent-foreground)) !important;
+  }
+
+  .stable-section-editor .ql-toolbar button:hover .ql-fill {
+    fill: hsl(var(--accent-foreground)) !important;
+  }
+
+  .stable-section-editor .ql-toolbar .ql-picker {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .stable-section-editor .ql-toolbar .ql-picker-options {
+    background: hsl(var(--background)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    z-index: 1000 !important;
+  }
+
+  .stable-section-editor .ql-toolbar .ql-picker-item {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .stable-section-editor .ql-toolbar .ql-picker-item:hover {
+    background: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+
+  /* Editor wrapper */
+  .editor-wrapper-stable {
+    background: hsl(var(--background)) !important;
+    border-radius: 0 0 12px 12px !important;
+    position: relative !important;
+    z-index: 1 !important;
+    min-height: 400px !important;
+    overflow: visible !important;
+  }
+
+  /* Prevent modal/dialog interference */
+  .stable-section-editor .ql-editor:focus {
+    outline: none !important;
+    border: none !important;
+  }
+
+  .stable-section-editor .ql-container:focus-within {
+    outline: none !important;
+  }
+
+  /* Dark mode specific fixes */
+  html.dark .stable-section-editor .ql-editor,
+  html.dark .stable-section-editor .ql-editor *,
+  [data-theme="dark"] .stable-section-editor .ql-editor,
+  [data-theme="dark"] .stable-section-editor .ql-editor * {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  html.dark .stable-section-editor .ql-editor::before,
+  [data-theme="dark"] .stable-section-editor .ql-editor::before {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Video and Image Embeds in Editor */
+  .stable-section-editor .ql-editor .video-embed-container {
     position: relative !important;
     width: 100% !important;
     height: 0 !important;
@@ -439,7 +539,7 @@
     border: 1px solid hsl(var(--border)) !important;
   }
 
-  .video-embed-container iframe {
+  .stable-section-editor .ql-editor .video-embed-container iframe {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
@@ -449,34 +549,15 @@
     border-radius: 12px !important;
   }
 
-  .image-embed-container {
+  .stable-section-editor .ql-editor .image-embed-container {
     margin: 1.5rem 0 !important;
     text-align: center !important;
   }
 
-  .image-embed-container img {
+  .stable-section-editor .ql-editor .image-embed-container img {
     max-width: 100% !important;
     height: auto !important;
     border-radius: 12px !important;
     box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1) !important;
     border: 1px solid hsl(var(--border)) !important;
-  }
-
-  /* Editor wrapper */
-  .editor-wrapper {
-    background: hsl(var(--background)) !important;
-    border-radius: 0 0 12px 12px !important;
-  }
-
-  /* Dark mode text visibility fixes */
-  html.dark .section-editor .ql-editor,
-  html.dark .section-editor .ql-editor *,
-  [data-theme="dark"] .section-editor .ql-editor,
-  [data-theme="dark"] .section-editor .ql-editor * {
-    color: hsl(var(--foreground)) !important;
-  }
-
-  html.dark .section-editor .ql-editor::before,
-  [data-theme="dark"] .section-editor .ql-editor::before {
-    color: hsl(var(--muted-foreground)) !important;
   }
