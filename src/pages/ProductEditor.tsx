@@ -66,6 +66,7 @@ const ProductEditor = () => {
   const [sections, setSections] = useState<Section[]>([
     { id: '1', title: 'Getting Started', content: '' }
   ]);
+  const [quillRefs, setQuillRefs] = useState<{ [key: string]: any }>({});
 
   useEffect(() => {
     if (!currentProduct) {
@@ -203,9 +204,12 @@ const ProductEditor = () => {
   };
 
   const updateSectionContent = (id: string, content: string) => {
-    setSections(sections.map(section => 
-      section.id === id ? { ...section, content } : section
-    ));
+    console.log('Updating section content:', id, content);
+    setSections(prevSections => 
+      prevSections.map(section => 
+        section.id === id ? { ...section, content } : section
+      )
+    );
   };
 
   const deleteSection = (id: string) => {
@@ -510,11 +514,12 @@ const ProductEditor = () => {
                           </div>
                           
                           {/* Rich Text Editor - Always Visible */}
-                          <div className="bg-background">
-                            <div className="editor-wrapper" style={{ minHeight: '350px' }}>
+                          <div className="bg-background border border-border/20 rounded-b-xl">
+                            <div className="editor-wrapper">
                               <ReactQuill
+                                key={`editor-${section.id}`}
                                 theme="snow"
-                                value={section.content}
+                                value={section.content || ''}
                                 onChange={(content) => {
                                   console.log('Content changing for section:', section.id, content);
                                   updateSectionContent(section.id, content);
@@ -525,16 +530,16 @@ const ProductEditor = () => {
                                 className="section-editor"
                                 style={{
                                   height: '350px',
-                                  backgroundColor: 'hsl(var(--background))',
-                                  color: 'hsl(var(--foreground))',
+                                  minHeight: '350px',
                                 }}
+                                preserveWhitespace={true}
                               />
                             </div>
                             
                             {/* Quick Tools Bar */}
-                            <div className="flex items-center justify-between p-4 bg-muted/20 border-t border-border/30">
+                            <div className="flex items-center justify-between p-3 bg-muted/10 border-t border-border/20">
                               <div className="flex items-center space-x-2">
-                                <div className="text-xs text-muted-foreground">Quick tools:</div>
+                                <div className="text-xs text-muted-foreground font-medium">Quick tools:</div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -544,22 +549,38 @@ const ProductEditor = () => {
                                       handleVideoEmbedInSection(section.id, url);
                                     }
                                   }}
-                                  className="text-primary hover:text-primary hover:bg-primary/10 h-7 px-2"
+                                  className="text-primary hover:text-primary hover:bg-primary/10 h-7 px-2 text-xs"
                                 >
                                   <Video className="h-3 w-3 mr-1" />
-                                  Video
+                                  Add Video
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-accent hover:text-accent hover:bg-accent/10 h-7 px-2"
+                                  onClick={() => {
+                                    const url = prompt('Enter image URL:');
+                                    if (url) {
+                                      const imageEmbed = `<div class="image-embed-container"><img src="${url}" alt="Embedded image" style="max-width: 100%; height: auto; border-radius: 8px; margin: 1rem 0;" /></div>`;
+                                      const updatedSections = sections.map(s => 
+                                        s.id === section.id 
+                                          ? { ...s, content: s.content + '<br/>' + imageEmbed + '<br/>' }
+                                          : s
+                                      );
+                                      setSections(updatedSections);
+                                      toast({
+                                        title: "Image added successfully!",
+                                        description: "Your image has been embedded in the section.",
+                                      });
+                                    }
+                                  }}
+                                  className="text-accent hover:text-accent hover:bg-accent/10 h-7 px-2 text-xs"
                                 >
                                   <Image className="h-3 w-3 mr-1" />
-                                  Image
+                                  Add Image
                                 </Button>
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {section.content.replace(/<[^>]*>/g, '').length} characters
+                                {(section.content || '').replace(/<[^>]*>/g, '').trim().length} chars
                               </div>
                             </div>
                           </div>
@@ -572,8 +593,40 @@ const ProductEditor = () => {
                           <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
                           <h3 className="text-lg font-semibold text-foreground mb-2">Start Your Documentation</h3>
                           <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                            Create structured sections to organize your content effectively
+                            Create structured sections to organize your content effectively. Here's how your content will look when published:
                           </p>
+                          <div className="bg-white dark:bg-gray-900/50 border border-border rounded-lg p-6 mb-6 max-w-3xl mx-auto">
+                            <h4 className="font-semibold mb-4 text-left">Preview: How videos and images will appear</h4>
+                            
+                            {/* Sample Video Embed */}
+                            <div className="mb-6">
+                              <h5 className="text-sm font-medium text-muted-foreground mb-2">Video Embeds:</h5>
+                              <div className="video-embed-container">
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center rounded-lg">
+                                  <div className="text-center">
+                                    <Video className="h-12 w-12 mx-auto mb-2 text-primary" />
+                                    <p className="text-sm text-muted-foreground">YouTube / Loom / HeyGen Video</p>
+                                    <p className="text-xs text-muted-foreground">Responsive 16:9 aspect ratio</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Sample Image Embed */}
+                            <div className="mb-4">
+                              <h5 className="text-sm font-medium text-muted-foreground mb-2">Image Embeds:</h5>
+                              <div className="image-embed-container">
+                                <div className="bg-gradient-to-br from-secondary/10 to-accent/10 border border-border rounded-lg p-8 flex items-center justify-center">
+                                  <div className="text-center">
+                                    <Image className="h-8 w-8 mx-auto mb-2 text-secondary" />
+                                    <p className="text-sm text-muted-foreground">Screenshots & Images</p>
+                                    <p className="text-xs text-muted-foreground">Automatically optimized</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
                           <Button
                             onClick={addSection}
                             className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
