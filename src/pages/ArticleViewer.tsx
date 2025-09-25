@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Search, ChevronRight, BookOpen, Home, FileText, Users, Settings } from 'lucide-react';
+import { Search, ChevronRight, BookOpen, Home, FileText, Users, Settings, Edit3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -22,55 +22,77 @@ const ArticleViewer = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string }[]>([]);
 
-  // Mock data - replace with actual data fetching
+  // Load saved article data from localStorage (in a real app, this would be from an API)
   useEffect(() => {
-    const mockArticle: Article = {
-      id: articleId || '1',
-      title: 'Stripe Integration',
-      subtitle: 'How to set up payments in your app using our Stripe integration',
-      category: 'Integrations',
-      content: `
-        <div class="article-banner">
-          <div class="banner-content">
-            <h1>Stripe Integration</h1>
-            <p>Complete guide to implementing Stripe payments</p>
-          </div>
-        </div>
+    const savedArticleKey = `article-${productId}-${articleId}`;
+    const savedArticleData = localStorage.getItem(savedArticleKey);
+    
+    if (savedArticleData) {
+      try {
+        const parsedData = JSON.parse(savedArticleData);
+        const loadedArticle: Article = {
+          id: articleId || '1',
+          title: parsedData.title || 'Untitled Article',
+          subtitle: parsedData.subtitle || 'Documentation article',
+          category: getProductCategory(productId),
+          content: '', // We'll use sections instead
+          sections: parsedData.sections || [],
+          createdAt: parsedData.createdAt || new Date().toISOString().split('T')[0],
+          updatedAt: parsedData.updatedAt || new Date().toISOString().split('T')[0]
+        };
         
-        <p>Lovable now lets you set up Stripe entirely through <strong>chat</strong>.</p>
+        setArticle(loadedArticle);
         
-        <h2 id="chat-driven-setup">Chat-driven auto-setup (recommended)</h2>
-        <p>After you connect <strong>Supabase</strong> and save your <strong>Stripe Secret Key</strong> via <strong>Add API Key</strong>, just describe what you need:</p>
+        // Generate table of contents from actual sections
+        const toc = parsedData.sections?.map((section: any, index: number) => ({
+          title: section.title,
+          id: `section-${index + 1}`
+        })) || [];
         
-        <ul>
-          <li>"Add three subscription tiers..."</li>
-          <li>"Create a one-time checkout for $99"</li>
-          <li>"Set up a donation form"</li>
-        </ul>
-        
-        <p>Lovable generates the perfect Stripe integration, creates the database tables with RLS, and UI components automatically.</p>
-      `,
-      sections: [
-        { title: 'Key Takeaways', content: 'Main points from this article' },
-        { title: 'Requirements', content: 'What you need before starting' },
-        { title: 'Setup Process', content: 'Step-by-step implementation' }
-      ],
-      createdAt: '2024-01-15',
-      updatedAt: '2024-01-20'
+        setTableOfContents(toc);
+      } catch (error) {
+        console.error('Error loading article data:', error);
+        // Fall back to empty article
+        setArticle({
+          id: articleId || '1',
+          title: 'No Article Found',
+          subtitle: 'This article hasn\'t been created yet',
+          category: getProductCategory(productId),
+          content: '',
+          sections: [],
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0]
+        });
+        setTableOfContents([]);
+      }
+    } else {
+      // No saved data, show empty state
+      setArticle({
+        id: articleId || '1',
+        title: 'No Article Found',
+        subtitle: 'This article hasn\'t been created yet',
+        category: getProductCategory(productId),
+        content: '',
+        sections: [],
+        createdAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0]
+      });
+      setTableOfContents([]);
+    }
+  }, [articleId, productId]);
+
+  // Helper function to get product category name
+  const getProductCategory = (productId: string | undefined) => {
+    const productMap: { [key: string]: string } = {
+      'mobile': 'Mobile App',
+      'web': 'Web Platform',
+      'cloud': 'Cloud Services',
+      'security': 'Security Suite',
+      'analytics': 'Analytics',
+      'api': 'API & Integrations'
     };
-    
-    setArticle(mockArticle);
-    
-    // Generate table of contents
-    const headings = [
-      { title: 'Key Takeaways', id: 'key-takeaways' },
-      { title: 'Requirements', id: 'requirements' },
-      { title: 'Chat-driven Setup', id: 'chat-driven-setup' },
-      { title: 'Advanced Integration', id: 'advanced-integration' },
-      { title: 'Debugging & Troubleshooting', id: 'debugging' }
-    ];
-    setTableOfContents(headings);
-  }, [articleId]);
+    return productMap[productId || ''] || 'Documentation';
+  };
 
   const sidebarItems = [
     { icon: Home, label: 'Overview', href: '/', active: false },
@@ -259,9 +281,45 @@ const ArticleViewer = () => {
               </div>
             </div>
 
-            {/* Article Content */}
-            <div className="prose prose-gray dark:prose-invert max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            {/* Article Content - Show actual sections from editor */}
+            <div className="space-y-8">
+              {article.sections && article.sections.length > 0 ? (
+                article.sections.map((section, index) => (
+                  <div key={index} className="animate-fade-in" style={{animationDelay: `${index * 0.1}s`}}>
+                    <div className="flex items-center mb-6" id={`section-${index + 1}`}>
+                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-sm font-bold mr-4">
+                        {index + 1}
+                      </div>
+                      <h2 className="text-2xl font-semibold text-primary flex-1 border-b border-primary/20 pb-2">
+                        {section.title}
+                      </h2>
+                    </div>
+                    <div className="ml-12">
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: section.content }}
+                        className="prose prose-lg max-w-none text-foreground/90 leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-16 bg-gradient-to-br from-background to-muted/10 rounded-lg border border-border/50">
+                  <div className="max-w-md mx-auto">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-xl font-semibold text-foreground mb-2">No Content Available</h3>
+                    <p className="text-muted-foreground mb-6">
+                      This article hasn't been created yet. Go to the product editor to create content for this documentation.
+                    </p>
+                    <Link 
+                      to={`/product/${productId}`}
+                      className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                    >
+                      <Edit3 className="h-4 w-4 mr-2" />
+                      Create Article
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </main>

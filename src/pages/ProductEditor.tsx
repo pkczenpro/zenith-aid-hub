@@ -222,9 +222,16 @@ const ProductEditor = () => {
   const handleSave = () => {
     const articleData = {
       title: articleTitle,
+      subtitle: `${currentProduct?.name} documentation`,
       sections: sections,
-      productId: productId
+      productId: productId,
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0]
     };
+    
+    // Save to localStorage (in a real app, this would be saved to a database)
+    const savedArticleKey = `article-${productId}-article-1`;
+    localStorage.setItem(savedArticleKey, JSON.stringify(articleData));
     
     console.log('Saving article:', articleData);
     
