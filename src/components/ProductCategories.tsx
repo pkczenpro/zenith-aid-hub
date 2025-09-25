@@ -11,11 +11,13 @@ import {
   PlayCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const ProductCategories = () => {
+  const navigate = useNavigate();
   const products = [
     {
-      id: 1,
+      id: "mobile",
       name: "Mobile App",
       description: "iOS and Android applications with seamless user experience",
       icon: Smartphone,
@@ -24,7 +26,7 @@ const ProductCategories = () => {
       tours: 3
     },
     {
-      id: 2,
+      id: "web",
       name: "Web Platform", 
       description: "Comprehensive web dashboard and management tools",
       icon: Monitor,
@@ -33,7 +35,7 @@ const ProductCategories = () => {
       tours: 5
     },
     {
-      id: 3,
+      id: "cloud",
       name: "Cloud Services",
       description: "Scalable cloud infrastructure and deployment solutions",
       icon: Cloud,
@@ -42,7 +44,7 @@ const ProductCategories = () => {
       tours: 2
     },
     {
-      id: 4,
+      id: "security",
       name: "Security Suite",
       description: "Advanced security features and compliance tools",
       icon: Shield,
@@ -51,7 +53,7 @@ const ProductCategories = () => {
       tours: 4
     },
     {
-      id: 5,
+      id: "analytics",
       name: "Analytics",
       description: "Data insights and performance monitoring dashboard",
       icon: BarChart3,
@@ -60,7 +62,7 @@ const ProductCategories = () => {
       tours: 3
     },
     {
-      id: 6,
+      id: "api",
       name: "API & Integrations",
       description: "Developer tools and third-party integrations",
       icon: Zap,
@@ -84,7 +86,11 @@ const ProductCategories = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {products.map((product) => (
-            <Card key={product.id} className="group cursor-pointer card-hover border-0 shadow-card bg-gradient-card">
+            <Card 
+              key={product.id} 
+              className="group cursor-pointer card-hover border-0 shadow-card bg-gradient-card"
+              onClick={() => navigate(`/product/${product.id}`)}
+            >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className={`p-3 rounded-xl bg-gradient-to-br ${product.color} shadow-lg`}>
@@ -110,8 +116,16 @@ const ProductCategories = () => {
                     <span>{product.tours} video tours</span>
                   </div>
                   
-                  <Button variant="ghost" size="sm" className="group/btn">
-                    Explore
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="group/btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/product/${product.id}`);
+                    }}
+                  >
+                    Manage
                     <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
                   </Button>
                 </div>

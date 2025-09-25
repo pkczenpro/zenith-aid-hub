@@ -1,0 +1,436 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ArrowLeft, 
+  Save, 
+  Eye, 
+  Settings,
+  Edit3,
+  Video, 
+  Image, 
+  Link,
+  Upload,
+  Play,
+  FileText
+} from "lucide-react";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import { useToast } from "@/hooks/use-toast";
+import Header from "@/components/Header";
+
+const ProductEditor = () => {
+  const { productId } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  // Product data - in a real app this would come from an API
+  const products = {
+    mobile: { name: "Mobile App", icon: "📱", color: "from-blue-500 to-blue-600" },
+    web: { name: "Web Platform", icon: "💻", color: "from-purple-500 to-purple-600" },
+    cloud: { name: "Cloud Services", icon: "☁️", color: "from-cyan-500 to-cyan-600" },
+    security: { name: "Security Suite", icon: "🛡️", color: "from-emerald-500 to-emerald-600" },
+    analytics: { name: "Analytics", icon: "📊", color: "from-orange-500 to-orange-600" },
+    api: { name: "API & Integrations", icon: "⚡", color: "from-violet-500 to-violet-600" }
+  };
+
+  const currentProduct = products[productId as keyof typeof products];
+  
+  const [productInfo, setProductInfo] = useState({
+    name: currentProduct?.name || "",
+    description: "",
+    version: "1.0.0",
+    status: "Active"
+  });
+  
+  const [content, setContent] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [isPreview, setIsPreview] = useState(false);
+  const [activeTab, setActiveTab] = useState('editor');
+
+  useEffect(() => {
+    if (!currentProduct) {
+      navigate('/');
+      return;
+    }
+  }, [currentProduct, navigate]);
+
+  // Quill editor configuration
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      ['link', 'image', 'video'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike', 'blockquote',
+    'list', 'bullet', 'indent',
+    'link', 'image', 'video', 'color', 'background',
+    'align', 'script', 'code-block'
+  ];
+
+  const handleVideoEmbed = () => {
+    if (!videoUrl) return;
+    
+    let embedCode = '';
+    
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+      embedCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+    } else if (videoUrl.includes('loom.com')) {
+      const videoId = videoUrl.split('/').pop();
+      embedCode = `<iframe src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+    } else if (videoUrl.includes('heygen.com')) {
+      embedCode = `<iframe width="560" height="315" src="${videoUrl}" frameborder="0" allowfullscreen></iframe>`;
+    } else {
+      embedCode = `<video controls width="560"><source src="${videoUrl}" type="video/mp4">Your browser does not support the video tag.</video>`;
+    }
+    
+    setContent(prev => prev + `<br/>${embedCode}<br/>`);
+    setVideoUrl('');
+    
+    toast({
+      title: "Video embedded successfully!",
+      description: "Your video has been added to the article.",
+    });
+  };
+
+  const handleSave = () => {
+    toast({
+      title: "Product updated!",
+      description: "Your changes have been saved successfully.",
+    });
+  };
+
+  const handleProductInfoSave = () => {
+    toast({
+      title: "Product info saved!",
+      description: "Product details updated successfully.",
+    });
+  };
+
+  if (!currentProduct) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      <main className="py-8 px-4">
+        <div className="container mx-auto max-w-7xl">
+          {/* Navigation */}
+          <div className="flex items-center space-x-4 mb-8">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate('/')}
+              className="hover:bg-muted/50"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Products
+            </Button>
+            <div className="h-6 w-px bg-border"></div>
+            <div className="flex items-center space-x-3">
+              <div className={`p-2 rounded-lg bg-gradient-to-br ${currentProduct.color} text-white text-lg`}>
+                {currentProduct.icon}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">{currentProduct.name}</h1>
+                <p className="text-muted-foreground">Product Management</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="info" className="flex items-center space-x-2">
+                <Settings className="h-4 w-4" />
+                <span>Product Info</span>
+              </TabsTrigger>
+              <TabsTrigger value="editor" className="flex items-center space-x-2">
+                <Edit3 className="h-4 w-4" />
+                <span>Content Editor</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Product Info Tab */}
+            <TabsContent value="info">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <Card className="shadow-card border-0 bg-gradient-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Settings className="h-5 w-5 text-primary" />
+                      <span>Product Details</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="product-name">Product Name</Label>
+                        <Input
+                          id="product-name"
+                          value={productInfo.name}
+                          onChange={(e) => setProductInfo(prev => ({ ...prev, name: e.target.value }))}
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="product-description">Description</Label>
+                        <Textarea
+                          id="product-description"
+                          value={productInfo.description}
+                          onChange={(e) => setProductInfo(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder="Describe your product and its key features..."
+                          rows={4}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="version">Version</Label>
+                          <Input
+                            id="version"
+                            value={productInfo.version}
+                            onChange={(e) => setProductInfo(prev => ({ ...prev, version: e.target.value }))}
+                            className="mt-1"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="status">Status</Label>
+                          <Input
+                            id="status"
+                            value={productInfo.status}
+                            onChange={(e) => setProductInfo(prev => ({ ...prev, status: e.target.value }))}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        onClick={handleProductInfoSave}
+                        className="w-full bg-gradient-button text-white border-0"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Product Info
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-card border-0 bg-gradient-card">
+                  <CardHeader>
+                    <CardTitle>Quick Stats</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-muted/50 rounded-lg">
+                        <div className="text-2xl font-bold text-primary">24</div>
+                        <div className="text-sm text-muted-foreground">Articles</div>
+                      </div>
+                      <div className="text-center p-4 bg-muted/50 rounded-lg">
+                        <div className="text-2xl font-bold text-accent">8</div>
+                        <div className="text-sm text-muted-foreground">Video Tours</div>
+                      </div>
+                      <div className="text-center p-4 bg-muted/50 rounded-lg">
+                        <div className="text-2xl font-bold text-success">156</div>
+                        <div className="text-sm text-muted-foreground">Views</div>
+                      </div>
+                      <div className="text-center p-4 bg-muted/50 rounded-lg">
+                        <div className="text-2xl font-bold text-warning">12</div>
+                        <div className="text-sm text-muted-foreground">Tickets</div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Documentation Coverage</span>
+                        <Badge variant="secondary">78%</Badge>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div className="bg-gradient-to-r from-primary to-accent h-2 rounded-full" style={{ width: '78%' }}></div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Content Editor Tab */}
+            <TabsContent value="editor">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                {/* Main Editor */}
+                <div className="lg:col-span-3 space-y-6">
+                  <Card className="shadow-card border-0 bg-gradient-card">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center space-x-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <span>Content Editor</span>
+                        </CardTitle>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsPreview(!isPreview)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            {isPreview ? 'Edit' : 'Preview'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={handleSave}
+                            className="bg-gradient-button text-white border-0"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      {!isPreview ? (
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Article Title</Label>
+                            <Input 
+                              placeholder="Enter article title..." 
+                              className="mt-1 text-lg font-semibold"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label>Content</Label>
+                            <div className="mt-2 border rounded-lg overflow-hidden">
+                              <ReactQuill
+                                theme="snow"
+                                value={content}
+                                onChange={setContent}
+                                modules={modules}
+                                formats={formats}
+                                style={{ minHeight: '400px' }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="prose max-w-none">
+                          <h1 className="text-3xl font-bold mb-6">Article Preview</h1>
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: content }}
+                            className="space-y-4"
+                          />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Sidebar Tools */}
+                <div className="space-y-6">
+                  {/* Video Embedding */}
+                  <Card className="shadow-card border-0 bg-gradient-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Video className="h-5 w-5 text-primary" />
+                        <span>Video Tours</span>
+                      </CardTitle>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label>Video URL</Label>
+                        <Input
+                          value={videoUrl}
+                          onChange={(e) => setVideoUrl(e.target.value)}
+                          placeholder="Paste Loom, HeyGen, or YouTube URL..."
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <Button 
+                        onClick={handleVideoEmbed}
+                        disabled={!videoUrl}
+                        className="w-full bg-gradient-button text-white border-0"
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Embed Video
+                      </Button>
+                      
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Supported platforms:</p>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary">YouTube</Badge>
+                          <Badge variant="secondary">Loom</Badge>
+                          <Badge variant="secondary">HeyGen</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Media Upload */}
+                  <Card className="shadow-card border-0 bg-gradient-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Image className="h-5 w-5 text-primary" />
+                        <span>Media Library</span>
+                      </CardTitle>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                        <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Upload screenshots or images
+                        </p>
+                        <Button variant="outline" size="sm">
+                          Choose Files
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Quick Actions:</p>
+                        <div className="space-y-1">
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            <Image className="h-4 w-4 mr-2" />
+                            Insert Image
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start">
+                            <Link className="h-4 w-4 mr-2" />
+                            Add Link
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default ProductEditor;
