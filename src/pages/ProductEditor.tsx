@@ -234,6 +234,11 @@ const ProductEditor = () => {
     });
   };
 
+  const handleViewArticle = () => {
+    // Navigate to the article viewer with the current product and a mock article ID
+    navigate(`/docs/${productId}/article-1`);
+  };
+
   const handleProductInfoSave = () => {
     toast({
       title: "Product info saved!",
@@ -404,6 +409,15 @@ const ProductEditor = () => {
                           <span>Content Editor</span>
                         </CardTitle>
                         <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleViewArticle}
+                            className="bg-gradient-to-r from-secondary/10 to-accent/10 hover:from-secondary/20 hover:to-accent/20 border-secondary/20 hover:border-secondary/30"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            View Docs
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
