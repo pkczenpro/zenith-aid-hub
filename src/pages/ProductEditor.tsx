@@ -41,6 +41,8 @@ const ProductEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Load products from database instead of hardcoded data
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
