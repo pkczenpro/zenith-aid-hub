@@ -18,12 +18,21 @@ import {
   Link,
   Upload,
   Play,
-  FileText
+  FileText,
+  Plus,
+  Trash2,
+  GripVertical
 } from "lucide-react";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
+
+interface Section {
+  id: string;
+  title: string;
+  content: string;
+}
 
 const ProductEditor = () => {
   const { productId } = useParams();
@@ -53,6 +62,10 @@ const ProductEditor = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [activeTab, setActiveTab] = useState('editor');
+  const [articleTitle, setArticleTitle] = useState('');
+  const [sections, setSections] = useState<Section[]>([
+    { id: '1', title: 'Getting Started', content: '' }
+  ]);
 
   useEffect(() => {
     if (!currentProduct) {
@@ -92,29 +105,88 @@ const ProductEditor = () => {
     
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
       const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
-      embedCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+      if (videoId) {
+        embedCode = `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="max-width: 560px;"></iframe>`;
+      }
     } else if (videoUrl.includes('loom.com')) {
-      const videoId = videoUrl.split('/').pop();
-      embedCode = `<iframe src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+      const videoId = videoUrl.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] || videoUrl.split('/').pop();
+      if (videoId) {
+        embedCode = `<iframe width="100%" height="315" src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen style="max-width: 560px;"></iframe>`;
+      }
     } else if (videoUrl.includes('heygen.com')) {
-      embedCode = `<iframe width="560" height="315" src="${videoUrl}" frameborder="0" allowfullscreen></iframe>`;
+      // Handle different HeyGen URL patterns
+      let videoId = '';
+      if (videoUrl.includes('/share/')) {
+        videoId = videoUrl.match(/\/share\/([^/?#]+)/)?.[1];
+      } else if (videoUrl.includes('share-prod.heygen.com')) {
+        videoId = videoUrl.split('/').pop()?.split('?')[0];
+      }
+      
+      if (videoId) {
+        embedCode = `<iframe width="100%" height="315" src="https://share-prod.heygen.com/${videoId}" frameborder="0" allowfullscreen style="max-width: 560px;"></iframe>`;
+      } else {
+        // Fallback to the original URL if we can't parse it
+        embedCode = `<iframe width="100%" height="315" src="${videoUrl}" frameborder="0" allowfullscreen style="max-width: 560px;"></iframe>`;
+      }
     } else {
-      embedCode = `<video controls width="560"><source src="${videoUrl}" type="video/mp4">Your browser does not support the video tag.</video>`;
+      embedCode = `<video controls width="100%" style="max-width: 560px;"><source src="${videoUrl}" type="video/mp4">Your browser does not support the video tag.</video>`;
     }
     
-    setContent(prev => prev + `<br/>${embedCode}<br/>`);
+    // Add video to the current active section
+    if (sections.length > 0) {
+      const updatedSections = [...sections];
+      const lastSectionIndex = updatedSections.length - 1;
+      updatedSections[lastSectionIndex].content += `<br/>${embedCode}<br/>`;
+      setSections(updatedSections);
+    }
+    
     setVideoUrl('');
     
     toast({
       title: "Video embedded successfully!",
-      description: "Your video has been added to the article.",
+      description: "Your video has been added to the current section.",
     });
   };
 
+  const addSection = () => {
+    const newSection: Section = {
+      id: Date.now().toString(),
+      title: `Section ${sections.length + 1}`,
+      content: ''
+    };
+    setSections([...sections, newSection]);
+  };
+
+  const updateSectionTitle = (id: string, title: string) => {
+    setSections(sections.map(section => 
+      section.id === id ? { ...section, title } : section
+    ));
+  };
+
+  const updateSectionContent = (id: string, content: string) => {
+    setSections(sections.map(section => 
+      section.id === id ? { ...section, content } : section
+    ));
+  };
+
+  const deleteSection = (id: string) => {
+    if (sections.length > 1) {
+      setSections(sections.filter(section => section.id !== id));
+    }
+  };
+
   const handleSave = () => {
+    const articleData = {
+      title: articleTitle,
+      sections: sections,
+      productId: productId
+    };
+    
+    console.log('Saving article:', articleData);
+    
     toast({
-      title: "Product updated!",
-      description: "Your changes have been saved successfully.",
+      title: "Article saved!",
+      description: `Article "${articleTitle}" has been saved with ${sections.length} sections.`,
     });
   };
 
@@ -310,36 +382,88 @@ const ProductEditor = () => {
                     
                     <CardContent>
                       {!isPreview ? (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           <div>
                             <Label>Article Title</Label>
                             <Input 
+                              value={articleTitle}
+                              onChange={(e) => setArticleTitle(e.target.value)}
                               placeholder="Enter article title..." 
                               className="mt-1 text-lg font-semibold"
                             />
                           </div>
                           
-                          <div>
-                            <Label>Content</Label>
-                            <div className="mt-2 border rounded-lg overflow-hidden">
-                              <ReactQuill
-                                theme="snow"
-                                value={content}
-                                onChange={setContent}
-                                modules={modules}
-                                formats={formats}
-                                style={{ minHeight: '400px' }}
-                              />
+                          {/* Master Sections */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-base font-semibold">Article Sections</Label>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={addSection}
+                                className="flex items-center space-x-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                                <span>Add Section</span>
+                              </Button>
                             </div>
+                            
+                            {sections.map((section, index) => (
+                              <Card key={section.id} className="border border-muted">
+                                <CardHeader className="pb-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2 flex-1">
+                                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                      <Input
+                                        value={section.title}
+                                        onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                                        className="font-medium"
+                                        placeholder="Section title..."
+                                      />
+                                    </div>
+                                    {sections.length > 1 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => deleteSection(section.id)}
+                                        className="text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="border rounded-lg overflow-hidden">
+                                    <ReactQuill
+                                      theme="snow"
+                                      value={section.content}
+                                      onChange={(content) => updateSectionContent(section.id, content)}
+                                      modules={modules}
+                                      formats={formats}
+                                      style={{ minHeight: '200px' }}
+                                      placeholder={`Write content for ${section.title}...`}
+                                    />
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
                         </div>
                       ) : (
                         <div className="prose max-w-none">
-                          <h1 className="text-3xl font-bold mb-6">Article Preview</h1>
-                          <div 
-                            dangerouslySetInnerHTML={{ __html: content }}
-                            className="space-y-4"
-                          />
+                          <h1 className="text-3xl font-bold mb-6">{articleTitle || 'Article Preview'}</h1>
+                          {sections.map((section) => (
+                            <div key={section.id} className="mb-8">
+                              <h2 className="text-2xl font-semibold mb-4 text-primary border-b border-border pb-2">
+                                {section.title}
+                              </h2>
+                              <div 
+                                dangerouslySetInnerHTML={{ __html: section.content }}
+                                className="space-y-4"
+                              />
+                            </div>
+                          ))}
                         </div>
                       )}
                     </CardContent>
@@ -384,6 +508,9 @@ const ProductEditor = () => {
                           <Badge variant="secondary">Loom</Badge>
                           <Badge variant="secondary">HeyGen</Badge>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Videos will be embedded in the last section of your article.
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
