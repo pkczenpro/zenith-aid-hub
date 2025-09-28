@@ -260,36 +260,12 @@ const ArticleViewer = () => {
           );
         default:
           // Handle rich text content with embedded videos
-          if (typeof section.content === 'string' && section.content.includes('<')) {
-            // Check if content has video player containers and extract URL from data-video-src
-            if (section.content.includes('video-player-container')) {
-              const videoUrlMatch = section.content.match(/data-video-src="([^"]+)"/);
-              if (videoUrlMatch && videoUrlMatch[1].match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
-                return (
-                  <div key={index} className="animate-fade-in mb-6">
-                    <LMSVideoPlayer src={videoUrlMatch[1]} />
-                  </div>
-                );
-              }
-            }
-            
-            // Check for direct video tags in HTML content  
-            if (section.content.includes('<video') || section.content.includes('<source')) {
-              const videoSrcMatch = section.content.match(/src="([^"]+\.(mp4|webm|ogg|mov|avi|mkv)[^"]*)"/i);
-              if (videoSrcMatch) {
-                return (
-                  <div key={index} className="animate-fade-in mb-6">
-                    <LMSVideoPlayer src={videoSrcMatch[1]} />
-                  </div>
-                );
-              }
-            }
-            
+          if (typeof section.content === 'string' && section.content.includes('<')) {            
             return (
               <div key={index} className="animate-fade-in mb-6">
                 <div 
                   dangerouslySetInnerHTML={{ __html: section.content }}
-                  className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90"
+                  className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-container]:my-4"
                 />
               </div>
             );

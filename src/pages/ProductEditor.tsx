@@ -160,19 +160,24 @@ const ProductEditor = () => {
         'video': function() {
           const range = this.quill.getSelection();
           if (range) {
-            const url = prompt('Enter video URL (YouTube, Loom, HeyGen):');
+            const url = prompt('Enter video URL (YouTube, Vimeo, Loom, HeyGen, or direct video file):');
             if (url) {
               let embedCode = '';
               
               if (url.includes('youtube.com') || url.includes('youtu.be')) {
                 const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
                 if (videoId) {
-                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
+                }
+              } else if (url.includes('vimeo.com')) {
+                const videoId = url.match(/vimeo\.com\/(\d+)/)?.[1];
+                if (videoId) {
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
                 }
               } else if (url.includes('loom.com')) {
                 const videoId = url.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] || url.split('/').pop();
                 if (videoId) {
-                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
                 }
               } else if (url.includes('heygen.com')) {
                 let videoId = '';
@@ -183,10 +188,16 @@ const ProductEditor = () => {
                 }
                 
                 if (videoId) {
-                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="https://share-prod.heygen.com/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://share-prod.heygen.com/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
                 } else {
-                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0;"><iframe src="${url}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>`;
+                  embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="${url}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
                 }
+              } else if (url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
+                // For direct video files, create a video element
+                embedCode = `<div class="video-container" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><video controls preload="metadata" style="width: 100%; height: auto; display: block;" crossorigin="anonymous"><source src="${url}" type="video/mp4"><source src="${url}" type="video/webm"><source src="${url}" type="video/ogg"><p style="padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${url}" target="_blank" style="color: #0066cc;">Open video in new window</a></p></video></div>`;
+              } else {
+                // For any other URL, try embedding as iframe
+                embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="${url}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
               }
               
               if (embedCode) {
@@ -210,12 +221,21 @@ const ProductEditor = () => {
   const handleVideoEmbedInSection = (sectionId: string, videoUrl: string) => {
     if (!videoUrl) return;
     
+    const quillRef = quillRefs[sectionId];
+    if (!quillRef) return;
+    
+    const range = quillRef.getSelection() || quillRef.getLength();
     let embedCode = '';
     
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
       const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
       if (videoId) {
         embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
+      }
+    } else if (videoUrl.includes('vimeo.com')) {
+      const videoId = videoUrl.match(/vimeo\.com\/(\d+)/)?.[1];
+      if (videoId) {
+        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
       }
     } else if (videoUrl.includes('loom.com')) {
       const videoId = videoUrl.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] || videoUrl.split('/').pop();
@@ -235,42 +255,18 @@ const ProductEditor = () => {
       } else {
         embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="${videoUrl}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
       }
-    } else if (videoUrl.includes('vimeo.com')) {
-      const videoId = videoUrl.match(/vimeo\.com\/(\d+)/)?.[1];
-      if (videoId) {
-        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
-      }
     } else if (videoUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
-      // Handle direct video file links with LMS-style player
-      embedCode = `<div class="video-player-container" data-video-src="${videoUrl}" style="position: relative; width: 100%; margin: 1rem 0; background: #f8f9fa; border-radius: 8px; overflow: hidden;">
-        <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, #1f2937 0%, #374151 100%); display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="this.style.display='none'; this.nextElementSibling.style.display='block'; this.nextElementSibling.querySelector('video').play();">
-          <div style="position: absolute; inset: 0; background: url('data:image/svg+xml;base64,${btoa(`<svg width="640" height="360" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#1f2937"/><circle cx="320" cy="180" r="40" fill="rgba(255,255,255,0.1)"/><polygon points="305,165 345,180 305,195" fill="white"/></svg>`)}') center/cover;"></div>
-          <div style="position: relative; z-index: 10; width: 64px; height: 64px; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
-          </div>
-          <div style="position: absolute; bottom: 16px; left: 16px; color: white; font-size: 14px; font-weight: 500; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Click to play video</div>
-        </div>
-        <div style="display: none; position: relative; width: 100%; background: #000;">
-          <video controls preload="metadata" style="width: 100%; height: auto; display: block;" crossorigin="anonymous">
-            <source src="${videoUrl}" type="video/mp4">
-            <source src="${videoUrl}" type="video/webm">
-            <source src="${videoUrl}" type="video/ogg">
-            <p style="padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank" style="color: #0066cc;">Open video in new window</a></p>
-          </video>
-        </div>
-      </div>`;
+      // For direct video files, create a video element
+      embedCode = `<div class="video-container" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><video controls preload="metadata" style="width: 100%; height: auto; display: block;" crossorigin="anonymous"><source src="${videoUrl}" type="video/mp4"><source src="${videoUrl}" type="video/webm"><source src="${videoUrl}" type="video/ogg"><p style="padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank" style="color: #0066cc;">Open video in new window</a></p></video></div>`;
     } else {
       // For any other URL, try embedding as iframe
       embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="${videoUrl}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
     }
     
     if (embedCode) {
-      const updatedSections = sections.map(section => 
-        section.id === sectionId 
-          ? { ...section, content: section.content + '<br/>' + embedCode + '<br/>' }
-          : section
-      );
-      setSections(updatedSections);
+      // Insert the video embed directly into the Quill editor
+      const insertIndex = typeof range === 'number' ? range : range.index || quillRef.getLength();
+      quillRef.clipboard.dangerouslyPasteHTML(insertIndex, embedCode);
       
       toast({
         title: "Video embedded successfully!",
@@ -681,6 +677,11 @@ const ProductEditor = () => {
                           <div className="bg-background border border-border/20 rounded-b-xl">
                             <div className="editor-wrapper-stable">
                               <ReactQuill
+                                ref={(el) => {
+                                  if (el) {
+                                    setQuillRefs(prev => ({ ...prev, [section.id]: el.getEditor() }));
+                                  }
+                                }}
                                 key={`stable-editor-${section.id}`}
                                 theme="snow"
                                 value={section.content || ''}
