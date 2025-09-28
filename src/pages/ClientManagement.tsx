@@ -155,10 +155,21 @@ const ClientManagement = () => {
         return;
       }
 
-      // Get current user to use as granted_by
+      // Get current user and their profile to use as granted_by
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (!currentUser) {
         throw new Error('You must be logged in to create clients');
+      }
+
+      // Get current admin's profile ID
+      const { data: adminProfile, error: adminProfileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (adminProfileError || !adminProfile) {
+        throw new Error('Admin profile not found');
       }
 
       // First, create a user account for the client
@@ -224,7 +235,7 @@ const ClientManagement = () => {
         const accessRecords = newClient.assignedProducts.map(productId => ({
           client_id: clientData.id,
           product_id: productId,
-          granted_by: currentUser.id // Use current admin user ID
+          granted_by: adminProfile.id // Use admin's profile.id, not user.id
         }));
 
         const { error: accessError } = await supabase

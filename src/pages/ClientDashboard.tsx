@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import ClientChat from '@/components/ClientChat';
 import { 
   Search, 
   BookOpen, 
@@ -16,7 +17,8 @@ import {
   FileText, 
   ExternalLink,
   Shield,
-  LogOut
+  LogOut,
+  MessageCircle
 } from 'lucide-react';
 
 interface Client {
@@ -47,6 +49,7 @@ const ClientDashboard = () => {
   const [client, setClient] = useState<Client | null>(null);
   const [accessibleProducts, setAccessibleProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'docs' | 'support'>('docs');
 
   useEffect(() => {
     fetchClientData();
@@ -215,7 +218,8 @@ const ClientDashboard = () => {
               </div>
             )}
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
             </Button>
           </div>
         </div>
@@ -223,126 +227,154 @@ const ClientDashboard = () => {
 
       <main className="py-8 px-6">
         <div className="container mx-auto max-w-7xl">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <div className="bg-gradient-to-r from-background via-muted/10 to-background border border-border/50 rounded-lg p-6">
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                Welcome back, {client.name.split(' ')[0]}! 👋
-              </h1>
-              <p className="text-muted-foreground mb-4">
-                Access your assigned documentation and resources{client.company ? ` for ${client.company}` : ''}
-              </p>
-              <div className="flex items-center space-x-6 text-sm">
-                {client.industry && (
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                      {client.industry}
-                    </Badge>
-                  </div>
-                )}
-                <div className="flex items-center space-x-2 text-muted-foreground">
-                  <Shield className="h-4 w-4" />
-                  <span>Access to {accessibleProducts.length} products</span>
-                </div>
-                <div className="flex items-center space-x-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>Last login: Today</span>
-                </div>
-              </div>
-            </div>
+          {/* Navigation Tabs */}
+          <div className="flex items-center space-x-4 mb-8">
+            <Button
+              variant={activeTab === 'docs' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('docs')}
+              className="flex items-center space-x-2"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Documentation</span>
+            </Button>
+            <Button
+              variant={activeTab === 'support' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('support')}
+              className="flex items-center space-x-2"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Support</span>
+            </Button>
           </div>
 
-          {/* Accessible Products */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">Your Documentation</h2>
-                <p className="text-muted-foreground">Products and resources you have access to</p>
-              </div>
-              <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
-                {accessibleProducts.length} Products Available
-              </Badge>
-            </div>
-
-            {accessibleProducts.length === 0 ? (
-              <div className="text-center py-16">
-                <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No products assigned</h3>
-                <p className="text-muted-foreground">
-                  Contact your administrator to get access to documentation.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredAccessibleProducts.map((product) => (
-                  <Card key={product.id} className="shadow-card border-0 bg-gradient-card hover:shadow-lg transition-all duration-300 group">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-3 rounded-lg bg-gradient-to-br from-primary to-accent text-white">
-                            {product.icon_url ? (
-                              <img src={product.icon_url} alt="" className="h-6 w-6" />
-                            ) : (
-                              <BookOpen className="h-6 w-6" />
-                            )}
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">{product.name}</CardTitle>
-                            <p className="text-sm text-muted-foreground">{product.description}</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                          <Shield className="h-3 w-3 mr-1" />
-                          Access
+          {activeTab === 'docs' && (
+            <>
+              {/* Welcome Section */}
+              <div className="mb-8">
+                <div className="bg-gradient-to-r from-background via-muted/10 to-background border border-border/50 rounded-lg p-6">
+                  <h1 className="text-3xl font-bold text-foreground mb-2">
+                    Welcome back, {client.name.split(' ')[0]}! 👋
+                  </h1>
+                  <p className="text-muted-foreground mb-4">
+                    Access your assigned documentation and resources{client.company ? ` for ${client.company}` : ''}
+                  </p>
+                  <div className="flex items-center space-x-6 text-sm">
+                    {client.industry && (
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                          {client.industry}
                         </Badge>
                       </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center space-x-2 text-muted-foreground">
-                          <FileText className="h-4 w-4" />
-                          <span>{product.articles} articles</span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>Updated {product.lastUpdated}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <Button 
-                          asChild 
-                          className="flex-1 bg-gradient-button text-white border-0 group-hover:shadow-md transition-all duration-200"
-                          disabled={product.articles === 0}
-                        >
-                          <Link to={`/product/${product.id}/docs`}>
-                            <BookOpen className="h-4 w-4 mr-2" />
-                            View Documentation
-                          </Link>
-                        </Button>
-                        <Button variant="outline" size="icon" asChild disabled={product.articles === 0}>
-                          <Link to={`/product/${product.id}/docs`}>
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    )}
+                    <div className="flex items-center space-x-2 text-muted-foreground">
+                      <Shield className="h-4 w-4" />
+                      <span>Access to {accessibleProducts.length} products</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>Last login: Today</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
 
-            {filteredAccessibleProducts.length === 0 && searchQuery && (
-              <div className="text-center py-12">
-                <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No results found</h3>
-                <p className="text-muted-foreground">
-                  Try adjusting your search terms or browse all available documentation.
-                </p>
+              {/* Accessible Products */}
+              <div className="mb-12">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground">Your Documentation</h2>
+                    <p className="text-muted-foreground">Products and resources you have access to</p>
+                  </div>
+                  <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
+                    {accessibleProducts.length} Products Available
+                  </Badge>
+                </div>
+
+                {accessibleProducts.length === 0 ? (
+                  <div className="text-center py-16">
+                    <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No products assigned</h3>
+                    <p className="text-muted-foreground">
+                      Contact your administrator to get access to documentation.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredAccessibleProducts.map((product) => (
+                      <Card key={product.id} className="shadow-card border-0 bg-gradient-card hover:shadow-lg transition-all duration-300 group">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="p-3 rounded-lg bg-gradient-to-br from-primary to-accent text-white">
+                                {product.icon_url ? (
+                                  <img src={product.icon_url} alt="" className="h-6 w-6" />
+                                ) : (
+                                  <BookOpen className="h-6 w-6" />
+                                )}
+                              </div>
+                              <div>
+                                <CardTitle className="text-lg">{product.name}</CardTitle>
+                                <p className="text-sm text-muted-foreground">{product.description}</p>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                              <Shield className="h-3 w-3 mr-1" />
+                              Access
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        
+                        <CardContent className="space-y-4">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center space-x-2 text-muted-foreground">
+                              <FileText className="h-4 w-4" />
+                              <span>{product.articles} articles</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span>Updated {product.lastUpdated}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              asChild 
+                              className="flex-1 bg-gradient-button text-white border-0 group-hover:shadow-md transition-all duration-200"
+                              disabled={product.articles === 0}
+                            >
+                              <Link to={`/product/${product.id}/docs`}>
+                                <BookOpen className="h-4 w-4 mr-2" />
+                                View Documentation
+                              </Link>
+                            </Button>
+                            <Button variant="outline" size="icon" asChild disabled={product.articles === 0}>
+                              <Link to={`/product/${product.id}/docs`}>
+                                <ExternalLink className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {filteredAccessibleProducts.length === 0 && searchQuery && (
+                  <div className="text-center py-12">
+                    <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No results found</h3>
+                    <p className="text-muted-foreground">
+                      Try adjusting your search terms or browse all available documentation.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
+
+          {activeTab === 'support' && (
+            <ClientChat />
+          )}
         </div>
       </main>
     </div>
