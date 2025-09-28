@@ -261,14 +261,25 @@ const ArticleViewer = () => {
         default:
           // Handle rich text content with embedded videos
           if (typeof section.content === 'string' && section.content.includes('<')) {
-            // Check if content has video player containers
+            // Check if content has video player containers and extract URL from data-video-src
             if (section.content.includes('video-player-container')) {
-              // Extract video URL from the embedded HTML
-              const videoUrlMatch = section.content.match(/src="([^"]+)"/);
+              const videoUrlMatch = section.content.match(/data-video-src="([^"]+)"/);
               if (videoUrlMatch && videoUrlMatch[1].match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
                 return (
                   <div key={index} className="animate-fade-in mb-6">
                     <LMSVideoPlayer src={videoUrlMatch[1]} />
+                  </div>
+                );
+              }
+            }
+            
+            // Check for direct video tags in HTML content  
+            if (section.content.includes('<video') || section.content.includes('<source')) {
+              const videoSrcMatch = section.content.match(/src="([^"]+\.(mp4|webm|ogg|mov|avi|mkv)[^"]*)"/i);
+              if (videoSrcMatch) {
+                return (
+                  <div key={index} className="animate-fade-in mb-6">
+                    <LMSVideoPlayer src={videoSrcMatch[1]} />
                   </div>
                 );
               }

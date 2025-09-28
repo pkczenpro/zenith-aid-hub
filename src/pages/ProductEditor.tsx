@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
+import VideoEmbedButton from "@/components/VideoEmbedButton";
 
 interface Section {
   id: string;
@@ -660,14 +661,19 @@ const ProductEditor = () => {
                               />
                             </div>
                             {sections.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteSection(section.id)}
-                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <>
+                                <VideoEmbedButton 
+                                  onVideoEmbed={(url) => handleVideoEmbedInSection(section.id, url)}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteSection(section.id)}
+                                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
                             )}
                           </div>
                           
@@ -710,22 +716,9 @@ const ProductEditor = () => {
                             <div className="flex items-center justify-between p-3 bg-muted/10 border-t border-border/20">
                               <div className="flex items-center space-x-2">
                                 <div className="text-xs text-muted-foreground font-medium">Quick tools:</div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const url = prompt('Enter video URL (YouTube, Loom, HeyGen, MP4, or any video link):');
-                                    if (url) {
-                                      handleVideoEmbedInSection(section.id, url);
-                                    }
-                                  }}
-                                  className="text-primary hover:text-primary hover:bg-primary/10 h-7 px-2 text-xs"
-                                >
-                                  <Video className="h-3 w-3 mr-1" />
-                                  Add Video
-                                </Button>
+                                <VideoEmbedButton 
+                                  onVideoEmbed={(url) => handleVideoEmbedInSection(section.id, url)}
+                                />
                                 <Button
                                   variant="ghost"
                                   size="sm"
