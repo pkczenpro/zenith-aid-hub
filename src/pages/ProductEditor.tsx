@@ -240,16 +240,34 @@ const ProductEditor = () => {
         embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
       }
     } else if (videoUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
-      // Handle direct video file links (MP4, WebM, etc.)
-      embedCode = `<div class="video-container" style="position: relative; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden;">
+      // Handle direct video file links with proper MIME type detection
+      const getVideoType = (url: string) => {
+        const extension = url.split('.').pop()?.toLowerCase();
+        switch (extension) {
+          case 'mp4': return 'video/mp4';
+          case 'webm': return 'video/webm';
+          case 'ogg': return 'video/ogg';
+          case 'mov': return 'video/mp4';
+          case 'avi': return 'video/mp4';
+          case 'mkv': return 'video/mp4';
+          default: return 'video/mp4';
+        }
+      };
+      
+      const videoType = getVideoType(videoUrl);
+      embedCode = `<div class="video-container" style="position: relative; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; background: #000;">
         <video 
           controls 
           preload="metadata" 
           style="width: 100%; height: auto; display: block; border-radius: 8px;" 
           controlsList="nodownload"
+          crossorigin="anonymous"
+          onloadstart="this.style.background='#000'"
+          onerror="this.nextElementSibling.style.display='block'; this.style.display='none'"
         >
-          <source src="${videoUrl}" type="video/mp4">
-          <p>Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank">Download the video</a> instead.</p>
+          <source src="${videoUrl}" type="${videoType}">
+          ${videoType !== 'video/mp4' ? `<source src="${videoUrl}" type="video/mp4">` : ''}
+          <p style="display:none; padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank" style="color: #0066cc;">Download the video</a> instead.</p>
         </video>
       </div>`;
     } else {
