@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,13 @@ const ProductEditor = () => {
     }
   ]);
   const [quillRefs, setQuillRefs] = useState<{ [key: string]: any }>({});
+
+  // Memoized ref callback to prevent infinite loops
+  const createQuillRef = useCallback((sectionId: string) => (el: any) => {
+    if (el && !quillRefs[sectionId]) {
+      setQuillRefs(prev => ({ ...prev, [sectionId]: el.getEditor() }));
+    }
+  }, [quillRefs]);
 
   useEffect(() => {
     fetchProducts();
@@ -677,11 +684,7 @@ const ProductEditor = () => {
                           <div className="bg-background border border-border/20 rounded-b-xl">
                             <div className="editor-wrapper-stable">
                               <ReactQuill
-                                ref={(el) => {
-                                  if (el) {
-                                    setQuillRefs(prev => ({ ...prev, [section.id]: el.getEditor() }));
-                                  }
-                                }}
+                                ref={createQuillRef(section.id)}
                                 key={`stable-editor-${section.id}`}
                                 theme="snow"
                                 value={section.content || ''}
