@@ -279,7 +279,7 @@ const ArticleViewer = () => {
                   
                   if (videoType === 'youtube' && videoId) {
                     playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                      <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="YouTube Video"></iframe>
+                      <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="YouTube Video"></iframe>
                     </div>`;
                   } else if (videoType === 'vimeo' && videoId) {
                     playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
@@ -340,7 +340,56 @@ const ArticleViewer = () => {
     });
   };
 
-  // Group articles by sections and subsections
+  useEffect(() => {
+    const handleVideoEmbeds = () => {
+      const videoContainers = document.querySelectorAll('.video-embed-container:not([data-processed])');
+      
+      videoContainers.forEach((container) => {
+        const videoUrl = container.getAttribute('data-video-url');
+        const videoType = container.getAttribute('data-video-type');
+        const videoId = container.getAttribute('data-video-id');
+        
+        if (!videoUrl || !videoType || !videoId) return;
+        
+        // Mark as processed to avoid re-processing
+        container.setAttribute('data-processed', 'true');
+        
+        // Create click handler for YouTube thumbnails
+        if (videoType === 'youtube') {
+          const playButton = container.querySelector('.play-button');
+          if (playButton) {
+            playButton.addEventListener('click', () => {
+              const embedHtml = `
+                <div class="relative w-full aspect-video rounded-lg overflow-hidden shadow-lg">
+                  <iframe
+                    src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1"
+                    class="absolute inset-0 w-full h-full"
+                    frameborder="0"
+                    allowfullscreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    title="YouTube Video"
+                  ></iframe>
+                </div>
+              `;
+              container.innerHTML = embedHtml;
+            });
+          }
+        }
+      });
+    };
+
+    // Handle video embeds on mount and when content changes
+    const observer = new MutationObserver(() => {
+      setTimeout(handleVideoEmbeds, 100);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Initial call with delay to ensure DOM is ready
+    setTimeout(handleVideoEmbeds, 500);
+    
+    return () => observer.disconnect();
+  }, [article]);
+
   const groupedArticles = allArticles.reduce((acc, article) => {
     const content = article.content || [];
     const mainHeadings = content.filter((section: any) => section.type === 'heading' && section.level === 1);
