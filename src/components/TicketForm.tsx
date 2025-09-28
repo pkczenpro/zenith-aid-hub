@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const TicketForm = () => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     subject: "",
     product: "",
@@ -17,23 +20,102 @@ const TicketForm = () => {
     description: "",
     email: ""
   });
+  const [products, setProducts] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({ ...prev, email: user.email || "" }));
+      fetchProducts();
+    }
+  }, [user]);
+
+  const fetchProducts = async () => {
+    try {
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'published')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching products:', error);
+        return;
+      }
+
+      setProducts(products || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit a ticket.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.subject.trim() || !formData.description.trim() || !formData.priority) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    toast({
-      title: "Ticket submitted successfully!",
-      description: "We'll get back to you within 24 hours.",
-    });
-    
-    setFormData({ subject: "", product: "", priority: "", description: "", email: "" });
-    setIsSubmitting(false);
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) {
+        throw new Error('Profile not found');
+      }
+
+      const { error } = await supabase
+        .from('support_tickets')
+        .insert({
+          user_id: user.id,
+          profile_id: profile.id,
+          subject: formData.subject,
+          description: formData.description,
+          priority: formData.priority,
+          product_id: formData.product || null
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Ticket submitted successfully!",
+        description: "We'll get back to you within 24 hours.",
+      });
+      
+      setFormData({ subject: "", product: "", priority: "", description: "", email: user.email || "" });
+      
+    } catch (error) {
+      console.error('Error submitting ticket:', error);
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your ticket. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const priorities = [
@@ -87,12 +169,12 @@ const TicketForm = () => {
                       <SelectValue placeholder="Select a product" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="mobile">Mobile App</SelectItem>
-                      <SelectItem value="web">Web Platform</SelectItem>
-                      <SelectItem value="cloud">Cloud Services</SelectItem>
-                      <SelectItem value="security">Security Suite</SelectItem>
-                      <SelectItem value="analytics">Analytics</SelectItem>
-                      <SelectItem value="api">API & Integrations</SelectItem>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="general">General Inquiry</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

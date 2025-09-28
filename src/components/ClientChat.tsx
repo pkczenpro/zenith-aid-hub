@@ -21,7 +21,7 @@ import {
 interface Message {
   id: string;
   content: string;
-  sender: 'user' | 'support';
+  sender: 'user' | 'support' | 'system';
   timestamp: string;
   type: 'chat' | 'ticket';
 }
@@ -30,8 +30,8 @@ interface Ticket {
   id: string;
   subject: string;
   description: string;
-  status: 'open' | 'in_progress' | 'resolved';
-  priority: 'low' | 'medium' | 'high';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   created_at: string;
   product_id?: string;
 }
@@ -63,73 +63,172 @@ const ClientChat = () => {
 
   useEffect(() => {
     fetchTickets();
-    // Initialize with some sample messages
-    setMessages([
-      {
-        id: '1',
-        content: 'Hello! How can I help you today?',
-        sender: 'support',
-        timestamp: new Date().toISOString(),
-        type: 'chat'
-      }
-    ]);
-  }, []);
+    fetchMessages();
+    
+    // Set up real-time subscription for chat messages
+    const channel = supabase
+      .channel('chat-messages')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+        (payload) => {
+          const newMessage: Message = {
+            id: payload.new.id,
+            content: payload.new.content,
+            sender: payload.new.sender as 'user' | 'support' | 'system',
+            timestamp: payload.new.created_at,
+            type: 'chat'
+          };
+          
+          // Only add message if it's not from current user to avoid duplicates
+          if (payload.new.profile_id !== user?.id) {
+            setMessages(prev => [...prev, newMessage]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const fetchTickets = async () => {
     if (!user) return;
 
     try {
-      // In a real implementation, you'd fetch from a tickets table
-      // For now, using mock data
-      const mockTickets: Ticket[] = [
-        {
-          id: '1',
-          subject: 'Issue with video playback',
-          description: 'Videos are not loading properly in the documentation',
-          status: 'open',
-          priority: 'high',
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          subject: 'Documentation feedback',
-          description: 'Suggestion to add more examples in the API section',
-          status: 'resolved',
-          priority: 'low',
-          created_at: new Date(Date.now() - 86400000).toISOString()
-        }
-      ];
-      setTickets(mockTickets);
+      const { data: tickets, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching tickets:', error);
+        return;
+      }
+
+      const formattedTickets = tickets?.map(ticket => ({
+        ...ticket,
+        status: ticket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+        priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent'
+      })) || [];
+
+      setTickets(formattedTickets);
     } catch (error) {
       console.error('Error fetching tickets:', error);
+    }
+  };
+
+  const fetchMessages = async () => {
+    if (!user) return;
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) return;
+
+      const { data: messages, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('profile_id', profile.id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
+      }
+
+      const formattedMessages: Message[] = messages?.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.sender as 'user' | 'support' | 'system',
+        timestamp: msg.created_at,
+        type: 'chat'
+      })) || [];
+
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
     }
   };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      content: newMessage,
-      sender: 'user',
-      timestamp: new Date().toISOString(),
-      type: 'chat'
-    };
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-    setMessages(prev => [...prev, message]);
-    setNewMessage('');
+      if (!profile) {
+        toast({
+          title: "Error",
+          description: "Profile not found. Please try logging in again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    // Simulate support response
-    setTimeout(() => {
-      const supportMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "Thank you for your message. Our support team will get back to you shortly. If this is urgent, please create a ticket for faster response.",
-        sender: 'support',
+      const message: Message = {
+        id: Date.now().toString(),
+        content: newMessage,
+        sender: 'user',
         timestamp: new Date().toISOString(),
         type: 'chat'
       };
-      setMessages(prev => [...prev, supportMessage]);
-    }, 1000);
+
+      setMessages(prev => [...prev, message]);
+      setNewMessage('');
+
+      // Save message to database
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          user_id: user.id,
+          profile_id: profile.id,
+          content: newMessage,
+          sender: 'user'
+        });
+
+      if (error) {
+        console.error('Error saving message:', error);
+        toast({
+          title: "Error",
+          description: "Failed to send message. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Auto-response for now (in production, this would be handled by support staff)
+      setTimeout(async () => {
+        const supportMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: "Thank you for your message. Our support team will get back to you shortly. If this is urgent, please create a ticket for faster response.",
+          sender: 'support',
+          timestamp: new Date().toISOString(),
+          type: 'chat'
+        };
+        setMessages(prev => [...prev, supportMessage]);
+
+        // Note: In production, support messages would be sent by actual support staff
+        // This is just a demo auto-response
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const submitTicket = async () => {
@@ -142,19 +241,54 @@ const ClientChat = () => {
       return;
     }
 
-    try {
-      // In a real implementation, you'd save to database
-      const newTicket: Ticket = {
-        id: Date.now().toString(),
-        subject: ticketForm.subject,
-        description: ticketForm.description,
-        status: 'open',
-        priority: ticketForm.priority,
-        created_at: new Date().toISOString(),
-        product_id: ticketForm.product_id || undefined
-      };
+    if (!user) return;
 
-      setTickets(prev => [newTicket, ...prev]);
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) {
+        toast({
+          title: "Error",
+          description: "Profile not found. Please try logging in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data: ticket, error } = await supabase
+        .from('support_tickets')
+        .insert({
+          user_id: user.id,
+          profile_id: profile.id,
+          subject: ticketForm.subject,
+          description: ticketForm.description,
+          priority: ticketForm.priority,
+          product_id: ticketForm.product_id || null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating ticket:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create ticket. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Add ticket to local state with proper typing
+      const formattedTicket = {
+        ...ticket,
+        status: ticket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
+        priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent'
+      };
+      setTickets(prev => [formattedTicket, ...prev]);
       setTicketForm({ subject: '', description: '', priority: 'medium', product_id: '' });
       setIsTicketFormOpen(false);
       
