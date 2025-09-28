@@ -59,13 +59,17 @@ const ProductEditor = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('status', 'published')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
+      toast({
+        title: "Error loading products",
+        description: "Failed to load product information. Please refresh the page.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -395,8 +399,34 @@ const ProductEditor = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading product editor...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentProduct) {
-    return null;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold text-foreground mb-2">Product Not Found</h1>
+            <p className="text-muted-foreground mb-4">
+              The product you're looking for doesn't exist or you don't have access to it.
+            </p>
+          </div>
+          <Button onClick={() => navigate('/')} variant="default">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Products
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
