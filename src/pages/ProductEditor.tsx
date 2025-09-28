@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -98,20 +98,14 @@ const ProductEditor = () => {
       level: 0
     }
   ]);
-  const [quillRefs, setQuillRefs] = useState<{ [key: string]: any }>({});
+  const quillRefs = useRef<{ [key: string]: any }>({});
 
-  // Memoized ref callback to prevent infinite loops
-  const createQuillRef = useCallback((sectionId: string) => (el: any) => {
-    if (el) {
-      setQuillRefs(prev => {
-        // Only update if this section's ref isn't already set
-        if (!prev[sectionId]) {
-          return { ...prev, [sectionId]: el.getEditor() };
-        }
-        return prev;
-      });
+  // Function to handle setting quill editor refs
+  const setQuillRef = (sectionId: string, editor: any) => {
+    if (editor && !quillRefs.current[sectionId]) {
+      quillRefs.current[sectionId] = editor;
     }
-  }, []); // Empty dependency array to prevent recreation
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -238,7 +232,7 @@ const ProductEditor = () => {
   const handleVideoEmbedInSection = (sectionId: string, videoUrl: string) => {
     if (!videoUrl) return;
     
-    const quillRef = quillRefs[sectionId];
+    const quillRef = quillRefs.current[sectionId];
     if (!quillRef) return;
     
     const range = quillRef.getSelection() || quillRef.getLength();
@@ -720,7 +714,11 @@ const ProductEditor = () => {
                           <div className="bg-background border border-border/20 rounded-b-xl">
                             <div className="editor-wrapper-stable">
                               <ReactQuill
-                                ref={createQuillRef(section.id)}
+                                ref={(el) => {
+                                  if (el) {
+                                    setQuillRef(section.id, el.getEditor());
+                                  }
+                                }}
                                 key={`stable-editor-${section.id}`}
                                 theme="snow"
                                 value={section.content || ''}
