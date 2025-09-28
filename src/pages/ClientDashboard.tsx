@@ -384,63 +384,108 @@ const ClientDashboard = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredAccessibleProducts.map((product) => (
-                      <Card key={product.id} className="shadow-card border-0 bg-gradient-card hover:shadow-lg transition-all duration-300 group">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="p-3 rounded-lg bg-gradient-to-br from-primary to-accent text-white">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredAccessibleProducts.map((product) => {
+                      const getProductIcon = (category: string | null) => {
+                        const categoryIconMap: { [key: string]: typeof BookOpen } = {
+                          'mobile': BookOpen,
+                          'web': BookOpen,
+                          'cloud': BookOpen,
+                          'security': Shield,
+                          'analytics': BookOpen,
+                          'api': BookOpen,
+                          'zenithr': BookOpen,
+                          'default': BookOpen
+                        };
+                        return categoryIconMap[category?.toLowerCase() || 'default'] || BookOpen;
+                      };
+
+                      const getProductColor = (category: string | null) => {
+                        const categoryColorMap: { [key: string]: string } = {
+                          'mobile': 'from-blue-500 to-blue-600',
+                          'web': 'from-purple-500 to-purple-600',
+                          'cloud': 'from-cyan-500 to-cyan-600',
+                          'security': 'from-emerald-500 to-emerald-600',
+                          'analytics': 'from-orange-500 to-orange-600',
+                          'api': 'from-violet-500 to-violet-600',
+                          'zenithr': 'from-indigo-500 to-indigo-600',
+                          'default': 'from-slate-500 to-slate-600'
+                        };
+                        return categoryColorMap[category?.toLowerCase() || 'default'] || 'from-slate-500 to-slate-600';
+                      };
+
+                      const ProductIcon = getProductIcon(product.category);
+                      const colorClass = getProductColor(product.category);
+
+                      return (
+                        <Card 
+                          key={product.id} 
+                          className="group cursor-pointer card-hover border-0 shadow-card bg-gradient-card transition-all duration-300"
+                        >
+                          <CardHeader className="pb-4">
+                            <div className="flex items-start justify-between">
+                              <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClass} shadow-lg`}>
                                 {product.icon_url ? (
-                                  <img src={product.icon_url} alt="" className="h-6 w-6" />
+                                  <img 
+                                    src={product.icon_url} 
+                                    alt={product.name}
+                                    className="h-6 w-6 object-contain text-white"
+                                  />
                                 ) : (
-                                  <BookOpen className="h-6 w-6" />
+                                  <ProductIcon className="h-6 w-6 text-white" />
                                 )}
                               </div>
-                              <div>
-                                <CardTitle className="text-lg">{product.name}</CardTitle>
-                                <p className="text-sm text-muted-foreground">{product.description}</p>
+                              <div className="flex flex-col items-end space-y-1">
+                                <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                                  {product.articles} articles
+                                </Badge>
+                                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Access
+                                </Badge>
                               </div>
                             </div>
-                            <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                              <Shield className="h-3 w-3 mr-1" />
-                              Access
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center space-x-2 text-muted-foreground">
-                              <FileText className="h-4 w-4" />
-                              <span>{product.articles} articles</span>
+                            <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                              {product.name}
+                            </CardTitle>
+                          </CardHeader>
+                          
+                          <CardContent className="space-y-4">
+                            <p className="text-muted-foreground text-sm leading-relaxed">
+                              {product.description || "No description available"}
+                            </p>
+                            
+                            <div className="flex items-center justify-between pt-4 border-t">
+                              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                <span>Updated {product.lastUpdated}</span>
+                              </div>
+                              
+                              <Button 
+                                asChild
+                                variant="ghost" 
+                                size="sm" 
+                                className="group/btn"
+                                disabled={product.articles === 0}
+                              >
+                                <Link to={`/product/${product.id}/docs`}>
+                                  View Docs
+                                  <ExternalLink className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                                </Link>
+                              </Button>
                             </div>
-                            <div className="flex items-center space-x-2 text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span>Updated {product.lastUpdated}</span>
-                            </div>
-                          </div>
 
-                          <div className="flex items-center space-x-2">
-                            <Button 
-                              asChild 
-                              className="flex-1 bg-gradient-button text-white border-0 group-hover:shadow-md transition-all duration-200"
-                              disabled={product.articles === 0}
-                            >
-                              <Link to={`/product/${product.id}/docs`}>
-                                <BookOpen className="h-4 w-4 mr-2" />
-                                View Documentation
-                              </Link>
-                            </Button>
-                            <Button variant="outline" size="icon" asChild disabled={product.articles === 0}>
-                              <Link to={`/product/${product.id}/docs`}>
-                                <ExternalLink className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                            {product.articles === 0 && (
+                              <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                                <p className="text-xs text-muted-foreground text-center">
+                                  No documentation available yet
+                                </p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
 
