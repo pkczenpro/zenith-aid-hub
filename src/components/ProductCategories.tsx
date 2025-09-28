@@ -80,30 +80,91 @@ const ProductCategories = () => {
 
       // If not admin, only show products the client has access to
       if (!isAdmin && user) {
+        console.log('Fetching products for client user:', user.id, user.email);
+        
+        // First get the user's profile
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        console.log('User profile result:', userProfile, profileError);
+
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          toast({
+            title: "Error",
+            description: "Failed to load user profile",
+            variant: "destructive",
+          });
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+
+        if (!userProfile) {
+          console.log('No profile found for user');
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+
         // For clients, we need to join through client_product_access
-        const { data: clientData } = await supabase
+        const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select('id')
-          .eq('profile_id', user.id)
-          .single();
+          .eq('profile_id', userProfile.id)
+          .maybeSingle();
+
+        console.log('Client data result:', clientData, clientError);
+
+        if (clientError) {
+          console.error('Client error:', clientError);
+          toast({
+            title: "Error",
+            description: "Failed to load client data",
+            variant: "destructive",
+          });
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
 
         if (clientData) {
-          const { data: accessData } = await supabase
+          const { data: accessData, error: accessError } = await supabase
             .from('client_product_access')
             .select('product_id')
             .eq('client_id', clientData.id);
 
+          console.log('Product access data:', accessData, accessError);
+
+          if (accessError) {
+            console.error('Access error:', accessError);
+            toast({
+              title: "Error",
+              description: "Failed to load product access",
+              variant: "destructive",
+            });
+            setProducts([]);
+            setLoading(false);
+            return;
+          }
+
           if (accessData && accessData.length > 0) {
             const productIds = accessData.map(access => access.product_id);
+            console.log('Client has access to products:', productIds);
             query = query.in('id', productIds);
           } else {
             // No access, return empty
+            console.log('No product access found for client');
             setProducts([]);
             setLoading(false);
             return;
           }
         } else {
           // No client record, return empty
+          console.log('No client record found for profile');
           setProducts([]);
           setLoading(false);
           return;
@@ -122,6 +183,8 @@ const ProductCategories = () => {
 
       const { data, error } = await query;
 
+      console.log('Final products query result:', data, error);
+
       if (error) {
         console.error('Error fetching products:', error);
         toast({
@@ -137,6 +200,7 @@ const ProductCategories = () => {
         articles_count: item.articles?.[0]?.count || 0
       }));
 
+      console.log('Products with article counts:', productsWithCount);
       setProducts(productsWithCount);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -145,6 +209,7 @@ const ProductCategories = () => {
         description: "Failed to load products",
         variant: "destructive",
       });
+      setProducts([]);
     } finally {
       setLoading(false);
     }
