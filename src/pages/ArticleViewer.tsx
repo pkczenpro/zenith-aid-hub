@@ -4,94 +4,148 @@ import { Search, ChevronRight, BookOpen, Home, FileText, Users, Settings, Edit3 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface Article {
   id: string;
   title: string;
-  subtitle: string;
-  category: string;
-  content: string;
-  sections: { title: string; content: string }[];
-  createdAt: string;
-  updatedAt: string;
+  product_id: string;
+  content: any[];
+  status: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
 }
 
 const ArticleViewer = () => {
   const { productId, articleId } = useParams();
+  const { user, isAdmin } = useAuth();
+  const { toast } = useToast();
   const [article, setArticle] = useState<Article | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string }[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load saved article data from localStorage (in a real app, this would be from an API)
   useEffect(() => {
-    const savedArticleKey = `article-${productId}-${articleId}`;
-    const savedArticleData = localStorage.getItem(savedArticleKey);
-    
-    if (savedArticleData) {
-      try {
-        const parsedData = JSON.parse(savedArticleData);
-        const loadedArticle: Article = {
-          id: articleId || '1',
-          title: parsedData.title || 'Untitled Article',
-          subtitle: parsedData.subtitle || 'Documentation article',
-          category: getProductCategory(productId),
-          content: '', // We'll use sections instead
-          sections: parsedData.sections || [],
-          createdAt: parsedData.createdAt || new Date().toISOString().split('T')[0],
-          updatedAt: parsedData.updatedAt || new Date().toISOString().split('T')[0]
-        };
-        
-        setArticle(loadedArticle);
-        
-        // Generate table of contents from actual sections
-        const toc = parsedData.sections?.map((section: any, index: number) => ({
-          title: section.title,
-          id: `section-${index + 1}`
-        })) || [];
-        
-        setTableOfContents(toc);
-      } catch (error) {
-        console.error('Error loading article data:', error);
-        // Fall back to empty article
-        setArticle({
-          id: articleId || '1',
-          title: 'No Article Found',
-          subtitle: 'This article hasn\'t been created yet',
-          category: getProductCategory(productId),
-          content: '',
-          sections: [],
-          createdAt: new Date().toISOString().split('T')[0],
-          updatedAt: new Date().toISOString().split('T')[0]
-        });
-        setTableOfContents([]);
-      }
-    } else {
-      // No saved data, show empty state
-      setArticle({
-        id: articleId || '1',
-        title: 'No Article Found',
-        subtitle: 'This article hasn\'t been created yet',
-        category: getProductCategory(productId),
-        content: '',
-        sections: [],
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0]
-      });
-      setTableOfContents([]);
+    if (articleId && productId) {
+      fetchArticleAndProduct();
     }
-  }, [articleId, productId]);
+  }, [articleId, productId, user]);
 
-  // Helper function to get product category name
-  const getProductCategory = (productId: string | undefined) => {
-    const productMap: { [key: string]: string } = {
-      'mobile': 'Mobile App',
-      'web': 'Web Platform',
-      'cloud': 'Cloud Services',
-      'security': 'Security Suite',
-      'analytics': 'Analytics',
-      'api': 'API & Integrations'
-    };
-    return productMap[productId || ''] || 'Documentation';
+  const fetchArticleAndProduct = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch product first
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single();
+
+      if (productError) {
+        console.error('Error fetching product:', productError);
+        toast({
+          title: "Error",
+          description: "Failed to load product information",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setProduct(productData);
+
+      // Fetch article
+      const { data: articleData, error: articleError } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', articleId)
+        .eq('product_id', productId)
+        .single();
+
+      if (articleError) {
+        console.error('Error fetching article:', articleError);
+        // Don't show error for missing articles, just show empty state
+        setArticle(null);
+        return;
+      }
+
+      setArticle({
+        ...articleData,
+        content: Array.isArray(articleData.content) ? articleData.content : []
+      });
+
+      // Generate table of contents from article content
+      if (articleData.content && Array.isArray(articleData.content)) {
+        const toc = articleData.content
+          .filter((section: any) => section.type === 'heading')
+          .map((section: any, index: number) => ({
+            title: section.content || `Section ${index + 1}`,
+            id: `section-${index + 1}`
+          }));
+        setTableOfContents(toc);
+      }
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load article",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderContent = (content: any[]) => {
+    if (!content || !Array.isArray(content)) return null;
+
+    return content.map((section, index) => {
+      switch (section.type) {
+        case 'heading':
+          return (
+            <div key={index} className="animate-fade-in mb-6" id={`section-${index + 1}`}>
+              <h2 className="text-2xl font-semibold text-primary border-b border-primary/20 pb-2">
+                {section.content}
+              </h2>
+            </div>
+          );
+        case 'text':
+          return (
+            <div key={index} className="animate-fade-in mb-6">
+              <div 
+                dangerouslySetInnerHTML={{ __html: section.content }}
+                className="prose prose-lg max-w-none text-foreground/90 leading-relaxed"
+              />
+            </div>
+          );
+        case 'code':
+          return (
+            <div key={index} className="animate-fade-in mb-6">
+              <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
+                <code>{section.content}</code>
+              </pre>
+            </div>
+          );
+        default:
+          return (
+            <div key={index} className="animate-fade-in mb-6">
+              <p className="text-foreground/90">{section.content}</p>
+            </div>
+          );
+      }
+    });
   };
 
   const sidebarItems = [
@@ -121,7 +175,7 @@ const ArticleViewer = () => {
     { label: '21st.dev Integration', href: '/integrations/21st-dev' },
   ];
 
-  if (!article) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -248,75 +302,48 @@ const ArticleViewer = () => {
                 Documentation
               </Link>
               <ChevronRight className="h-4 w-4" />
-              <span className="text-primary font-medium">{article.category}</span>
+              <span className="text-primary font-medium">{product?.name || 'Documentation'}</span>
             </nav>
 
             {/* Article Header */}
             <div className="mb-8">
               <div className="mb-4">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                  {article.category}
+                  {product?.category || 'Documentation'}
                 </span>
               </div>
-              <h1 className="text-4xl font-bold text-foreground mb-4">{article.title}</h1>
-              <p className="text-xl text-muted-foreground">{article.subtitle}</p>
+              <h1 className="text-4xl font-bold text-foreground mb-4">
+                {article?.title || 'Article Not Found'}
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                {product?.description || 'This article could not be found'}
+              </p>
             </div>
 
-            {/* Article Banner */}
-            <div className="mb-8 bg-gradient-to-br from-background to-muted/50 border border-border rounded-lg p-8 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5"></div>
-              <div className="relative z-10 flex items-center justify-center min-h-[200px]">
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-6 mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-orange-400 via-red-400 to-pink-400 rounded-full flex items-center justify-center transform rotate-12">
-                      <div className="w-8 h-8 bg-white rounded-full"></div>
-                    </div>
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">stripe</span>
-                    </div>
-                  </div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">Integration Setup</h2>
-                  <p className="text-muted-foreground">Connect your application with Stripe payments</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Article Content - Show actual sections from editor */}
+            {/* Article Content */}
             <div className="space-y-8">
-              {article.sections && article.sections.length > 0 ? (
-                article.sections.map((section, index) => (
-                  <div key={index} className="animate-fade-in" style={{animationDelay: `${index * 0.1}s`}}>
-                    <div className="flex items-center mb-6" id={`section-${index + 1}`}>
-                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-sm font-bold mr-4">
-                        {index + 1}
-                      </div>
-                      <h2 className="text-2xl font-semibold text-primary flex-1 border-b border-primary/20 pb-2">
-                        {section.title}
-                      </h2>
-                    </div>
-                    <div className="ml-12">
-                      <div 
-                        dangerouslySetInnerHTML={{ __html: section.content }}
-                        className="prose prose-lg max-w-none text-foreground/90 leading-relaxed"
-                      />
-                    </div>
-                  </div>
-                ))
+              {article && article.content && Array.isArray(article.content) && article.content.length > 0 ? (
+                renderContent(article.content)
               ) : (
                 <div className="text-center py-16 bg-gradient-to-br from-background to-muted/10 rounded-lg border border-border/50">
                   <div className="max-w-md mx-auto">
                     <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
                     <h3 className="text-xl font-semibold text-foreground mb-2">No Content Available</h3>
                     <p className="text-muted-foreground mb-6">
-                      This article hasn't been created yet. Go to the product editor to create content for this documentation.
+                      {article 
+                        ? "This article exists but has no content yet." 
+                        : "This article hasn't been created yet."
+                      } {isAdmin ? "Go to the product editor to create content for this documentation." : "Please contact an administrator to create this content."}
                     </p>
-                    <Link 
-                      to={`/product/${productId}`}
-                      className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-                    >
-                      <Edit3 className="h-4 w-4 mr-2" />
-                      Create Article
-                    </Link>
+                    {isAdmin && (
+                      <Link 
+                        to={`/product/${productId}`}
+                        className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                      >
+                        <Edit3 className="h-4 w-4 mr-2" />
+                        {article ? 'Edit Article' : 'Create Article'}
+                      </Link>
+                    )}
                   </div>
                 </div>
               )}
