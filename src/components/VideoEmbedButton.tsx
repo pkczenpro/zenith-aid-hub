@@ -101,12 +101,21 @@ const VideoEmbedButton: React.FC<VideoEmbedButtonProps> = ({ onVideoEmbed, disab
         </div>`;
       }
     } else if (videoUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
-      embedHtml = `<div class="video-embed-container" data-video-url="${videoUrl}" data-video-type="direct" style="position: relative; aspect-ratio: 16/9; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; background: linear-gradient(135deg, #1f2937 0%, #374151 100%);">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
-          <div style="width: 68px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
+      embedHtml = `<div class="video-embed-container" data-video-url="${videoUrl}" data-video-type="direct" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background: #000;">
+        <div class="video-thumbnail" style="position: relative; width: 100%; padding-bottom: 56.25%; background: linear-gradient(135deg, #1f2937 0%, #374151 100%);">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
+            <div class="play-button" style="width: 68px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; cursor: pointer; transition: all 0.3s ease; border: 2px solid rgba(255,255,255,0.3);" 
+                 onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='scale(1.1)'" 
+                 onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='scale(1)'"
+                 onclick="
+                   var container = this.closest('.video-embed-container');
+                   container.innerHTML = '<video controls autoplay style=\\'width: 100%; height: auto; display: block; border-radius: 8px; background: #000;\\'><source src=\\'${videoUrl}\\' type=\\'video/mp4\\'><source src=\\'${videoUrl}\\' type=\\'video/webm\\'><source src=\\'${videoUrl}\\' type=\\'video/ogg\\'><div style=\\'padding: 2rem; text-align: center; color: white; background: #1f2937;\\'><p>Your browser does not support HTML5 video.</p><a href=\\'${videoUrl}\\' target=\\'_blank\\' style=\\'color: #60a5fa;\\'>Open video in new window</a></div></video>';
+                 ">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
+            </div>
+            <div style="font-size: 14px; font-weight: 500;">Click to Play Video</div>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">Direct Video File</div>
           </div>
-          <div style="font-size: 14px; font-weight: 500;">Video File</div>
         </div>
       </div>`;
     }

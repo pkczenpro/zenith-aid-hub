@@ -294,12 +294,15 @@ const ArticleViewer = () => {
                       <iframe src="https://share-prod.heygen.com/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="HeyGen Video"></iframe>
                     </div>`;
                   } else if (videoType === 'direct') {
-                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                      <video controls preload="metadata" style="width: 100%; height: auto; display: block;" crossorigin="anonymous">
+                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background: #000;">
+                      <video controls preload="metadata" style="width: 100%; height: auto; display: block; min-height: 300px;" crossorigin="anonymous">
                         <source src="${videoUrl}" type="video/mp4">
                         <source src="${videoUrl}" type="video/webm">
                         <source src="${videoUrl}" type="video/ogg">
-                        <p style="padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank" style="color: #0066cc;">Open video in new window</a></p>
+                        <div style="padding: 2rem; text-align: center; color: white; background: #1f2937;">
+                          <p style="margin-bottom: 1rem;">Your browser doesn't support HTML5 video.</p>
+                          <a href="${videoUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">Open video in new window</a>
+                        </div>
                       </video>
                     </div>`;
                   }

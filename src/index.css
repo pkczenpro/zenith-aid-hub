@@ -4,6 +4,64 @@
 
 /* Zenithr Help Center Design System - All colors, gradients, fonts, animations */
 
+/* Custom video player styles */
+.video-embed-container {
+  position: relative;
+  width: 100%;
+  margin: 1rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: #000;
+  cursor: pointer;
+}
+
+.video-embed-container:hover {
+  box-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+.video-player-wrapper {
+  position: relative;
+  width: 100%;
+  margin: 1rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.video-player-wrapper video {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #000;
+}
+
+.video-player-wrapper iframe {
+  border: none;
+  border-radius: 8px;
+}
+
+/* Enhanced Quill editor video support */
+.ql-editor .video-embed-container {
+  max-width: 100%;
+  display: block;
+}
+
+.ql-editor .video-embed-container img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Make sure videos work in published articles */
+.prose .video-player-wrapper,
+.prose .video-embed-container {
+  margin: 1.5rem 0;
+  max-width: none;
+}
+
 @layer base {
   :root {
     --background: 240 10% 98%;
