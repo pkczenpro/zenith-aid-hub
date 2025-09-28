@@ -43,6 +43,7 @@ const ProductEditor = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { profile } = useAuth();
   
   // Load products from database instead of hardcoded data
   const [products, setProducts] = useState<any[]>([]);
@@ -298,7 +299,7 @@ const ProductEditor = () => {
         product_id: productId,
         title: articleTitle,
         content: sections as any, // Cast to satisfy Json type
-        created_by: (await supabase.auth.getUser()).data.user?.id,
+        created_by: profile?.id,
         status: 'published'
       };
 
