@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import VideoPlayer from '@/components/VideoPlayer';
 
 interface Article {
   id: string;
@@ -230,15 +231,7 @@ const ArticleViewer = () => {
                     title="Embedded Video"
                   />
                 ) : section.content.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
-                  <video 
-                    controls 
-                    preload="metadata" 
-                    className="w-full h-auto rounded-lg"
-                    controlsList="nodownload"
-                  >
-                    <source src={section.content} type="video/mp4" />
-                    <p>Your browser doesn&apos;t support HTML5 video. <a href={section.content} target="_blank" rel="noopener noreferrer">Download the video</a> instead.</p>
-                  </video>
+                  <VideoPlayer src={section.content} />
                 ) : (
                   <div 
                     dangerouslySetInnerHTML={{ __html: section.content }}

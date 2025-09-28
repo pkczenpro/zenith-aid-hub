@@ -240,35 +240,35 @@ const ProductEditor = () => {
         embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
       }
     } else if (videoUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
-      // Handle direct video file links with proper MIME type detection
-      const getVideoType = (url: string) => {
-        const extension = url.split('.').pop()?.toLowerCase();
-        switch (extension) {
-          case 'mp4': return 'video/mp4';
-          case 'webm': return 'video/webm';
-          case 'ogg': return 'video/ogg';
-          case 'mov': return 'video/mp4';
-          case 'avi': return 'video/mp4';
-          case 'mkv': return 'video/mp4';
-          default: return 'video/mp4';
-        }
-      };
-      
-      const videoType = getVideoType(videoUrl);
-      embedCode = `<div class="video-container" style="position: relative; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; background: #000;">
+      // Handle direct video file links with enhanced fallback support
+      embedCode = `<div class="video-player-container" style="position: relative; width: 100%; margin: 1rem 0;">
         <video 
           controls 
           preload="metadata" 
-          style="width: 100%; height: auto; display: block; border-radius: 8px;" 
-          controlsList="nodownload"
+          style="width: 100%; height: auto; border-radius: 8px; background: #f8f9fa; display: block;"
           crossorigin="anonymous"
-          onloadstart="this.style.background='#000'"
-          onerror="this.nextElementSibling.style.display='block'; this.style.display='none'"
+          oncanplay="this.style.background='transparent'"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
         >
-          <source src="${videoUrl}" type="${videoType}">
-          ${videoType !== 'video/mp4' ? `<source src="${videoUrl}" type="video/mp4">` : ''}
-          <p style="display:none; padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank" style="color: #0066cc;">Download the video</a> instead.</p>
+          <source src="${videoUrl}" type="video/mp4">
+          <source src="${videoUrl}" type="video/webm">
+          <source src="${videoUrl}" type="video/ogg">
         </video>
+        <div style="display: none; width: 100%; aspect-ratio: 16/9; background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 2rem;">
+          <div style="width: 64px; height: 64px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgb(59, 130, 246)" stroke-width="2">
+              <polygon points="5,3 19,12 5,21 5,3"></polygon>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.125rem; font-weight: 500; color: #1f2937; margin-bottom: 0.5rem;">Video Player</h3>
+          <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">Click below to open the video</p>
+          <a href="${videoUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; padding: 0.5rem 1rem; background: rgb(59, 130, 246); color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+              <polygon points="5,3 19,12 5,21 5,3"></polygon>
+            </svg>
+            Play Video
+          </a>
+        </div>
       </div>`;
     } else {
       // For any other URL, try embedding as iframe
