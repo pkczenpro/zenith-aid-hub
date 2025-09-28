@@ -240,34 +240,22 @@ const ProductEditor = () => {
         embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
       }
     } else if (videoUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
-      // Handle direct video file links with enhanced fallback support
-      embedCode = `<div class="video-player-container" style="position: relative; width: 100%; margin: 1rem 0;">
-        <video 
-          controls 
-          preload="metadata" 
-          style="width: 100%; height: auto; border-radius: 8px; background: #f8f9fa; display: block;"
-          crossorigin="anonymous"
-          oncanplay="this.style.background='transparent'"
-          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
-        >
-          <source src="${videoUrl}" type="video/mp4">
-          <source src="${videoUrl}" type="video/webm">
-          <source src="${videoUrl}" type="video/ogg">
-        </video>
-        <div style="display: none; width: 100%; aspect-ratio: 16/9; background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 2rem;">
-          <div style="width: 64px; height: 64px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgb(59, 130, 246)" stroke-width="2">
-              <polygon points="5,3 19,12 5,21 5,3"></polygon>
-            </svg>
+      // Handle direct video file links with LMS-style player
+      embedCode = `<div class="video-player-container" data-video-src="${videoUrl}" style="position: relative; width: 100%; margin: 1rem 0; background: #f8f9fa; border-radius: 8px; overflow: hidden;">
+        <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, #1f2937 0%, #374151 100%); display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="this.style.display='none'; this.nextElementSibling.style.display='block'; this.nextElementSibling.querySelector('video').play();">
+          <div style="position: absolute; inset: 0; background: url('data:image/svg+xml;base64,${btoa(`<svg width="640" height="360" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#1f2937"/><circle cx="320" cy="180" r="40" fill="rgba(255,255,255,0.1)"/><polygon points="305,165 345,180 305,195" fill="white"/></svg>`)}') center/cover;"></div>
+          <div style="position: relative; z-index: 10; width: 64px; height: 64px; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
           </div>
-          <h3 style="font-size: 1.125rem; font-weight: 500; color: #1f2937; margin-bottom: 0.5rem;">Video Player</h3>
-          <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">Click below to open the video</p>
-          <a href="${videoUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; padding: 0.5rem 1rem; background: rgb(59, 130, 246); color: white; border-radius: 6px; text-decoration: none; font-size: 0.875rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-              <polygon points="5,3 19,12 5,21 5,3"></polygon>
-            </svg>
-            Play Video
-          </a>
+          <div style="position: absolute; bottom: 16px; left: 16px; color: white; font-size: 14px; font-weight: 500; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Click to play video</div>
+        </div>
+        <div style="display: none; position: relative; width: 100%; background: #000;">
+          <video controls preload="metadata" style="width: 100%; height: auto; display: block;" crossorigin="anonymous">
+            <source src="${videoUrl}" type="video/mp4">
+            <source src="${videoUrl}" type="video/webm">
+            <source src="${videoUrl}" type="video/ogg">
+            <p style="padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank" style="color: #0066cc;">Open video in new window</a></p>
+          </video>
         </div>
       </div>`;
     } else {

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import VideoPlayer from '@/components/VideoPlayer';
+import LMSVideoPlayer from '@/components/LMSVideoPlayer';
 
 interface Article {
   id: string;
@@ -231,7 +231,7 @@ const ArticleViewer = () => {
                     title="Embedded Video"
                   />
                 ) : section.content.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
-                  <VideoPlayer src={section.content} />
+                  <LMSVideoPlayer src={section.content} />
                 ) : (
                   <div 
                     dangerouslySetInnerHTML={{ __html: section.content }}
@@ -259,8 +259,21 @@ const ArticleViewer = () => {
             </div>
           );
         default:
-          // Handle rich text content that might not have a specific type
+          // Handle rich text content with embedded videos
           if (typeof section.content === 'string' && section.content.includes('<')) {
+            // Check if content has video player containers
+            if (section.content.includes('video-player-container')) {
+              // Extract video URL from the embedded HTML
+              const videoUrlMatch = section.content.match(/src="([^"]+)"/);
+              if (videoUrlMatch && videoUrlMatch[1].match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
+                return (
+                  <div key={index} className="animate-fade-in mb-6">
+                    <LMSVideoPlayer src={videoUrlMatch[1]} />
+                  </div>
+                );
+              }
+            }
+            
             return (
               <div key={index} className="animate-fade-in mb-6">
                 <div 
