@@ -196,7 +196,7 @@ const ArticleViewer = () => {
             <div key={index} className="animate-fade-in mb-6">
               <div 
                 dangerouslySetInnerHTML={{ __html: section.content }}
-                className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
+                className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90"
               />
             </div>
           );
@@ -208,7 +208,65 @@ const ArticleViewer = () => {
               </pre>
             </div>
           );
+        case 'video':
+        case 'embed':
+          return (
+            <div key={index} className="animate-fade-in mb-6">
+              <div className="relative aspect-video rounded-lg overflow-hidden bg-muted border border-border">
+                {section.content.includes('youtube.com') || section.content.includes('youtu.be') ? (
+                  <iframe
+                    src={section.content.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    className="absolute inset-0 w-full h-full"
+                    frameBorder="0"
+                    allowFullScreen
+                    title="Embedded Video"
+                  />
+                ) : section.content.includes('vimeo.com') ? (
+                  <iframe
+                    src={section.content.replace('vimeo.com/', 'player.vimeo.com/video/')}
+                    className="absolute inset-0 w-full h-full"
+                    frameBorder="0"
+                    allowFullScreen
+                    title="Embedded Video"
+                  />
+                ) : (
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: section.content }}
+                    className="absolute inset-0 w-full h-full"
+                  />
+                )}
+              </div>
+            </div>
+          );
+        case 'image':
+          return (
+            <div key={index} className="animate-fade-in mb-6">
+              <div className="flex justify-center">
+                <img 
+                  src={section.content} 
+                  alt={section.alt || 'Content image'}
+                  className="max-w-full h-auto rounded-lg shadow-md border border-border"
+                />
+              </div>
+              {section.caption && (
+                <p className="text-center text-sm text-muted-foreground mt-2 italic">
+                  {section.caption}
+                </p>
+              )}
+            </div>
+          );
         default:
+          // Handle rich text content that might not have a specific type
+          if (typeof section.content === 'string' && section.content.includes('<')) {
+            return (
+              <div key={index} className="animate-fade-in mb-6">
+                <div 
+                  dangerouslySetInnerHTML={{ __html: section.content }}
+                  className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90"
+                />
+              </div>
+            );
+          }
           return (
             <div key={index} className="animate-fade-in mb-6">
               <p className="text-foreground/90 leading-relaxed">{section.content}</p>
@@ -389,8 +447,87 @@ const ArticleViewer = () => {
 
             {/* Article Content */}
             <div className="space-y-8">
-              {article && article.content && Array.isArray(article.content) && article.content.length > 0 ? (
-                renderContent(article.content)
+              {article && article.content ? (
+                <>
+                  {/* Handle both structured content (array) and direct HTML content (string) */}
+                  {Array.isArray(article.content) && article.content.length > 0 ? (
+                    renderContent(article.content)
+                  ) : typeof article.content === 'string' && article.content ? (
+                    <div className="animate-fade-in">
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: article.content }}
+                        className="prose prose-lg max-w-none text-foreground/90 leading-relaxed 
+                                   prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground 
+                                   prose-code:text-primary prose-code:bg-primary/10 prose-code:px-2 prose-code:py-1 prose-code:rounded 
+                                   prose-a:text-primary prose-a:no-underline hover:prose-a:underline 
+                                   prose-img:rounded-lg prose-img:shadow-md prose-img:border prose-img:border-border 
+                                   prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r 
+                                   prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 
+                                   prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-muted prose-th:p-2 prose-td:border prose-td:border-border prose-td:p-2
+                                   prose-video:rounded-lg prose-video:shadow-md
+                                   [&_iframe]:rounded-lg [&_iframe]:shadow-md [&_iframe]:border [&_iframe]:border-border
+                                   [&_video]:rounded-lg [&_video]:shadow-md [&_video]:border [&_video]:border-border"
+                      />
+                    </div>
+                  ) : (
+                    renderContent(article.content)
+                  )}
+                  
+                  {/* Article Navigation */}
+                  <div className="mt-12 pt-8 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                      {/* Previous Article */}
+                      <div className="flex-1">
+                        {(() => {
+                          const currentIndex = allArticles.findIndex(art => art.id === articleId);
+                          const prevArticle = currentIndex > 0 ? allArticles[currentIndex - 1] : null;
+                          
+                          return prevArticle ? (
+                            <Link
+                              to={`/docs/${productId}/${prevArticle.id}`}
+                              className="group flex items-center space-x-3 p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 transition-all duration-200 max-w-sm"
+                            >
+                              <ArrowLeft className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                              <div className="text-left">
+                                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Previous</p>
+                                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                                  {prevArticle.title}
+                                </p>
+                              </div>
+                            </Link>
+                          ) : (
+                            <div className="max-w-sm" /> // Empty space for alignment
+                          );
+                        })()}
+                      </div>
+                      
+                      {/* Next Article */}
+                      <div className="flex-1 flex justify-end">
+                        {(() => {
+                          const currentIndex = allArticles.findIndex(art => art.id === articleId);
+                          const nextArticle = currentIndex < allArticles.length - 1 ? allArticles[currentIndex + 1] : null;
+                          
+                          return nextArticle ? (
+                            <Link
+                              to={`/docs/${productId}/${nextArticle.id}`}
+                              className="group flex items-center space-x-3 p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 transition-all duration-200 max-w-sm text-right"
+                            >
+                              <div className="text-right">
+                                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Next</p>
+                                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                                  {nextArticle.title}
+                                </p>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </Link>
+                          ) : (
+                            <div className="max-w-sm" /> // Empty space for alignment
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-16 bg-gradient-to-br from-background to-muted/10 rounded-lg border border-border/50">
                   <div className="max-w-md mx-auto">
