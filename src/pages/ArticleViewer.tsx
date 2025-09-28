@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Search, ChevronRight, BookOpen, Home, FileText, Users, Settings, Edit3 } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Search, ChevronRight, BookOpen, Home, FileText, Settings, Edit3, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -28,25 +29,55 @@ interface Product {
 
 const ArticleViewer = () => {
   const { productId, articleId } = useParams();
-  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAdmin, profile } = useAuth();
   const { toast } = useToast();
+  
   const [article, setArticle] = useState<Article | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
+  const [allArticles, setAllArticles] = useState<Article[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string }[]>([]);
+  const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string; level: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (articleId && productId) {
-      fetchArticleAndProduct();
+      fetchData();
     }
   }, [articleId, productId, user]);
 
-  const fetchArticleAndProduct = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
 
-      // Fetch product first
+      // Check access for non-admin users
+      if (!isAdmin && user && profile) {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('profile_id', profile.id)
+          .single();
+
+        if (clientData) {
+          const { data: accessData } = await supabase
+            .from('client_product_access')
+            .select('product_id')
+            .eq('client_id', clientData.id)
+            .eq('product_id', productId);
+
+          if (!accessData || accessData.length === 0) {
+            toast({
+              title: "Access Denied",
+              description: "You don't have access to this product.",
+              variant: "destructive",
+            });
+            navigate('/');
+            return;
+          }
+        }
+      }
+
+      // Fetch product
       const { data: productData, error: productError } = await supabase
         .from('products')
         .select('*')
@@ -65,7 +96,25 @@ const ArticleViewer = () => {
 
       setProduct(productData);
 
-      // Fetch article
+      // Fetch all articles for this product
+      const { data: articlesData, error: articlesError } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('product_id', productId)
+        .eq('status', 'published')
+        .order('created_at', { ascending: true });
+
+      if (articlesError) {
+        console.error('Error fetching articles:', articlesError);
+      } else {
+        const processedArticles = (articlesData || []).map(article => ({
+          ...article,
+          content: Array.isArray(article.content) ? article.content : []
+        }));
+        setAllArticles(processedArticles);
+      }
+
+      // Fetch specific article
       const { data: articleData, error: articleError } = await supabase
         .from('articles')
         .select('*')
@@ -75,7 +124,6 @@ const ArticleViewer = () => {
 
       if (articleError) {
         console.error('Error fetching article:', articleError);
-        // Don't show error for missing articles, just show empty state
         setArticle(null);
         return;
       }
@@ -91,7 +139,8 @@ const ArticleViewer = () => {
           .filter((section: any) => section.type === 'heading')
           .map((section: any, index: number) => ({
             title: section.content || `Section ${index + 1}`,
-            id: `section-${index + 1}`
+            id: `section-${index + 1}`,
+            level: section.level || 1
           }));
         setTableOfContents(toc);
       }
@@ -114,11 +163,18 @@ const ArticleViewer = () => {
     return content.map((section, index) => {
       switch (section.type) {
         case 'heading':
+          const HeadingTag = section.level === 1 ? 'h1' : section.level === 2 ? 'h2' : 'h3';
+          const headingClasses = section.level === 1 
+            ? 'text-3xl font-bold text-primary border-b border-primary/20 pb-3 mb-6'
+            : section.level === 2 
+            ? 'text-2xl font-semibold text-primary border-b border-primary/20 pb-2 mb-4'
+            : 'text-xl font-medium text-foreground mb-3';
+          
           return (
             <div key={index} className="animate-fade-in mb-6" id={`section-${index + 1}`}>
-              <h2 className="text-2xl font-semibold text-primary border-b border-primary/20 pb-2">
+              <HeadingTag className={headingClasses}>
                 {section.content}
-              </h2>
+              </HeadingTag>
             </div>
           );
         case 'text':
@@ -126,61 +182,57 @@ const ArticleViewer = () => {
             <div key={index} className="animate-fade-in mb-6">
               <div 
                 dangerouslySetInnerHTML={{ __html: section.content }}
-                className="prose prose-lg max-w-none text-foreground/90 leading-relaxed"
+                className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
               />
             </div>
           );
         case 'code':
           return (
             <div key={index} className="animate-fade-in mb-6">
-              <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                <code>{section.content}</code>
+              <pre className="bg-muted border border-border rounded-lg p-4 overflow-x-auto">
+                <code className="text-sm text-foreground">{section.content}</code>
               </pre>
             </div>
           );
         default:
           return (
             <div key={index} className="animate-fade-in mb-6">
-              <p className="text-foreground/90">{section.content}</p>
+              <p className="text-foreground/90 leading-relaxed">{section.content}</p>
             </div>
           );
       }
     });
   };
 
-  const sidebarItems = [
-    { icon: Home, label: 'Overview', href: '/', active: false },
-    { icon: FileText, label: 'Documentation', href: '/docs', active: true },
-    { icon: Users, label: 'Client Access', href: '/clients', active: false },
-    { icon: Settings, label: 'Settings', href: '/settings', active: false },
-  ];
-
-  const navigationItems = [
-    { label: 'Announcements', href: '/announcements' },
-    { label: 'Status', href: '/status' },
-    { label: 'About Integrations', href: '/about-integrations' },
-    { label: 'Introduction', href: '/introduction' },
-    { label: 'Build with URL', href: '/build-url' },
-  ];
-
-  const integrationItems = [
-    { label: 'GitHub Integration', href: '/integrations/github' },
-    { label: 'Supabase Integration', href: '/integrations/supabase' },
-    { label: 'Stripe Integration', href: '/integrations/stripe', active: true },
-    { label: 'Resend Integration', href: '/integrations/resend' },
-    { label: 'Clerk Integration', href: '/integrations/clerk' },
-    { label: 'Make Integration', href: '/integrations/make' },
-    { label: 'Replicate Integration', href: '/integrations/replicate' },
-    { label: 'AI Integration', href: '/integrations/ai' },
-    { label: '21st.dev Integration', href: '/integrations/21st-dev' },
-  ];
+  // Group articles by sections and subsections
+  const groupedArticles = allArticles.reduce((acc, article) => {
+    const content = article.content || [];
+    const mainHeadings = content.filter((section: any) => section.type === 'heading' && section.level === 1);
+    
+    if (mainHeadings.length > 0) {
+      mainHeadings.forEach((heading: any) => {
+        if (!acc[heading.content]) {
+          acc[heading.content] = [];
+        }
+        acc[heading.content].push(article);
+      });
+    } else {
+      // If no main headings, group under article title
+      if (!acc[article.title]) {
+        acc[article.title] = [];
+      }
+      acc[article.title].push(article);
+    }
+    
+    return acc;
+  }, {} as Record<string, Article[]>);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading article...</p>
+          <p className="text-muted-foreground">Loading documentation...</p>
         </div>
       </div>
     );
@@ -192,12 +244,21 @@ const ArticleViewer = () => {
       <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
         <div className="container flex h-14 items-center px-6">
           <div className="flex items-center space-x-4">
-            <Link to="/" className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/docs/${productId}`)}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to {product?.name}</span>
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <div className="flex items-center space-x-2">
               <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-md flex items-center justify-center">
                 <BookOpen className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-foreground">Documentation</span>
-            </Link>
+              <span className="font-semibold text-foreground">{product?.name} Documentation</span>
+            </div>
           </div>
           
           <div className="flex-1 flex items-center justify-center px-6">
@@ -210,80 +271,63 @@ const ArticleViewer = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                  Ctrl K
-                </kbd>
-              </div>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon">
-              <Settings className="h-4 w-4" />
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => navigate(`/product/${productId}`)}>
+                <Edit3 className="h-4 w-4 mr-2" />
+                Edit Product
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
       <div className="flex">
-        {/* Left Sidebar */}
+        {/* Left Sidebar - Dynamic Navigation */}
         <aside className="w-64 border-r border-border bg-background/50 h-[calc(100vh-3.5rem)] overflow-y-auto sticky top-14">
           <div className="p-6">
-            {/* Main Navigation */}
-            <div className="space-y-1 mb-6">
-              {sidebarItems.map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.href}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                    item.active
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  }`}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Link>
-              ))}
+            <div className="mb-6">
+              <Link 
+                to={`/docs/${productId}`}
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <Home className="h-4 w-4" />
+                <span>Overview</span>
+              </Link>
             </div>
 
             <Separator className="my-4" />
 
-            {/* Documentation Navigation */}
+            {/* Dynamic Articles Navigation */}
             <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium text-foreground mb-2">General</h4>
-                <div className="space-y-1">
-                  {navigationItems.map((item) => (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      className="block px-3 py-1 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-medium text-foreground mb-2">Integrations</h4>
-                <div className="space-y-1">
-                  {integrationItems.map((item) => (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      className={`block px-3 py-1 text-sm rounded-md transition-colors ${
-                        item.active
-                          ? 'bg-primary/10 text-primary font-medium'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
+              <h4 className="text-sm font-medium text-foreground mb-2">Articles</h4>
+              <div className="space-y-1">
+                {allArticles.map((art) => (
+                  <Link
+                    key={art.id}
+                    to={`/docs/${productId}/${art.id}`}
+                    className={`block px-3 py-2 text-sm rounded-md transition-colors ${
+                      art.id === articleId
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="truncate">{art.title}</span>
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {art.status}
+                      </Badge>
+                    </div>
+                  </Link>
+                ))}
+                {allArticles.length === 0 && (
+                  <p className="text-sm text-muted-foreground px-3 py-2">
+                    No published articles yet
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -298,26 +342,35 @@ const ArticleViewer = () => {
                 Home
               </Link>
               <ChevronRight className="h-4 w-4" />
-              <Link to="/docs" className="hover:text-foreground transition-colors">
-                Documentation
+              <Link to={`/docs/${productId}`} className="hover:text-foreground transition-colors">
+                {product?.name}
               </Link>
               <ChevronRight className="h-4 w-4" />
-              <span className="text-primary font-medium">{product?.name || 'Documentation'}</span>
+              <span className="text-primary font-medium">
+                {article?.title || 'Article Not Found'}
+              </span>
             </nav>
 
             {/* Article Header */}
             <div className="mb-8">
-              <div className="mb-4">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                  {product?.category || 'Documentation'}
-                </span>
-              </div>
+              {product?.category && (
+                <div className="mb-4">
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                    {product.category}
+                  </Badge>
+                </div>
+              )}
               <h1 className="text-4xl font-bold text-foreground mb-4">
                 {article?.title || 'Article Not Found'}
               </h1>
-              <p className="text-xl text-muted-foreground">
-                {product?.description || 'This article could not be found'}
-              </p>
+              {article && (
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                  <span>Last updated: {new Date(article.updated_at).toLocaleDateString()}</span>
+                  <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                    {article.status}
+                  </Badge>
+                </div>
+              )}
             </div>
 
             {/* Article Content */}
@@ -332,17 +385,17 @@ const ArticleViewer = () => {
                     <p className="text-muted-foreground mb-6">
                       {article 
                         ? "This article exists but has no content yet." 
-                        : "This article hasn't been created yet."
+                        : "This article hasn't been created yet or you don't have access to it."
                       } {isAdmin ? "Go to the product editor to create content for this documentation." : "Please contact an administrator to create this content."}
                     </p>
                     {isAdmin && (
-                      <Link 
-                        to={`/product/${productId}`}
-                        className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                      <Button 
+                        onClick={() => navigate(`/product/${productId}`)}
+                        className="inline-flex items-center"
                       >
                         <Edit3 className="h-4 w-4 mr-2" />
                         {article ? 'Edit Article' : 'Create Article'}
-                      </Link>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -352,24 +405,27 @@ const ArticleViewer = () => {
         </main>
 
         {/* Right Sidebar - Table of Contents */}
-        <aside className="w-64 border-l border-border bg-background/50 h-[calc(100vh-3.5rem)] overflow-y-auto sticky top-14">
-          <div className="p-6">
-            <h4 className="text-sm font-medium text-foreground mb-4 flex items-center">
-              <span className="mr-2">On this page</span>
-            </h4>
-            <nav className="space-y-2">
-              {tableOfContents.map((item) => (
-                <a
-                  key={item.id}
-                  href={`#${item.id}`}
-                  className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
-                >
-                  {item.title}
-                </a>
-              ))}
-            </nav>
-          </div>
-        </aside>
+        {tableOfContents.length > 0 && (
+          <aside className="w-64 border-l border-border bg-background/50 h-[calc(100vh-3.5rem)] overflow-y-auto sticky top-14">
+            <div className="p-6">
+              <h4 className="text-sm font-medium text-foreground mb-4">On this page</h4>
+              <nav className="space-y-2">
+                {tableOfContents.map((item) => (
+                  <a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    className={`block text-sm text-muted-foreground hover:text-foreground transition-colors py-1 ${
+                      item.level > 1 ? 'ml-4' : ''
+                    }`}
+                    style={{ marginLeft: `${(item.level - 1) * 16}px` }}
+                  >
+                    {item.title}
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );
