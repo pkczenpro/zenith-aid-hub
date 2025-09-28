@@ -183,6 +183,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signOut = async () => {
     try {
+      // Clear local state first
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         toast({
@@ -197,6 +202,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         });
       }
     } catch (error: any) {
+      // Clear state even if signout fails
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      
       toast({
         title: "Sign out failed",
         description: error.message,

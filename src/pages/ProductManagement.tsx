@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/Header';
+import ClientChat from '@/components/ClientChat';
 import { 
   Plus, 
   Package, 
@@ -23,7 +24,9 @@ import {
   Settings,
   FileText,
   Search,
-  Image as ImageIcon
+  Image as ImageIcon,
+  MessageCircle,
+  Headphones
 } from 'lucide-react';
 
 interface Product {
@@ -64,6 +67,7 @@ const ProductManagement = () => {
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'products' | 'support'>('products');
 
   const [productForm, setProductForm] = useState({
     name: '',
@@ -328,6 +332,7 @@ const ProductManagement = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
+        {/* Tab Navigation */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button
@@ -341,118 +346,42 @@ const ProductManagement = () => {
             <div>
               <h1 className="text-3xl font-bold text-gradient flex items-center gap-2">
                 <Package className="h-8 w-8" />
-                Product Management
+                Admin Dashboard
               </h1>
               <p className="text-muted-foreground mt-1">
-                Create and manage your products and documentation
+                Manage products, documentation, and customer support
               </p>
             </div>
           </div>
           
-          <Button
-            onClick={() => {
-              resetForm();
-              setIsCreateDialogOpen(true);
-            }}
-            className="bg-gradient-button hover:shadow-button transition-all duration-300"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Product
-          </Button>
-        </div>
-
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex items-center space-x-4">
+            <Button
+              variant={activeTab === 'products' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('products')}
+              className="flex items-center space-x-2"
+            >
+              <Package className="h-4 w-4" />
+              <span>Products</span>
+            </Button>
+            <Button
+              variant={activeTab === 'support' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('support')}
+              className="flex items-center space-x-2"
+            >
+              <Headphones className="h-4 w-4" />
+              <span>Support</span>
+            </Button>
           </div>
         </div>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
-            <Card key={product.id} className="card-hover">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    {product.icon_url ? (
-                      <img 
-                        src={product.icon_url} 
-                        alt={product.name}
-                        className="w-10 h-10 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                        <Package className="h-5 w-5 text-white" />
-                      </div>
-                    )}
-                    <div>
-                      <CardTitle className="text-lg">{product.name}</CardTitle>
-                      {product.category && (
-                        <Badge variant="secondary" className="mt-1 text-xs">
-                          {product.category}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <Badge 
-                    variant={product.status === 'published' ? 'default' : 'secondary'}
-                    className="capitalize"
-                  >
-                    {product.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                  {product.description || 'No description provided'}
-                </p>
-                
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                    className="flex-1"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Docs
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(product)}
-                  >
-                    <Edit3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteProduct(product.id)}
-                    className="text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No products found</h3>
-            <p className="text-muted-foreground mb-6">
-              {searchQuery ? 'No products match your search.' : 'Get started by creating your first product.'}
-            </p>
-            {!searchQuery && (
+        {activeTab === 'products' && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Product Management</h2>
+                <p className="text-muted-foreground">Create and manage your products and documentation</p>
+              </div>
+              
               <Button
                 onClick={() => {
                   resetForm();
@@ -461,9 +390,125 @@ const ProductManagement = () => {
                 className="bg-gradient-button hover:shadow-button transition-all duration-300"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Create Product
+                Add Product
               </Button>
+            </div>
+
+            {/* Search */}
+            <div className="mb-6">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Products Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map((product) => (
+                <Card key={product.id} className="card-hover">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        {product.icon_url ? (
+                          <img 
+                            src={product.icon_url} 
+                            alt={product.name}
+                            className="w-10 h-10 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                            <Package className="h-5 w-5 text-white" />
+                          </div>
+                        )}
+                        <div>
+                          <CardTitle className="text-lg">{product.name}</CardTitle>
+                          {product.category && (
+                            <Badge variant="secondary" className="mt-1 text-xs">
+                              {product.category}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Badge 
+                        variant={product.status === 'published' ? 'default' : 'secondary'}
+                        className="capitalize"
+                      >
+                        {product.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                      {product.description || 'No description provided'}
+                    </p>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/product/${product.id}`)}
+                        className="flex-1"
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Docs
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(product)}
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteProduct(product.id)}
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No products found</h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchQuery ? 'No products match your search.' : 'Get started by creating your first product.'}
+                </p>
+                {!searchQuery && (
+                  <Button
+                    onClick={() => {
+                      resetForm();
+                      setIsCreateDialogOpen(true);
+                    }}
+                    className="bg-gradient-button hover:shadow-button transition-all duration-300"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Product
+                  </Button>
+                )}
+              </div>
             )}
+          </>
+        )}
+
+        {activeTab === 'support' && (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground">Support Management</h2>
+              <p className="text-muted-foreground">View and manage customer support tickets and chat</p>
+            </div>
+            <ClientChat />
           </div>
         )}
       </div>

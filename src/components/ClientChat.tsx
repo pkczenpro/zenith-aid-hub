@@ -24,6 +24,7 @@ interface Message {
   sender: 'user' | 'support' | 'system';
   timestamp: string;
   type: 'chat' | 'ticket';
+  client_name?: string;
 }
 
 interface Ticket {
@@ -34,10 +35,11 @@ interface Ticket {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   created_at: string;
   product_id?: string;
+  client_name?: string;
 }
 
 const ClientChat = () => {
-  const { user } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'chat' | 'tickets'>('chat');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -97,10 +99,25 @@ const ClientChat = () => {
     if (!user) return;
 
     try {
-      const { data: tickets, error } = await supabase
-        .from('support_tickets')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('support_tickets').select(`
+        *,
+        profiles!support_tickets_profile_id_fkey(full_name, email)
+      `);
+
+      // If not admin, only show user's tickets
+      if (!isAdmin) {
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (currentProfile) {
+          query = query.eq('profile_id', currentProfile.id);
+        }
+      }
+
+      const { data: tickets, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching tickets:', error);
@@ -110,7 +127,8 @@ const ClientChat = () => {
       const formattedTickets = tickets?.map(ticket => ({
         ...ticket,
         status: ticket.status as 'open' | 'in_progress' | 'resolved' | 'closed',
-        priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent'
+        priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent',
+        client_name: ticket.profiles?.full_name || ticket.profiles?.email || 'Unknown'
       })) || [];
 
       setTickets(formattedTickets);
@@ -123,19 +141,27 @@ const ClientChat = () => {
     if (!user) return;
 
     try {
-      const { data: profile } = await supabase
+      const { data: currentProfile } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user.id)
         .single();
 
-      if (!profile) return;
+      if (!currentProfile) return;
 
-      const { data: messages, error } = await supabase
+      let query = supabase
         .from('chat_messages')
-        .select('*')
-        .eq('profile_id', profile.id)
-        .order('created_at', { ascending: true });
+        .select(`
+          *,
+          profiles!chat_messages_profile_id_fkey(full_name, email)
+        `);
+
+      // If not admin, only show user's messages
+      if (!isAdmin) {
+        query = query.eq('profile_id', currentProfile.id);
+      }
+
+      const { data: messages, error } = await query.order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching messages:', error);
@@ -147,7 +173,8 @@ const ClientChat = () => {
         content: msg.content,
         sender: msg.sender as 'user' | 'support' | 'system',
         timestamp: msg.created_at,
-        type: 'chat'
+        type: 'chat',
+        client_name: msg.profiles?.full_name || msg.profiles?.email || 'Unknown'
       })) || [];
 
       setMessages(formattedMessages);
@@ -178,9 +205,10 @@ const ClientChat = () => {
       const message: Message = {
         id: Date.now().toString(),
         content: newMessage,
-        sender: 'user',
+        sender: isAdmin ? 'support' : 'user',
         timestamp: new Date().toISOString(),
-        type: 'chat'
+        type: 'chat',
+        client_name: profile?.id ? (profile as any).full_name || user.email || 'Unknown' : 'Unknown'
       };
 
       setMessages(prev => [...prev, message]);
@@ -193,7 +221,7 @@ const ClientChat = () => {
           user_id: user.id,
           profile_id: profile.id,
           content: newMessage,
-          sender: 'user'
+          sender: isAdmin ? 'support' : 'user'
         });
 
       if (error) {
@@ -206,20 +234,22 @@ const ClientChat = () => {
         return;
       }
 
-      // Auto-response for now (in production, this would be handled by support staff)
-      setTimeout(async () => {
-        const supportMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: "Thank you for your message. Our support team will get back to you shortly. If this is urgent, please create a ticket for faster response.",
-          sender: 'support',
-          timestamp: new Date().toISOString(),
-          type: 'chat'
-        };
-        setMessages(prev => [...prev, supportMessage]);
+      // Auto-response for clients only (admins don't get auto-response)
+      if (!isAdmin) {
+        setTimeout(async () => {
+          const supportMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            content: "Thank you for your message. Our support team will get back to you shortly. If this is urgent, please create a ticket for faster response.",
+            sender: 'support',
+            timestamp: new Date().toISOString(),
+            type: 'chat'
+          };
+          setMessages(prev => [...prev, supportMessage]);
 
-        // Note: In production, support messages would be sent by actual support staff
-        // This is just a demo auto-response
-      }, 1000);
+          // Note: In production, support messages would be sent by actual support staff
+          // This is just a demo auto-response
+        }, 1000);
+      }
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -357,7 +387,12 @@ const ClientChat = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <MessageCircle className="h-5 w-5" />
-              <span>Live Support Chat</span>
+              <span>{isAdmin ? 'Admin Support Chat' : 'Live Support Chat'}</span>
+              {profile && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  - {(profile as any).full_name || user?.email || 'User'}
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -378,6 +413,9 @@ const ClientChat = () => {
                     {message.sender === 'support' && <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />}
                     {message.sender === 'user' && <User className="h-4 w-4 mt-0.5 flex-shrink-0" />}
                     <div>
+                      {isAdmin && message.client_name && message.sender === 'user' && (
+                        <p className="text-xs font-medium text-primary mb-1">{message.client_name}</p>
+                      )}
                       <p className="text-sm">{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">
                         {new Date(message.timestamp).toLocaleTimeString()}
@@ -409,17 +447,21 @@ const ClientChat = () => {
       {/* Tickets Tab */}
       {activeTab === 'tickets' && (
         <div className="space-y-6">
-          {/* Create Ticket Button */}
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Your Support Tickets</h3>
-            <Button onClick={() => setIsTicketFormOpen(true)}>
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Create Ticket
-            </Button>
-          </div>
+      {/* Create Ticket Button */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">
+          {isAdmin ? 'All Support Tickets' : 'Your Support Tickets'}
+        </h3>
+        {!isAdmin && (
+          <Button onClick={() => setIsTicketFormOpen(true)}>
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Create Ticket
+          </Button>
+        )}
+      </div>
 
-          {/* Ticket Form */}
-          {isTicketFormOpen && (
+      {/* Ticket Form */}
+      {isTicketFormOpen && !isAdmin && (
             <Card className="shadow-card border-0 bg-gradient-card">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -481,23 +523,28 @@ const ClientChat = () => {
               <Card key={ticket.id} className="shadow-card border-0 bg-gradient-card">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h4 className="font-semibold text-foreground">{ticket.subject}</h4>
-                        <Badge className={getStatusColor(ticket.status)}>
-                          {ticket.status === 'open' && <AlertTriangle className="h-3 w-3 mr-1" />}
-                          {ticket.status === 'in_progress' && <Clock className="h-3 w-3 mr-1" />}
-                          {ticket.status === 'resolved' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                          {ticket.status.replace('_', ' ')}
-                        </Badge>
-                        <Badge variant="outline" className={getPriorityColor(ticket.priority)}>
-                          {ticket.priority}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">{ticket.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Created: {new Date(ticket.created_at).toLocaleDateString()}
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h4 className="font-semibold text-foreground">{ticket.subject}</h4>
+                      <Badge className={getStatusColor(ticket.status)}>
+                        {ticket.status === 'open' && <AlertTriangle className="h-3 w-3 mr-1" />}
+                        {ticket.status === 'in_progress' && <Clock className="h-3 w-3 mr-1" />}
+                        {ticket.status === 'resolved' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                        {ticket.status.replace('_', ' ')}
+                      </Badge>
+                      <Badge variant="outline" className={getPriorityColor(ticket.priority)}>
+                        {ticket.priority}
+                      </Badge>
+                    </div>
+                    {isAdmin && ticket.client_name && (
+                      <p className="text-sm font-medium text-primary mb-1">
+                        Client: {ticket.client_name}
                       </p>
+                    )}
+                    <p className="text-sm text-muted-foreground mb-2">{ticket.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Created: {new Date(ticket.created_at).toLocaleDateString()}
+                    </p>
                     </div>
                   </div>
                 </CardContent>
