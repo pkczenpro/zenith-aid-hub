@@ -212,7 +212,7 @@ const ArticleViewer = () => {
         case 'embed':
           return (
             <div key={index} className="animate-fade-in mb-6">
-              <div className="relative aspect-video rounded-lg overflow-hidden bg-muted border border-border">
+              <div className="relative rounded-lg overflow-hidden bg-muted border border-border">
                 {section.content.includes('youtube.com') || section.content.includes('youtu.be') ? (
                   <iframe
                     src={section.content.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
@@ -229,10 +229,20 @@ const ArticleViewer = () => {
                     allowFullScreen
                     title="Embedded Video"
                   />
+                ) : section.content.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
+                  <video 
+                    controls 
+                    preload="metadata" 
+                    className="w-full h-auto rounded-lg"
+                    controlsList="nodownload"
+                  >
+                    <source src={section.content} type="video/mp4" />
+                    <p>Your browser doesn&apos;t support HTML5 video. <a href={section.content} target="_blank" rel="noopener noreferrer">Download the video</a> instead.</p>
+                  </video>
                 ) : (
                   <div 
                     dangerouslySetInnerHTML={{ __html: section.content }}
-                    className="absolute inset-0 w-full h-full"
+                    className="w-full h-full"
                   />
                 )}
               </div>
@@ -464,9 +474,10 @@ const ArticleViewer = () => {
                                    prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r 
                                    prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 
                                    prose-table:border-collapse prose-th:border prose-th:border-border prose-th:bg-muted prose-th:p-2 prose-td:border prose-td:border-border prose-td:p-2
-                                   prose-video:rounded-lg prose-video:shadow-md
+                                   prose-video:rounded-lg prose-video:shadow-md prose-video:max-w-full
                                    [&_iframe]:rounded-lg [&_iframe]:shadow-md [&_iframe]:border [&_iframe]:border-border
-                                   [&_video]:rounded-lg [&_video]:shadow-md [&_video]:border [&_video]:border-border"
+                                   [&_video]:rounded-lg [&_video]:shadow-md [&_video]:border [&_video]:border-border [&_video]:max-w-full [&_video]:h-auto
+                                   [&_.video-container]:rounded-lg [&_.video-container]:shadow-md [&_.video-container]:overflow-hidden"
                       />
                     </div>
                   ) : (
