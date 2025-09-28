@@ -180,14 +180,35 @@ const ClientManagement = () => {
         throw new Error('Failed to create user account');
       }
 
-      // Wait a bit for the profile to be created by the trigger
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for profile to be created by trigger and fetch it
+      let profile = null;
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (!profile && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', authData.user.id)
+          .maybeSingle();
+          
+        if (profileData) {
+          profile = profileData;
+        }
+        attempts++;
+      }
 
-      // Create client record
+      if (!profile) {
+        throw new Error('Profile creation failed. Please try again.');
+      }
+
+      // Create client record using the profile ID
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .insert({
-          profile_id: authData.user.id,
+          profile_id: profile.id, // Use profile.id, not user.id
           name: newClient.name,
           industry: newClient.industry || null,
           company: newClient.company || null,
