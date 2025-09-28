@@ -181,120 +181,72 @@ const ProductDocs = () => {
     
     try {
       const contentArray = Array.isArray(content) ? content : [];
-      return contentArray.map((section: any, index: number) => {
-        switch (section.type) {
-          case 'heading':
-            const HeadingTag = section.level === 1 ? 'h1' : section.level === 2 ? 'h2' : 'h3';
-            const headingClasses = section.level === 1 
-              ? 'text-3xl font-bold text-foreground border-b border-border pb-3 mb-6'
-              : section.level === 2 
-              ? 'text-2xl font-semibold text-foreground border-b border-border pb-2 mb-4'
-              : 'text-xl font-medium text-foreground mb-3';
-            
-            return (
-              <div key={index} className="mb-6" id={`section-${index + 1}`}>
-                <HeadingTag className={headingClasses}>
-                  {section.content}
-                </HeadingTag>
+      
+      // Group sections by hierarchy
+      const mainSections = contentArray.filter((s: any) => s.level === 0 || !s.level);
+      const subsections = contentArray.filter((s: any) => s.level === 1);
+      
+      return mainSections.map((section: any, index: number) => {
+        const sectionSubsections = subsections.filter((sub: any) => sub.parent_id === section.id);
+        
+        return (
+          <div key={index} className="mb-8">
+            {renderSectionContent(section, index, true)}
+            {sectionSubsections.length > 0 && (
+              <div className="ml-6 mt-4 space-y-4">
+                {sectionSubsections.map((subsection: any, subIndex: number) => (
+                  <div key={subIndex}>
+                    {renderSectionContent(subsection, subIndex, false)}
+                  </div>
+                ))}
               </div>
-            );
-          case 'text':
-            return (
-              <div key={index} className="mb-6">
-                <div 
-                  dangerouslySetInnerHTML={{ __html: section.content }}
-                  className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 prose-video:w-full prose-video:rounded-lg [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg"
-                />
-              </div>
-            );
-          case 'code':
-            return (
-              <div key={index} className="mb-6">
-                <pre className="bg-muted border border-border rounded-lg p-4 overflow-x-auto">
-                  <code className="text-sm text-foreground">{section.content}</code>
-                </pre>
-              </div>
-            );
-          case 'video':
-          case 'embed':
-            return (
-              <div key={index} className="mb-6">
-                <div className="relative rounded-lg overflow-hidden bg-muted border border-border aspect-video">
-                  {section.content.includes('youtube.com') || section.content.includes('youtu.be') ? (
-                    <iframe
-                      src={section.content.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                      className="absolute inset-0 w-full h-full"
-                      frameBorder="0"
-                      allowFullScreen
-                      title="Embedded Video"
-                    />
-                  ) : section.content.includes('vimeo.com') ? (
-                    <iframe
-                      src={section.content.replace('vimeo.com/', 'player.vimeo.com/video/')}
-                      className="absolute inset-0 w-full h-full"
-                      frameBorder="0"
-                      allowFullScreen
-                      title="Embedded Video"
-                    />
-                  ) : (
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: section.content }}
-                      className="w-full h-full"
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          case 'image':
-            return (
-              <div key={index} className="mb-6">
-                <div className="flex justify-center">
-                  <img 
-                    src={section.content} 
-                    alt={section.alt || 'Content image'}
-                    className="max-w-full h-auto rounded-lg shadow-md border border-border"
-                  />
-                </div>
-                {section.caption && (
-                  <p className="text-center text-sm text-muted-foreground mt-2 italic">
-                    {section.caption}
-                  </p>
-                )}
-              </div>
-            );
-          default:
-            // Handle rich text content with embedded videos
-            if (typeof section.content === 'string' && section.content.includes('<')) {
-              return (
-                <div key={index} className="mb-6">
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: section.content }}
-                    className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg"
-                  />
-                </div>
-              );
-            }
-            
-            // Try to handle legacy format
-            if (section.content?.map) {
-              return (
-                <p key={index} className="mb-4 text-foreground leading-relaxed">
-                  {section.content.map((item: any, i: number) => item.text).join('')}
-                </p>
-              );
-            }
-            
-            return (
-              <div key={index} className="mb-6">
-                <p className="text-foreground/90 leading-relaxed">{section.content}</p>
-              </div>
-            );
-        }
+            )}
+          </div>
+        );
       });
     } catch (error) {
       console.error('Error rendering content:', error);
       return <p className="text-muted-foreground">Content could not be displayed.</p>;
     }
+  };
+
+  const renderSectionContent = (section: any, index: number, isMainSection: boolean = true) => {
+    // Display section title
+    const titleElement = (
+      <div className="mb-4">
+        <h3 className={`font-semibold ${isMainSection ? 'text-xl text-primary border-b border-primary/20 pb-2' : 'text-lg text-foreground/90'}`}>
+          {section.title}
+        </h3>
+      </div>
+    );
+
+    // Handle content based on type or render as rich HTML
+    let contentElement;
+    if (typeof section.content === 'string' && section.content.includes('<')) {
+      // Rich HTML content
+      contentElement = (
+        <div 
+          dangerouslySetInnerHTML={{ __html: section.content }}
+          className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-container]:my-4"
+        />
+      );
+    } else {
+      // Plain text content
+      contentElement = (
+        <div className="text-foreground/90 leading-relaxed">
+          {section.content}
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        {titleElement}
+        <div className="mb-6">
+          {contentElement}
+        </div>
+      </div>
+    );
   };
 
   if (loading) {

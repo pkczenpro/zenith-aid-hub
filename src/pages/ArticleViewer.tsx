@@ -217,169 +217,126 @@ const ArticleViewer = () => {
   const renderContent = (content: any[]) => {
     if (!content || !Array.isArray(content)) return null;
 
-    return content.map((section, index) => {
-      switch (section.type) {
-        case 'heading':
-          const HeadingTag = section.level === 1 ? 'h1' : section.level === 2 ? 'h2' : 'h3';
-          const headingClasses = section.level === 1 
-            ? 'text-3xl font-bold text-primary border-b border-primary/20 pb-3 mb-6'
-            : section.level === 2 
-            ? 'text-2xl font-semibold text-primary border-b border-primary/20 pb-2 mb-4'
-            : 'text-xl font-medium text-foreground mb-3';
-          
-          return (
-            <div key={index} className="animate-fade-in mb-6" id={`section-${index + 1}`}>
-              <HeadingTag className={headingClasses}>
-                {section.content}
-              </HeadingTag>
-            </div>
-          );
-        case 'text':
-          return (
-            <div key={index} className="animate-fade-in mb-6">
-              <div 
-                dangerouslySetInnerHTML={{ __html: section.content }}
-                className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 prose-video:w-full prose-video:rounded-lg"
-              />
-            </div>
-          );
-        case 'code':
-          return (
-            <div key={index} className="animate-fade-in mb-6">
-              <pre className="bg-muted border border-border rounded-lg p-4 overflow-x-auto">
-                <code className="text-sm text-foreground">{section.content}</code>
-              </pre>
-            </div>
-          );
-        case 'video':
-        case 'embed':
-          return (
-            <div key={index} className="animate-fade-in mb-6">
-              <div className="relative rounded-lg overflow-hidden bg-muted border border-border">
-                {section.content.includes('youtube.com') || section.content.includes('youtu.be') ? (
-                  <iframe
-                    src={section.content.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                    className="absolute inset-0 w-full h-full"
-                    frameBorder="0"
-                    allowFullScreen
-                    title="Embedded Video"
-                  />
-                ) : section.content.includes('vimeo.com') ? (
-                  <iframe
-                    src={section.content.replace('vimeo.com/', 'player.vimeo.com/video/')}
-                    className="absolute inset-0 w-full h-full"
-                    frameBorder="0"
-                    allowFullScreen
-                    title="Embedded Video"
-                  />
-                ) : section.content.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
-                  <LMSVideoPlayer src={section.content} />
-                ) : (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: section.content }}
-                    className="w-full h-full"
-                  />
-                )}
-              </div>
-            </div>
-          );
-        case 'image':
-          return (
-            <div key={index} className="animate-fade-in mb-6">
-              <div className="flex justify-center">
-                <img 
-                  src={section.content} 
-                  alt={section.alt || 'Content image'}
-                  className="max-w-full h-auto rounded-lg shadow-md border border-border"
-                />
-              </div>
-              {section.caption && (
-                <p className="text-center text-sm text-muted-foreground mt-2 italic">
-                  {section.caption}
-                </p>
-              )}
-            </div>
-          );
-        default:
-          // Handle rich text content with embedded videos
-          if (typeof section.content === 'string' && section.content.includes('<')) {
-            // Check for video embed containers
-            if (section.content.includes('video-embed-container')) {
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(section.content, 'text/html');
-              const videoContainers = doc.querySelectorAll('.video-embed-container');
-              
-              let processedContent = section.content;
-              
-              videoContainers.forEach((container) => {
-                const videoUrl = container.getAttribute('data-video-url');
-                const videoType = container.getAttribute('data-video-type');
-                const videoId = container.getAttribute('data-video-id');
-                
-                if (videoUrl && videoType) {
-                  let playableEmbed = '';
-                  
-                  if (videoType === 'youtube' && videoId) {
-                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                      <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="YouTube Video"></iframe>
-                    </div>`;
-                  } else if (videoType === 'vimeo' && videoId) {
-                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                      <iframe src="https://player.vimeo.com/video/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Vimeo Video"></iframe>
-                    </div>`;
-                  } else if (videoType === 'loom' && videoId) {
-                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                      <iframe src="https://www.loom.com/embed/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Loom Video"></iframe>
-                    </div>`;
-                  } else if (videoType === 'heygen' && videoId) {
-                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                      <iframe src="https://share-prod.heygen.com/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="HeyGen Video"></iframe>
-                    </div>`;
-                  } else if (videoType === 'direct') {
-                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background: #000;">
-                      <video controls preload="metadata" style="width: 100%; height: auto; display: block; min-height: 300px;" crossorigin="anonymous">
-                        <source src="${videoUrl}" type="video/mp4">
-                        <source src="${videoUrl}" type="video/webm">
-                        <source src="${videoUrl}" type="video/ogg">
-                        <div style="padding: 2rem; text-align: center; color: white; background: #1f2937;">
-                          <p style="margin-bottom: 1rem;">Your browser doesn't support HTML5 video.</p>
-                          <a href="${videoUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">Open video in new window</a>
-                        </div>
-                      </video>
-                    </div>`;
-                  }
-                  
-                  // Replace the thumbnail container with the playable embed
-                  processedContent = processedContent.replace(container.outerHTML, playableEmbed);
-                }
-              });
-              
-              return (
-                <div key={index} className="animate-fade-in mb-6">
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: processedContent }}
-                    className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-player-wrapper]:my-4"
-                  />
+    // Group sections by hierarchy
+    const mainSections = content.filter((s: any) => s.level === 0 || !s.level);
+    const subsections = content.filter((s: any) => s.level === 1);
+    
+    return mainSections.map((section, index) => {
+      const sectionSubsections = subsections.filter((sub: any) => sub.parent_id === section.id);
+      
+      return (
+        <div key={index} className="mb-8">
+          {renderSectionContent(section, index, true)}
+          {sectionSubsections.length > 0 && (
+            <div className="ml-6 mt-4 space-y-4">
+              {sectionSubsections.map((subsection: any, subIndex: number) => (
+                <div key={subIndex}>
+                  {renderSectionContent(subsection, subIndex, false)}
                 </div>
-              );
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  const renderSectionContent = (section: any, index: number, isMainSection: boolean = true) => {
+    // Display section title
+    const titleElement = (
+      <div className="mb-4">
+        <h3 className={`font-semibold ${isMainSection ? 'text-xl text-primary border-b border-primary/20 pb-2' : 'text-lg text-foreground/90'}`}>
+          {section.title}
+        </h3>
+      </div>
+    );
+
+    // Handle content based on type or render as rich HTML
+    let contentElement;
+    if (typeof section.content === 'string' && section.content.includes('<')) {
+      // Check for video embed containers and process them
+      if (section.content.includes('video-embed-container')) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(section.content, 'text/html');
+        const videoContainers = doc.querySelectorAll('.video-embed-container');
+        
+        let processedContent = section.content;
+        
+        videoContainers.forEach((container) => {
+          const videoUrl = container.getAttribute('data-video-url');
+          const videoType = container.getAttribute('data-video-type');
+          const videoId = container.getAttribute('data-video-id');
+          
+          if (videoUrl && videoType) {
+            let playableEmbed = '';
+            
+            if (videoType === 'youtube' && videoId) {
+              playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="YouTube Video"></iframe>
+              </div>`;
+            } else if (videoType === 'vimeo' && videoId) {
+              playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <iframe src="https://player.vimeo.com/video/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Vimeo Video"></iframe>
+              </div>`;
+            } else if (videoType === 'loom' && videoId) {
+              playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <iframe src="https://www.loom.com/embed/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Loom Video"></iframe>
+              </div>`;
+            } else if (videoType === 'heygen' && videoId) {
+              playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <iframe src="https://share-prod.heygen.com/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="HeyGen Video"></iframe>
+              </div>`;
+            } else if (videoType === 'direct') {
+              playableEmbed = `<div class="video-player-wrapper" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background: #000;">
+                <video controls preload="metadata" style="width: 100%; height: auto; display: block; min-height: 300px;" crossorigin="anonymous">
+                  <source src="${videoUrl}" type="video/mp4">
+                  <source src="${videoUrl}" type="video/webm">
+                  <source src="${videoUrl}" type="video/ogg">
+                  <div style="padding: 2rem; text-align: center; color: white; background: #1f2937;">
+                    <p style="margin-bottom: 1rem;">Your browser doesn't support HTML5 video.</p>
+                    <a href="${videoUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">Open video in new window</a>
+                  </div>
+                </video>
+              </div>`;
             }
             
-            return (
-              <div key={index} className="animate-fade-in mb-6">
-                <div 
-                  dangerouslySetInnerHTML={{ __html: section.content }}
-                  className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-container]:my-4"
-                />
-              </div>
-            );
+            // Replace the thumbnail container with the playable embed
+            processedContent = processedContent.replace(container.outerHTML, playableEmbed);
           }
-          return (
-            <div key={index} className="animate-fade-in mb-6">
-              <p className="text-foreground/90 leading-relaxed">{section.content}</p>
-            </div>
-          );
+        });
+        
+        contentElement = (
+          <div 
+            dangerouslySetInnerHTML={{ __html: processedContent }}
+            className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-player-wrapper]:my-4"
+          />
+        );
+      } else {
+        // Regular rich HTML content
+        contentElement = (
+          <div 
+            dangerouslySetInnerHTML={{ __html: section.content }}
+            className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-container]:my-4"
+          />
+        );
       }
-    });
+    } else {
+      // Plain text content
+      contentElement = (
+        <div className="text-foreground/90 leading-relaxed">
+          {section.content}
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        {titleElement}
+        <div className="mb-6">
+          {contentElement}
+        </div>
+      </div>
+    );
   };
 
   useEffect(() => {

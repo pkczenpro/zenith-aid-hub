@@ -248,15 +248,36 @@ const ProductEditor = () => {
   };
 
   const addSection = (level: number = 0, parentId?: string) => {
+    const parentSections = sections.filter(s => s.level === 0);
+    const allSubsections = sections.filter(s => s.level === 1);
+    
     const newSection: Section = {
       id: Date.now().toString(),
-      title: level === 0 ? `Section ${sections.filter(s => s.level === 0).length + 1}` : `Subsection ${sections.length + 1}`,
+      title: level === 0 ? `Section ${parentSections.length + 1}` : `Subsection ${allSubsections.filter(s => s.parent_id === parentId).length + 1}`,
       content: '',
       order: sections.length,
       level: level,
       parent_id: parentId
     };
     setSections([...sections, newSection]);
+  };
+
+  const addSubsection = (parentId: string) => {
+    addSection(1, parentId);
+  };
+
+  const getSectionHierarchy = () => {
+    const hierarchy: Array<Section & { children: Section[] }> = [];
+    const mainSections = sections.filter(s => s.level === 0).sort((a, b) => a.order - b.order);
+    
+    mainSections.forEach(section => {
+      const children = sections
+        .filter(s => s.level === 1 && s.parent_id === section.id)
+        .sort((a, b) => a.order - b.order);
+      hierarchy.push({ ...section, children });
+    });
+    
+    return hierarchy;
   };
 
   const updateSectionTitle = (id: string, title: string) => {
@@ -596,160 +617,178 @@ const ProductEditor = () => {
                         <span className="font-medium text-foreground">Document Sections</span>
                         <span className="text-sm text-muted-foreground">({sections.length})</span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addSection(0)}
-                          className="flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/20 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md"
-                        >
-                          <Plus className="h-4 w-4" />
-                          <span>New Section</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addSection(1)}
-                          className="flex items-center space-x-2 bg-gradient-to-r from-accent/10 to-secondary/10 hover:from-accent/20 hover:to-secondary/20 border-accent/20 hover:border-accent/30 transition-all duration-300 shadow-sm hover:shadow-md"
-                        >
-                          <Plus className="h-4 w-4" />
-                          <span>Add Subsection</span>
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addSection(0)}
+                        className="flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/20 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>New Section</span>
+                      </Button>
                     </div>
                     
-                    {/* Document Sections */}
+                    {/* Document Sections - Hierarchical Structure */}
                     <div className="space-y-6">
-                      {sections.map((section, index) => (
-                        <div 
-                          key={section.id} 
-                          className={`group animate-fade-in bg-white dark:bg-gray-900/50 border border-border/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 ${
-                            section.level > 0 ? `ml-${section.level * 8} border-l-4 border-l-accent/50` : ''
-                          }`}
-                        >
-                          {/* Section Header */}
-                          <div className="flex items-center justify-between p-4 border-b border-border/30 bg-gradient-to-r from-muted/30 via-muted/10 to-muted/30 rounded-t-xl">
-                            <div className="flex items-center space-x-3 flex-1">
+                      {getSectionHierarchy().map((section, index) => (
+                        <div key={section.id} className="space-y-4">
+                          {/* Main Section */}
+                          <div className="group animate-fade-in bg-white dark:bg-gray-900/50 border border-border/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+                            {/* Section Header */}
+                            <div className="flex items-center justify-between p-4 border-b border-border/30 bg-gradient-to-r from-muted/30 via-muted/10 to-muted/30 rounded-t-xl">
+                              <div className="flex items-center space-x-3 flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-6 h-6 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                    {index + 1}
+                                  </div>
+                                  <div className="cursor-grab hover:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                                    <GripVertical className="h-4 w-4" />
+                                  </div>
+                                </div>
+                                <Input
+                                  value={section.title}
+                                  onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                                  className="font-semibold text-lg border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0"
+                                  placeholder={`Section ${index + 1} title...`}
+                                />
+                              </div>
                               <div className="flex items-center space-x-2">
-                                <div className={`w-6 h-6 ${
-                                  section.level === 0 
-                                    ? 'bg-gradient-to-r from-primary to-accent' 
-                                    : 'bg-gradient-to-r from-accent to-secondary'
-                                } rounded-full flex items-center justify-center text-white text-xs font-bold`}>
-                                  {section.level === 0 ? index + 1 : '•'}
-                                </div>
-                                <div className="cursor-grab hover:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-                                  <GripVertical className="h-4 w-4" />
-                                </div>
-                                {section.level > 0 && (
-                                  <span className="text-xs text-accent font-medium px-2 py-1 bg-accent/10 rounded-full">
-                                    Subsection
-                                  </span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addSubsection(section.id)}
+                                  className="text-xs bg-gradient-to-r from-accent/10 to-secondary/10 hover:from-accent/20 hover:to-secondary/20 border-accent/20 hover:border-accent/30"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add Subsection
+                                </Button>
+                                {sections.length > 1 && (
+                                  <>
+                                    <VideoEmbedButton 
+                                      onVideoEmbed={(videoHtml) => handleVideoEmbedInSection(section.id, videoHtml)}
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteSection(section.id)}
+                                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
                                 )}
                               </div>
-                              <Input
-                                value={section.title}
-                                onChange={(e) => updateSectionTitle(section.id, e.target.value)}
-                                className="font-semibold text-lg border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0"
-                                placeholder={section.level === 0 ? `Section ${index + 1} title...` : `Subsection title...`}
-                              />
-                            </div>
-                            {sections.length > 1 && (
-                              <>
-                                <VideoEmbedButton 
-                                  onVideoEmbed={(videoHtml) => handleVideoEmbedInSection(section.id, videoHtml)}
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteSection(section.id)}
-                                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                          
-                          {/* Rich Text Editor - Always Visible */}
-                          <div className="bg-background border border-border/20 rounded-b-xl">
-                            <div className="editor-wrapper-stable">
-                              <ReactQuill
-                                ref={(el) => {
-                                  if (el) {
-                                    setQuillRef(section.id, el.getEditor());
-                                  }
-                                }}
-                                key={`stable-editor-${section.id}`}
-                                theme="snow"
-                                value={section.content || ''}
-                                onChange={(content, delta, source, editor) => {
-                                  // Ensure content is always visible during typing
-                                  console.log('Content updating:', content.length, 'chars');
-                                  updateSectionContent(section.id, content);
-                                }}
-                                modules={{
-                                  toolbar: [
-                                    [{ 'header': [1, 2, 3, false] }],
-                                    ['bold', 'italic', 'underline', 'strike'],
-                                    [{ 'color': [] }, { 'background': [] }],
-                                    ['blockquote', 'code-block'],
-                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                    ['link', 'image', 'video'],
-                                    ['clean']
-                                  ]
-                                }}
-                                formats={[
-                                  'header', 'bold', 'italic', 'underline', 'strike',
-                                  'list', 'bullet', 'link', 'image', 'video',
-                                  'blockquote', 'code-block', 'color', 'background'
-                                ]}
-                                placeholder={`Start writing content for "${section.title || `Section ${index + 1}`}"...`}
-                                className="stable-section-editor"
-                                bounds=".editor-wrapper-stable"
-                                scrollingContainer=".editor-wrapper-stable"
-                              />
                             </div>
                             
-                            {/* Quick Tools Bar */}
-                            <div className="flex items-center justify-between p-3 bg-muted/10 border-t border-border/20">
-                              <div className="flex items-center space-x-2">
-                                <div className="text-xs text-muted-foreground font-medium">Quick tools:</div>
-                                <VideoEmbedButton 
-                                  onVideoEmbed={(url) => handleVideoEmbedInSection(section.id, url)}
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const url = prompt('Enter image URL:');
-                                    if (url) {
-                                      const imageEmbed = `<div class="image-embed-container"><img src="${url}" alt="Embedded image" style="max-width: 100%; height: auto; border-radius: 8px; margin: 1rem 0;" /></div>`;
-                                      const updatedSections = sections.map(s => 
-                                        s.id === section.id 
-                                          ? { ...s, content: s.content + '<br/>' + imageEmbed + '<br/>' }
-                                          : s
-                                      );
-                                      setSections(updatedSections);
-                                      toast({
-                                        title: "Image added successfully!",
-                                        description: "Your image has been embedded in the section.",
-                                      });
+                            {/* Rich Text Editor for Main Section */}
+                            <div className="bg-background border border-border/20 rounded-b-xl">
+                              <div className="editor-wrapper-stable">
+                                <ReactQuill
+                                  ref={(el) => {
+                                    if (el) {
+                                      setQuillRef(section.id, el.getEditor());
                                     }
                                   }}
-                                  className="text-accent hover:text-accent hover:bg-accent/10 h-7 px-2 text-xs"
-                                >
-                                  <Image className="h-3 w-3 mr-1" />
-                                  Add Image
-                                </Button>
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {(section.content || '').replace(/<[^>]*>/g, '').trim().length} chars
+                                  key={`stable-editor-${section.id}`}
+                                  theme="snow"
+                                  value={section.content || ''}
+                                  onChange={(content) => updateSectionContent(section.id, content)}
+                                  modules={{
+                                    toolbar: [
+                                      [{ 'header': [1, 2, 3, false] }],
+                                      ['bold', 'italic', 'underline', 'strike'],
+                                      [{ 'color': [] }, { 'background': [] }],
+                                      ['blockquote', 'code-block'],
+                                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                      ['link', 'image', 'video'],
+                                      ['clean']
+                                    ]
+                                  }}
+                                  formats={[
+                                    'header', 'bold', 'italic', 'underline', 'strike',
+                                    'list', 'bullet', 'link', 'image', 'video',
+                                    'blockquote', 'code-block', 'color', 'background'
+                                  ]}
+                                  placeholder={`Start writing content for "${section.title || `Section ${index + 1}`}"...`}
+                                  className="stable-section-editor"
+                                />
                               </div>
                             </div>
                           </div>
+
+                          {/* Subsections */}
+                          {section.children.map((subsection, subIndex) => (
+                            <div 
+                              key={subsection.id}
+                              className="ml-8 group animate-fade-in bg-white dark:bg-gray-900/50 border border-border/40 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-l-accent/50"
+                            >
+                              {/* Subsection Header */}
+                              <div className="flex items-center justify-between p-3 border-b border-border/20 bg-gradient-to-r from-muted/20 via-muted/5 to-muted/20 rounded-t-lg">
+                                <div className="flex items-center space-x-3 flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-5 h-5 bg-gradient-to-r from-accent to-secondary rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                      •
+                                    </div>
+                                    <span className="text-xs text-accent font-medium px-2 py-1 bg-accent/10 rounded-full">
+                                      Subsection {subIndex + 1}
+                                    </span>
+                                  </div>
+                                  <Input
+                                    value={subsection.title}
+                                    onChange={(e) => updateSectionTitle(subsection.id, e.target.value)}
+                                    className="font-medium text-base border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0"
+                                    placeholder={`Subsection ${subIndex + 1} title...`}
+                                  />
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <VideoEmbedButton 
+                                    onVideoEmbed={(videoHtml) => handleVideoEmbedInSection(subsection.id, videoHtml)}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteSection(subsection.id)}
+                                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Rich Text Editor for Subsection */}
+                              <div className="bg-background border border-border/10 rounded-b-lg">
+                                <div className="editor-wrapper-stable">
+                                  <ReactQuill
+                                    ref={(el) => {
+                                      if (el) {
+                                        setQuillRef(subsection.id, el.getEditor());
+                                      }
+                                    }}
+                                    key={`stable-editor-${subsection.id}`}
+                                    theme="snow"
+                                    value={subsection.content || ''}
+                                    onChange={(content) => updateSectionContent(subsection.id, content)}
+                                    modules={{
+                                      toolbar: [
+                                        [{ 'header': [2, 3, false] }],
+                                        ['bold', 'italic', 'underline'],
+                                        ['blockquote', 'code-block'],
+                                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                        ['link', 'image', 'video']
+                                      ]
+                                    }}
+                                    formats={[
+                                      'header', 'bold', 'italic', 'underline',
+                                      'list', 'bullet', 'link', 'image', 'video',
+                                      'blockquote', 'code-block'
+                                    ]}
+                                    placeholder={`Write content for "${subsection.title || `Subsection ${subIndex + 1}`}"...`}
+                                    className="stable-section-editor"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ))}
                       
