@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Users, 
   Plus, 
@@ -30,21 +31,23 @@ import Header from '@/components/Header';
 interface Client {
   id: string;
   name: string;
-  email: string;
-  industry: string;
-  company: string;
-  assignedProducts: string[];
-  status: 'active' | 'inactive';
-  createdAt: string;
-  lastAccess: string;
+  profile_id: string;
+  industry?: string;
+  company?: string;
+  status: string;
+  created_at: string;
+  last_access?: string;
+  assignedProducts: Product[];
 }
 
 interface Product {
   id: string;
   name: string;
-  icon: string;
-  color: string;
-  description: string;
+  description?: string;
+  category?: string;
+  icon_url?: string;
+  status: string;
+  created_at: string;
 }
 
 const ClientManagement = () => {
@@ -57,53 +60,9 @@ const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-
-  // Mock data for products
-  const products: Product[] = [
-    { id: 'mobile', name: 'Mobile App', icon: '📱', color: 'from-blue-500 to-blue-600', description: 'iOS and Android app documentation' },
-    { id: 'web', name: 'Web Platform', icon: '💻', color: 'from-purple-500 to-purple-600', description: 'Web application user guides' },
-    { id: 'cloud', name: 'Cloud Services', icon: '☁️', color: 'from-cyan-500 to-cyan-600', description: 'Cloud infrastructure docs' },
-    { id: 'security', name: 'Security Suite', icon: '🛡️', color: 'from-emerald-500 to-emerald-600', description: 'Security protocols and compliance' },
-    { id: 'analytics', name: 'Analytics', icon: '📊', color: 'from-orange-500 to-orange-600', description: 'Data analytics and reporting' },
-    { id: 'api', name: 'API & Integrations', icon: '⚡', color: 'from-violet-500 to-violet-600', description: 'API documentation and integrations' }
-  ];
-
-  // Mock data for clients
-  const [clients, setClients] = useState<Client[]>([
-    {
-      id: '1',
-      name: 'John Smith',
-      email: 'john@techcorp.com',
-      industry: 'Technology',
-      company: 'TechCorp Inc.',
-      assignedProducts: ['mobile', 'web', 'api'],
-      status: 'active',
-      createdAt: '2024-01-15',
-      lastAccess: '2024-01-20'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah@healthplus.com',
-      industry: 'Healthcare',
-      company: 'HealthPlus Solutions',
-      assignedProducts: ['security', 'cloud'],
-      status: 'active',
-      createdAt: '2024-01-18',
-      lastAccess: '2024-01-19'
-    },
-    {
-      id: '3',
-      name: 'Mike Chen',
-      email: 'mike@datalytics.com',
-      industry: 'Finance',
-      company: 'DataLytics Corp',
-      assignedProducts: ['analytics', 'api'],
-      status: 'inactive',
-      createdAt: '2024-01-10',
-      lastAccess: '2024-01-12'
-    }
-  ]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [newClient, setNewClient] = useState({
     name: '',
@@ -113,51 +72,202 @@ const ClientManagement = () => {
     assignedProducts: [] as string[]
   });
 
-  const handleCreateClient = () => {
-    const client: Client = {
-      id: Date.now().toString(),
-      ...newClient,
-      status: 'active',
-      createdAt: new Date().toISOString().split('T')[0],
-      lastAccess: 'Never'
-    };
+  // Fetch clients and products from database
+  useEffect(() => {
+    fetchClientsAndProducts();
+  }, []);
 
-    setClients([...clients, client]);
-    setNewClient({ name: '', email: '', industry: '', company: '', assignedProducts: [] });
-    setIsCreateDialogOpen(false);
-    
-    toast({
-      title: "Client created successfully!",
-      description: `${client.name} has been added with access to ${client.assignedProducts.length} products.`,
-    });
+  const fetchClientsAndProducts = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch all products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (productsError) throw productsError;
+
+      // Fetch clients with their assigned products
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select(`
+          *,
+          profiles!inner(
+            full_name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (clientsError) throw clientsError;
+
+      // For each client, fetch their assigned products
+      const clientsWithProducts = await Promise.all(
+        clientsData.map(async (client) => {
+          const { data: accessData, error: accessError } = await supabase
+            .from('client_product_access')
+            .select(`
+              products(*)
+            `)
+            .eq('client_id', client.id);
+
+          if (accessError) throw accessError;
+
+          return {
+            id: client.id,
+            name: client.profiles.full_name || client.name,
+            profile_id: client.profile_id,
+            industry: client.industry,
+            company: client.company,
+            status: client.status,
+            created_at: client.created_at,
+            last_access: client.last_access,
+            assignedProducts: accessData.map(item => item.products).filter(Boolean)
+          };
+        })
+      );
+
+      setProducts(productsData || []);
+      setClients(clientsWithProducts);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch clients and products.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAssignProducts = () => {
-    if (selectedClient) {
-      setClients(clients.map(client => 
-        client.id === selectedClient.id 
-          ? { ...client, assignedProducts: selectedClient.assignedProducts }
-          : client
-      ));
-      setIsAssignDialogOpen(false);
-      setSelectedClient(null);
+  const handleCreateClient = async () => {
+    try {
+      // First, create a user account for the client
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newClient.email,
+        password: 'tempPassword123!', // Temporary password - client should change it
+        options: {
+          data: {
+            full_name: newClient.name,
+            role: 'client'
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Create client record
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .insert({
+          profile_id: authData.user?.id,
+          name: newClient.name,
+          industry: newClient.industry,
+          company: newClient.company,
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (clientError) throw clientError;
+
+      // Assign products to client
+      if (newClient.assignedProducts.length > 0) {
+        const accessRecords = newClient.assignedProducts.map(productId => ({
+          client_id: clientData.id,
+          product_id: productId,
+          granted_by: authData.user?.id // Should be current admin user
+        }));
+
+        const { error: accessError } = await supabase
+          .from('client_product_access')
+          .insert(accessRecords);
+
+        if (accessError) throw accessError;
+      }
+
+      // Refresh the clients list
+      await fetchClientsAndProducts();
+
+      setNewClient({ name: '', email: '', industry: '', company: '', assignedProducts: [] });
+      setIsCreateDialogOpen(false);
       
       toast({
-        title: "Product access updated!",
-        description: "Client permissions have been successfully updated.",
+        title: "Client created successfully!",
+        description: `${newClient.name} has been added with access to ${newClient.assignedProducts.length} products.`,
       });
+    } catch (error) {
+      console.error('Error creating client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create client. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAssignProducts = async () => {
+    if (selectedClient) {
+      try {
+        // Remove existing access
+        await supabase
+          .from('client_product_access')
+          .delete()
+          .eq('client_id', selectedClient.id);
+
+        // Add new access
+        if (selectedClient.assignedProducts.length > 0) {
+          const accessRecords = selectedClient.assignedProducts.map(product => ({
+            client_id: selectedClient.id,
+            product_id: product.id,
+            granted_by: selectedClient.profile_id // Should be current admin user
+          }));
+
+          const { error: accessError } = await supabase
+            .from('client_product_access')
+            .insert(accessRecords);
+
+          if (accessError) throw accessError;
+        }
+
+        // Refresh the clients list
+        await fetchClientsAndProducts();
+
+        setIsAssignDialogOpen(false);
+        setSelectedClient(null);
+        
+        toast({
+          title: "Product access updated!",
+          description: "Client permissions have been successfully updated.",
+        });
+      } catch (error) {
+        console.error('Error updating product access:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update product access. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         client.company.toLowerCase().includes(searchQuery.toLowerCase());
+                         (client.company && client.company.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || client.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const getProductById = (id: string) => products.find(p => p.id === id);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -261,43 +371,40 @@ const ClientManagement = () => {
                       </CardHeader>
                       
                       <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm">
-                            <span className="text-muted-foreground w-16">Email:</span>
-                            <span className="text-foreground">{client.email}</span>
-                          </div>
-                          <div className="flex items-center text-sm">
-                            <span className="text-muted-foreground w-16">Industry:</span>
-                            <span className="text-foreground">{client.industry}</span>
-                          </div>
-                        </div>
+                         <div className="space-y-2">
+                           <div className="flex items-center text-sm">
+                             <span className="text-muted-foreground w-16">Industry:</span>
+                             <span className="text-foreground">{client.industry || 'Not specified'}</span>
+                           </div>
+                           <div className="flex items-center text-sm">
+                             <span className="text-muted-foreground w-16">Company:</span>
+                             <span className="text-foreground">{client.company || 'Not specified'}</span>
+                           </div>
+                         </div>
 
-                        {/* Assigned Products */}
-                        <div>
-                          <div className="text-sm font-medium text-foreground mb-2">
-                            Access to {client.assignedProducts.length} products:
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {client.assignedProducts.slice(0, 3).map((productId) => {
-                              const product = getProductById(productId);
-                              return product ? (
-                                <Badge key={productId} variant="outline" className="text-xs">
-                                  {product.icon} {product.name}
-                                </Badge>
-                              ) : null;
-                            })}
-                            {client.assignedProducts.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{client.assignedProducts.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+                         {/* Assigned Products */}
+                         <div>
+                           <div className="text-sm font-medium text-foreground mb-2">
+                             Access to {client.assignedProducts.length} products:
+                           </div>
+                           <div className="flex flex-wrap gap-2">
+                             {client.assignedProducts.slice(0, 3).map((product) => (
+                               <Badge key={product.id} variant="outline" className="text-xs">
+                                 {product.name}
+                               </Badge>
+                             ))}
+                             {client.assignedProducts.length > 3 && (
+                               <Badge variant="outline" className="text-xs">
+                                 +{client.assignedProducts.length - 3} more
+                               </Badge>
+                             )}
+                           </div>
+                         </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                          <div className="text-xs text-muted-foreground">
-                            Last access: {client.lastAccess}
-                          </div>
+                         <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                           <div className="text-xs text-muted-foreground">
+                             Last access: {client.last_access ? new Date(client.last_access).toLocaleDateString() : 'Never'}
+                           </div>
                           <div className="flex items-center space-x-2">
                             <Button
                               variant="ghost"
@@ -461,15 +568,15 @@ const ClientManagement = () => {
                         }
                       }}
                     />
-                    <div className="flex items-center space-x-2 flex-1">
-                      <div className={`p-1 rounded bg-gradient-to-br ${product.color} text-white text-sm`}>
-                        {product.icon}
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">{product.name}</div>
-                        <div className="text-xs text-muted-foreground">{product.description}</div>
-                      </div>
-                    </div>
+                     <div className="flex items-center space-x-2 flex-1">
+                       <div className="p-1 rounded bg-primary text-white text-sm w-8 h-8 flex items-center justify-center">
+                         {product.name.charAt(0)}
+                       </div>
+                       <div>
+                         <div className="font-medium text-sm">{product.name}</div>
+                         <div className="text-xs text-muted-foreground">{product.description}</div>
+                       </div>
+                     </div>
                   </div>
                 ))}
               </div>
@@ -521,25 +628,25 @@ const ClientManagement = () => {
                     <div key={product.id} className="flex items-center space-x-3">
                       <Checkbox
                         id={`assign-${product.id}`}
-                        checked={selectedClient.assignedProducts.includes(product.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedClient({
-                              ...selectedClient,
-                              assignedProducts: [...selectedClient.assignedProducts, product.id]
-                            });
-                          } else {
-                            setSelectedClient({
-                              ...selectedClient,
-                              assignedProducts: selectedClient.assignedProducts.filter(id => id !== product.id)
-                            });
-                          }
+                         checked={selectedClient.assignedProducts.some(p => p.id === product.id)}
+                         onCheckedChange={(checked) => {
+                           if (checked) {
+                             setSelectedClient({
+                               ...selectedClient,
+                               assignedProducts: [...selectedClient.assignedProducts, product]
+                             });
+                           } else {
+                             setSelectedClient({
+                               ...selectedClient,
+                               assignedProducts: selectedClient.assignedProducts.filter(p => p.id !== product.id)
+                             });
+                           }
                         }}
                       />
-                      <div className="flex items-center space-x-2 flex-1">
-                        <div className={`p-1 rounded bg-gradient-to-br ${product.color} text-white text-sm`}>
-                          {product.icon}
-                        </div>
+                       <div className="flex items-center space-x-2 flex-1">
+                         <div className="p-1 rounded bg-primary text-white text-sm w-8 h-8 flex items-center justify-center">
+                           {product.name.charAt(0)}
+                         </div>
                         <div>
                           <div className="font-medium text-sm">{product.name}</div>
                           <div className="text-xs text-muted-foreground">{product.description}</div>
