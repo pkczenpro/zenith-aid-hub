@@ -52,8 +52,43 @@ const ClientDashboard = () => {
   const [activeTab, setActiveTab] = useState<'docs' | 'support'>('docs');
 
   useEffect(() => {
+    if (user) {
+      // Check user role and redirect accordingly
+      checkUserRoleAndRedirect();
+    }
+  }, [user]);
+
+  const checkUserRoleAndRedirect = async () => {
+    if (!user) return;
+
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role, id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileData?.role === 'client') {
+        // Check if client record exists
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('profile_id', profileData.id)
+          .maybeSingle();
+
+        if (clientData) {
+          // Redirect to client dashboard
+          navigate('/dashboard');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error);
+    }
+  };
+
+  useEffect(() => {
     fetchClientData();
-  }, [clientId, user]);
+  }, [user]);
 
   const fetchClientData = async () => {
     try {
@@ -64,12 +99,36 @@ const ClientDashboard = () => {
         return;
       }
 
-      // Get client data - check if user has client access
+      console.log('Current user:', user.id);
+
+      // First get the user's profile to find their client record
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !userProfile) {
+        console.error('Profile error:', profileError);
+        toast({
+          title: "Profile Error",
+          description: "Could not find user profile.",
+          variant: "destructive",
+        });
+        navigate('/auth');
+        return;
+      }
+
+      console.log('User profile:', userProfile);
+
+      // Get client data using the profile_id
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('*, profiles!inner(full_name, email)')
-        .eq('profile_id', user.id)
+        .eq('profile_id', userProfile.id)
         .maybeSingle();
+
+      console.log('Client data:', clientData);
 
       if (clientError) {
         console.error('Client error:', clientError);
@@ -77,35 +136,24 @@ const ClientDashboard = () => {
 
       if (!clientData) {
         // Check if user is admin and redirect to main dashboard
-        const { data: profileData } = await supabase
+        const { data: profileRoleData } = await supabase
           .from('profiles')
           .select('role')
           .eq('user_id', user.id)
           .single();
 
-        if (profileData?.role === 'admin') {
+        if (profileRoleData?.role === 'admin') {
           navigate('/');
           return;
         }
 
         toast({
-          title: "Access Denied",
-          description: "You don't have access to this client dashboard.",
+          title: "Access Denied", 
+          description: "You don't have access to any client dashboard.",
           variant: "destructive",
         });
-        navigate('/');
+        navigate('/auth');
         return;
-      }
-
-      // Get the profile ID for this user
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profileError || !profileData) {
-        throw new Error('User profile not found');
       }
 
       setClient({
@@ -113,8 +161,10 @@ const ClientDashboard = () => {
         name: clientData.profiles.full_name || clientData.name,
         company: clientData.company,
         industry: clientData.industry,
-        profile_id: profileData.id
+        profile_id: userProfile.id
       });
+
+      console.log('Looking for products for client_id:', clientData.id);
 
       // Get client's accessible products with article counts
       const { data: accessData, error: accessError } = await supabase
@@ -133,11 +183,24 @@ const ClientDashboard = () => {
         `)
         .eq('client_id', clientData.id);
 
-      if (accessError) throw accessError;
+      console.log('Access data:', accessData);
+
+      if (accessError) {
+        console.error('Access error:', accessError);
+        throw accessError;
+      }
+
+      if (!accessData || accessData.length === 0) {
+        console.log('No product access found for this client');
+        setAccessibleProducts([]);
+        return;
+      }
 
       // Get article counts for each product (only published articles)
       const productsWithCounts = await Promise.all(
         accessData.map(async (item) => {
+          console.log('Processing product:', item.products);
+          
           const { count, error: countError } = await supabase
             .from('articles')
             .select('*', { count: 'exact', head: true })
@@ -145,6 +208,8 @@ const ClientDashboard = () => {
             .eq('status', 'published');
 
           if (countError) console.error('Count error:', countError);
+
+          console.log(`Product ${item.products.name} has ${count} published articles`);
 
           return {
             id: item.products.id,
@@ -159,6 +224,7 @@ const ClientDashboard = () => {
         })
       );
 
+      console.log('Products with counts:', productsWithCounts);
       setAccessibleProducts(productsWithCounts);
     } catch (error) {
       console.error('Error fetching client data:', error);

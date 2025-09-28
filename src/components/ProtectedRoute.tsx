@@ -19,7 +19,12 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
       }
 
       if (requireAdmin && profile?.role !== 'admin') {
-        navigate('/');
+        // If user is client, redirect to client dashboard
+        if (profile?.role === 'client') {
+          navigate('/dashboard');
+        } else {
+          navigate('/');
+        }
         return;
       }
     }
