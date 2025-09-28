@@ -155,95 +155,19 @@ const ClientManagement = () => {
         return;
       }
 
-      // Get current user and their profile to use as granted_by
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) {
-        throw new Error('You must be logged in to create clients');
-      }
-
-      // Get current admin's profile ID
-      const { data: adminProfile, error: adminProfileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', currentUser.id)
-        .single();
-
-      if (adminProfileError || !adminProfile) {
-        throw new Error('Admin profile not found');
-      }
-
-      // First, create a user account for the client
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newClient.email,
-        password: newClient.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: newClient.name,
-            role: 'client'
-          }
+      // Use edge function to create client with auto-verified email
+      const { data, error } = await supabase.functions.invoke('create-client', {
+        body: {
+          email: newClient.email,
+          password: newClient.password,
+          full_name: newClient.name,
+          company: newClient.company,
+          industry: newClient.industry,
+          assignedProducts: newClient.assignedProducts
         }
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('Failed to create user account');
-      }
-
-      // Wait for profile to be created by trigger and fetch it
-      let profile = null;
-      let attempts = 0;
-      const maxAttempts = 10;
-      
-      while (!profile && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', authData.user.id)
-          .maybeSingle();
-          
-        if (profileData) {
-          profile = profileData;
-        }
-        attempts++;
-      }
-
-      if (!profile) {
-        throw new Error('Profile creation failed. Please try again.');
-      }
-
-      // Create client record using the profile ID
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .insert({
-          profile_id: profile.id, // Use profile.id, not user.id
-          name: newClient.name,
-          industry: newClient.industry || null,
-          company: newClient.company || null,
-          status: 'active'
-        })
-        .select()
-        .single();
-
-      if (clientError) throw clientError;
-
-      // Assign products to client
-      if (newClient.assignedProducts.length > 0) {
-        const accessRecords = newClient.assignedProducts.map(productId => ({
-          client_id: clientData.id,
-          product_id: productId,
-          granted_by: adminProfile.id // Use admin's profile.id, not user.id
-        }));
-
-        const { error: accessError } = await supabase
-          .from('client_product_access')
-          .insert(accessRecords);
-
-        if (accessError) throw accessError;
-      }
+      if (error) throw error;
 
       // Refresh the clients list
       await fetchClientsAndProducts();

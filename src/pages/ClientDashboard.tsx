@@ -64,15 +64,30 @@ const ClientDashboard = () => {
         return;
       }
 
-      // Get client data
+      // Get client data - check if user has client access
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('*, profiles!inner(full_name, email)')
         .eq('profile_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (clientError) {
         console.error('Client error:', clientError);
+      }
+
+      if (!clientData) {
+        // Check if user is admin and redirect to main dashboard
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileData?.role === 'admin') {
+          navigate('/');
+          return;
+        }
+
         toast({
           title: "Access Denied",
           description: "You don't have access to this client dashboard.",
@@ -82,12 +97,23 @@ const ClientDashboard = () => {
         return;
       }
 
+      // Get the profile ID for this user
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profileData) {
+        throw new Error('User profile not found');
+      }
+
       setClient({
         id: clientData.id,
         name: clientData.profiles.full_name || clientData.name,
         company: clientData.company,
         industry: clientData.industry,
-        profile_id: clientData.profile_id
+        profile_id: profileData.id
       });
 
       // Get client's accessible products with article counts
