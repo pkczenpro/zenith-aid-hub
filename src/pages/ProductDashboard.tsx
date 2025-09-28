@@ -60,6 +60,19 @@ const ProductDashboard = () => {
   const fetchProductData = async () => {
     try {
       setLoading(true);
+      
+      console.log('ProductDashboard - productId from useParams:', productId);
+      
+      if (!productId) {
+        console.error('ProductDashboard - No productId found');
+        toast({
+          title: "Error",
+          description: "Product ID is missing",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
 
       // First check if user has access to this product (for non-admins)
       if (!isAdmin && user && profile) {

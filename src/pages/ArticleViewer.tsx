@@ -49,6 +49,20 @@ const ArticleViewer = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      console.log('ArticleViewer - productId from useParams:', productId);
+      console.log('ArticleViewer - articleId from useParams:', articleId);
+      
+      if (!productId || !articleId) {
+        console.error('ArticleViewer - Missing parameters:', { productId, articleId });
+        toast({
+          title: "Error",
+          description: "Required parameters are missing",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
 
       // Check access for non-admin users
       if (!isAdmin && user && profile) {
@@ -301,62 +315,28 @@ const ArticleViewer = () => {
 
             <Separator className="my-4" />
 
-            {/* Dynamic Navigation with Sections and Subsections */}
+            {/* Dynamic Articles Navigation */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-foreground mb-2">Documentation</h4>
+              <h4 className="text-sm font-medium text-foreground mb-2">Articles</h4>
               <div className="space-y-1">
-                {allArticles.map((art) => {
-                  const content = art.content || [];
-                  const sections = content.filter((section: any) => 
-                    section.type === 'heading' && section.level <= 2
-                  );
-                  
-                  return (
-                    <div key={art.id} className="space-y-1">
-                      {/* Article Title as Main Section */}
-                      <Link
-                        to={`/docs/${productId}/${art.id}`}
-                        className={`block px-3 py-2 text-sm rounded-md transition-colors font-medium ${
-                          art.id === articleId
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-foreground hover:text-foreground hover:bg-accent'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="truncate">{art.title}</span>
-                          <Badge variant="outline" className="ml-2 text-xs">
-                            {art.status}
-                          </Badge>
-                        </div>
-                      </Link>
-                      
-                      {/* Section and Subsection Navigation */}
-                      {sections.length > 0 && (
-                        <div className="ml-4 space-y-1">
-                          {sections.map((section: any, index: number) => (
-                            <Link
-                              key={`${art.id}-section-${index}`}
-                              to={`/docs/${productId}/${art.id}#section-${index + 1}`}
-                              className={`block px-3 py-1 text-xs rounded transition-colors ${
-                                section.level === 1 
-                                  ? 'text-muted-foreground hover:text-foreground hover:bg-accent/50' 
-                                  : 'text-muted-foreground/80 hover:text-foreground hover:bg-accent/30 ml-4'
-                              }`}
-                              style={{ 
-                                marginLeft: section.level > 1 ? `${section.level * 8}px` : '0px',
-                                fontSize: section.level === 1 ? '0.75rem' : '0.7rem'
-                              }}
-                            >
-                              <span className="truncate block">
-                                {section.content || `Section ${index + 1}`}
-                              </span>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
+                {allArticles.map((art) => (
+                  <Link
+                    key={art.id}
+                    to={`/docs/${productId}/${art.id}`}
+                    className={`block px-3 py-2 text-sm rounded-md transition-colors ${
+                      art.id === articleId
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="truncate">{art.title}</span>
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {art.status}
+                      </Badge>
                     </div>
-                  );
-                })}
+                  </Link>
+                ))}
                 {allArticles.length === 0 && (
                   <p className="text-sm text-muted-foreground px-3 py-2">
                     No published articles yet
