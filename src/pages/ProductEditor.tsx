@@ -98,10 +98,16 @@ const ProductEditor = () => {
 
   // Memoized ref callback to prevent infinite loops
   const createQuillRef = useCallback((sectionId: string) => (el: any) => {
-    if (el && !quillRefs[sectionId]) {
-      setQuillRefs(prev => ({ ...prev, [sectionId]: el.getEditor() }));
+    if (el) {
+      setQuillRefs(prev => {
+        // Only update if this section's ref isn't already set
+        if (!prev[sectionId]) {
+          return { ...prev, [sectionId]: el.getEditor() };
+        }
+        return prev;
+      });
     }
-  }, [quillRefs]);
+  }, []); // Empty dependency array to prevent recreation
 
   useEffect(() => {
     fetchProducts();
