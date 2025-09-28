@@ -99,12 +99,12 @@ const ClientDashboard = () => {
         return;
       }
 
-      console.log('Current user:', user.id);
+      console.log('Fetching data for user:', user.id, user.email);
 
       // First get the user's profile to find their client record
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, role, full_name, email')
         .eq('user_id', user.id)
         .single();
 
@@ -119,34 +119,25 @@ const ClientDashboard = () => {
         return;
       }
 
-      console.log('User profile:', userProfile);
+      console.log('User profile found:', userProfile);
+
+      // Check if user is admin first
+      if (userProfile.role === 'admin') {
+        navigate('/');
+        return;
+      }
 
       // Get client data using the profile_id
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
-        .select('*, profiles!inner(full_name, email)')
+        .select('*')
         .eq('profile_id', userProfile.id)
-        .maybeSingle();
+        .single();
 
-      console.log('Client data:', clientData);
+      console.log('Client lookup result:', { clientData, clientError });
 
-      if (clientError) {
+      if (clientError || !clientData) {
         console.error('Client error:', clientError);
-      }
-
-      if (!clientData) {
-        // Check if user is admin and redirect to main dashboard
-        const { data: profileRoleData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-
-        if (profileRoleData?.role === 'admin') {
-          navigate('/');
-          return;
-        }
-
         toast({
           title: "Access Denied", 
           description: "You don't have access to any client dashboard.",
@@ -156,17 +147,17 @@ const ClientDashboard = () => {
         return;
       }
 
+      console.log('Client found:', clientData);
+
       setClient({
         id: clientData.id,
-        name: clientData.profiles.full_name || clientData.name,
+        name: userProfile.full_name || clientData.name || userProfile.email,
         company: clientData.company,
         industry: clientData.industry,
         profile_id: userProfile.id
       });
 
-      console.log('Looking for products for client_id:', clientData.id);
-
-      // Get client's accessible products with article counts
+      // Get client's accessible products
       const { data: accessData, error: accessError } = await supabase
         .from('client_product_access')
         .select(`
@@ -183,7 +174,7 @@ const ClientDashboard = () => {
         `)
         .eq('client_id', clientData.id);
 
-      console.log('Access data:', accessData);
+      console.log('Product access data:', accessData);
 
       if (accessError) {
         console.error('Access error:', accessError);
@@ -199,7 +190,7 @@ const ClientDashboard = () => {
       // Get article counts for each product (only published articles)
       const productsWithCounts = await Promise.all(
         accessData.map(async (item) => {
-          console.log('Processing product:', item.products);
+          console.log('Processing product for articles:', item.products);
           
           const { count, error: countError } = await supabase
             .from('articles')
@@ -207,9 +198,11 @@ const ClientDashboard = () => {
             .eq('product_id', item.products.id)
             .eq('status', 'published');
 
-          if (countError) console.error('Count error:', countError);
+          if (countError) {
+            console.error('Count error for product', item.products.name, ':', countError);
+          }
 
-          console.log(`Product ${item.products.name} has ${count} published articles`);
+          console.log(`Product "${item.products.name}" has ${count || 0} published articles`);
 
           return {
             id: item.products.id,
@@ -224,7 +217,7 @@ const ClientDashboard = () => {
         })
       );
 
-      console.log('Products with counts:', productsWithCounts);
+      console.log('Final products with counts:', productsWithCounts);
       setAccessibleProducts(productsWithCounts);
     } catch (error) {
       console.error('Error fetching client data:', error);

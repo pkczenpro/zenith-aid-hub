@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ProductEditor from "./pages/ProductEditor";
+import ProductDocs from "./pages/ProductDocs";
 import ProductManagement from "./pages/ProductManagement";
 import ArticleViewer from "./pages/ArticleViewer";
 import ClientManagement from "./pages/ClientManagement";
@@ -39,7 +40,7 @@ const App = () => (
             } />
             <Route path="/product/:productId/docs" element={
               <ProtectedRoute>
-                <ProductDashboard />
+                <ProductDocs />
               </ProtectedRoute>
             } />
             <Route path="/docs/:productId/:articleId" element={
