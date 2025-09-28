@@ -260,7 +260,65 @@ const ArticleViewer = () => {
           );
         default:
           // Handle rich text content with embedded videos
-          if (typeof section.content === 'string' && section.content.includes('<')) {            
+          if (typeof section.content === 'string' && section.content.includes('<')) {
+            // Check for video embed containers
+            if (section.content.includes('video-embed-container')) {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(section.content, 'text/html');
+              const videoContainers = doc.querySelectorAll('.video-embed-container');
+              
+              let processedContent = section.content;
+              
+              videoContainers.forEach((container) => {
+                const videoUrl = container.getAttribute('data-video-url');
+                const videoType = container.getAttribute('data-video-type');
+                const videoId = container.getAttribute('data-video-id');
+                
+                if (videoUrl && videoType) {
+                  let playableEmbed = '';
+                  
+                  if (videoType === 'youtube' && videoId) {
+                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                      <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="YouTube Video"></iframe>
+                    </div>`;
+                  } else if (videoType === 'vimeo' && videoId) {
+                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                      <iframe src="https://player.vimeo.com/video/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Vimeo Video"></iframe>
+                    </div>`;
+                  } else if (videoType === 'loom' && videoId) {
+                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                      <iframe src="https://www.loom.com/embed/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Loom Video"></iframe>
+                    </div>`;
+                  } else if (videoType === 'heygen' && videoId) {
+                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                      <iframe src="https://share-prod.heygen.com/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="HeyGen Video"></iframe>
+                    </div>`;
+                  } else if (videoType === 'direct') {
+                    playableEmbed = `<div class="video-player-wrapper" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                      <video controls preload="metadata" style="width: 100%; height: auto; display: block;" crossorigin="anonymous">
+                        <source src="${videoUrl}" type="video/mp4">
+                        <source src="${videoUrl}" type="video/webm">
+                        <source src="${videoUrl}" type="video/ogg">
+                        <p style="padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank" style="color: #0066cc;">Open video in new window</a></p>
+                      </video>
+                    </div>`;
+                  }
+                  
+                  // Replace the thumbnail container with the playable embed
+                  processedContent = processedContent.replace(container.outerHTML, playableEmbed);
+                }
+              });
+              
+              return (
+                <div key={index} className="animate-fade-in mb-6">
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: processedContent }}
+                    className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-player-wrapper]:my-4"
+                  />
+                </div>
+              );
+            }
+            
             return (
               <div key={index} className="animate-fade-in mb-6">
                 <div 

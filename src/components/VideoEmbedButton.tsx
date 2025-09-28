@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 
 interface VideoEmbedButtonProps {
-  onVideoEmbed: (videoUrl: string) => void;
+  onVideoEmbed: (videoHtml: string) => void;
   disabled?: boolean;
 }
 
@@ -43,14 +43,84 @@ const VideoEmbedButton: React.FC<VideoEmbedButtonProps> = ({ onVideoEmbed, disab
       return;
     }
 
-    onVideoEmbed(videoUrl);
-    setVideoUrl('');
-    setIsOpen(false);
+    // Create video embed with thumbnail preview for editor
+    let thumbnailUrl = '';
+    let embedHtml = '';
     
-    toast({
-      title: "Video embedded successfully!",
-      description: "Your video has been added to the content.",
-    });
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+      if (videoId) {
+        thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        embedHtml = `<div class="video-embed-container" data-video-url="${videoUrl}" data-video-type="youtube" data-video-id="${videoId}" style="position: relative; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; background: #000;">
+          <img src="${thumbnailUrl}" alt="Video thumbnail" style="width: 100%; height: auto; display: block;" onerror="this.src='data:image/svg+xml;base64,${btoa(`<svg width="640" height="360" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#1f2937"/><circle cx="320" cy="180" r="40" fill="rgba(255,255,255,0.1)"/><polygon points="305,165 345,180 305,195" fill="white"/><text x="320" y="220" text-anchor="middle" fill="white" font-size="14">YouTube Video</text></svg>`)}'">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; background: rgba(255, 0, 0, 0.8); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
+          </div>
+        </div>`;
+      }
+    } else if (videoUrl.includes('vimeo.com')) {
+      const videoId = videoUrl.match(/vimeo\.com\/(\d+)/)?.[1];
+      if (videoId) {
+        embedHtml = `<div class="video-embed-container" data-video-url="${videoUrl}" data-video-type="vimeo" data-video-id="${videoId}" style="position: relative; aspect-ratio: 16/9; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; background: linear-gradient(135deg, #1ab7ea 0%, #1ab7ea 100%);">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
+            <div style="width: 68px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
+            </div>
+            <div style="font-size: 14px; font-weight: 500;">Vimeo Video</div>
+          </div>
+        </div>`;
+      }
+    } else if (videoUrl.includes('loom.com')) {
+      const videoId = videoUrl.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] || videoUrl.split('/').pop();
+      if (videoId) {
+        embedHtml = `<div class="video-embed-container" data-video-url="${videoUrl}" data-video-type="loom" data-video-id="${videoId}" style="position: relative; aspect-ratio: 16/9; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; background: linear-gradient(135deg, #625df5 0%, #625df5 100%);">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
+            <div style="width: 68px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
+            </div>
+            <div style="font-size: 14px; font-weight: 500;">Loom Video</div>
+          </div>
+        </div>`;
+      }
+    } else if (videoUrl.includes('heygen.com')) {
+      let videoId = '';
+      if (videoUrl.includes('/share/')) {
+        videoId = videoUrl.match(/\/share\/([^/?#]+)/)?.[1];
+      } else if (videoUrl.includes('share-prod.heygen.com')) {
+        videoId = videoUrl.split('/').pop()?.split('?')[0];
+      }
+      
+      if (videoId) {
+        embedHtml = `<div class="video-embed-container" data-video-url="${videoUrl}" data-video-type="heygen" data-video-id="${videoId}" style="position: relative; aspect-ratio: 16/9; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
+            <div style="width: 68px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
+            </div>
+            <div style="font-size: 14px; font-weight: 500;">HeyGen Video</div>
+          </div>
+        </div>`;
+      }
+    } else if (videoUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
+      embedHtml = `<div class="video-embed-container" data-video-url="${videoUrl}" data-video-type="direct" style="position: relative; aspect-ratio: 16/9; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; background: linear-gradient(135deg, #1f2937 0%, #374151 100%);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
+          <div style="width: 68px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="margin-left: 2px;"><polygon points="5,3 19,12 5,21 5,3"></polygon></svg>
+          </div>
+          <div style="font-size: 14px; font-weight: 500;">Video File</div>
+        </div>
+      </div>`;
+    }
+
+    if (embedHtml) {
+      onVideoEmbed(embedHtml);
+      setVideoUrl('');
+      setIsOpen(false);
+      
+      toast({
+        title: "Video embedded successfully!",
+        description: "Your video thumbnail has been added to the content.",
+      });
+    }
   };
 
   const handleCancel = () => {

@@ -229,61 +229,22 @@ const ProductEditor = () => {
     'align', 'script', 'code-block'
   ];
 
-  const handleVideoEmbedInSection = (sectionId: string, videoUrl: string) => {
-    if (!videoUrl) return;
+  const handleVideoEmbedInSection = (sectionId: string, videoHtml: string) => {
+    if (!videoHtml) return;
     
     const quillRef = quillRefs.current[sectionId];
     if (!quillRef) return;
     
     const range = quillRef.getSelection() || quillRef.getLength();
-    let embedCode = '';
+    const insertIndex = typeof range === 'number' ? range : range.index || quillRef.getLength();
     
-    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-      const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
-      if (videoId) {
-        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
-      }
-    } else if (videoUrl.includes('vimeo.com')) {
-      const videoId = videoUrl.match(/vimeo\.com\/(\d+)/)?.[1];
-      if (videoId) {
-        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
-      }
-    } else if (videoUrl.includes('loom.com')) {
-      const videoId = videoUrl.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] || videoUrl.split('/').pop();
-      if (videoId) {
-        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
-      }
-    } else if (videoUrl.includes('heygen.com')) {
-      let videoId = '';
-      if (videoUrl.includes('/share/')) {
-        videoId = videoUrl.match(/\/share\/([^/?#]+)/)?.[1];
-      } else if (videoUrl.includes('share-prod.heygen.com')) {
-        videoId = videoUrl.split('/').pop()?.split('?')[0];
-      }
-      
-      if (videoId) {
-        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://share-prod.heygen.com/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
-      } else {
-        embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="${videoUrl}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
-      }
-    } else if (videoUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
-      // For direct video files, create a video element
-      embedCode = `<div class="video-container" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><video controls preload="metadata" style="width: 100%; height: auto; display: block;" crossorigin="anonymous"><source src="${videoUrl}" type="video/mp4"><source src="${videoUrl}" type="video/webm"><source src="${videoUrl}" type="video/ogg"><p style="padding: 2rem; text-align: center; color: #666;">Your browser doesn't support HTML5 video. <a href="${videoUrl}" target="_blank" style="color: #0066cc;">Open video in new window</a></p></video></div>`;
-    } else {
-      // For any other URL, try embedding as iframe
-      embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="${videoUrl}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
-    }
+    // Insert the video HTML directly into the Quill editor
+    quillRef.clipboard.dangerouslyPasteHTML(insertIndex, videoHtml);
     
-    if (embedCode) {
-      // Insert the video embed directly into the Quill editor
-      const insertIndex = typeof range === 'number' ? range : range.index || quillRef.getLength();
-      quillRef.clipboard.dangerouslyPasteHTML(insertIndex, embedCode);
-      
-      toast({
-        title: "Video embedded successfully!",
-        description: "Your video has been added to the section.",
-      });
-    }
+    toast({
+      title: "Video embedded successfully!",
+      description: "Your video thumbnail has been added to the section.",
+    });
   };
 
   const addSection = (level: number = 0, parentId?: string) => {
@@ -696,7 +657,7 @@ const ProductEditor = () => {
                             {sections.length > 1 && (
                               <>
                                 <VideoEmbedButton 
-                                  onVideoEmbed={(url) => handleVideoEmbedInSection(section.id, url)}
+                                  onVideoEmbed={(videoHtml) => handleVideoEmbedInSection(section.id, videoHtml)}
                                 />
                                 <Button
                                   variant="ghost"
