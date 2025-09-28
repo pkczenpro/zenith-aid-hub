@@ -34,6 +34,9 @@ interface Section {
   id: string;
   title: string;
   content: string;
+  order: number;
+  level: number; // 0 = main section, 1 = subsection, etc.
+  parent_id?: string;
 }
 
 const ProductEditor = () => {
@@ -81,7 +84,13 @@ const ProductEditor = () => {
   const [activeTab, setActiveTab] = useState('editor');
   const [articleTitle, setArticleTitle] = useState('');
   const [sections, setSections] = useState<Section[]>([
-    { id: '1', title: 'Getting Started', content: '' }
+    { 
+      id: '1', 
+      title: 'Getting Started', 
+      content: '',
+      order: 0,
+      level: 0
+    }
   ]);
   const [quillRefs, setQuillRefs] = useState<{ [key: string]: any }>({});
 
@@ -89,18 +98,44 @@ const ProductEditor = () => {
     fetchProducts();
   }, []);
 
+  // Load existing article content on mount
   useEffect(() => {
-    if (currentProduct) {
-      setProductInfo({
-        name: currentProduct.name || "",
-        description: currentProduct.description || "",
-        version: "1.0.0",
-        status: currentProduct.status || "Active"
-      });
-    } else if (!loading) {
-      navigate('/products');
+    if (productId && currentProduct) {
+      loadExistingArticle();
     }
-  }, [currentProduct, loading, navigate]);
+  }, [productId, currentProduct]);
+
+  const loadExistingArticle = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setArticleTitle(data.title || '');
+        if (data.content && Array.isArray(data.content)) {
+          setSections(data.content.map((section: any, index: number) => ({
+            id: section.id || index.toString(),
+            title: section.title || `Section ${index + 1}`,
+            content: section.content || '',
+            order: section.order !== undefined ? section.order : index,
+            level: section.level || 0,
+            parent_id: section.parent_id
+          })));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading article:', error);
+    }
+  };
 
   // Enhanced Quill editor configuration
   const modules = {
@@ -215,11 +250,14 @@ const ProductEditor = () => {
     }
   };
 
-  const addSection = () => {
+  const addSection = (level: number = 0, parentId?: string) => {
     const newSection: Section = {
       id: Date.now().toString(),
-      title: `Section ${sections.length + 1}`,
-      content: ''
+      title: level === 0 ? `Section ${sections.filter(s => s.level === 0).length + 1}` : `Subsection ${sections.length + 1}`,
+      content: '',
+      order: sections.length,
+      level: level,
+      parent_id: parentId
     };
     setSections([...sections, newSection]);
   };
@@ -245,26 +283,66 @@ const ProductEditor = () => {
     }
   };
 
-  const handleSave = () => {
-    const articleData = {
-      title: articleTitle,
-      subtitle: `${currentProduct?.name} documentation`,
-      sections: sections,
-      productId: productId,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0]
-    };
-    
-    // Save to localStorage (in a real app, this would be saved to a database)
-    const savedArticleKey = `article-${productId}-article-1`;
-    localStorage.setItem(savedArticleKey, JSON.stringify(articleData));
-    
-    console.log('Saving article:', articleData);
-    
-    toast({
-      title: "Article saved!",
-      description: `Article "${articleTitle}" has been saved with ${sections.length} sections.`,
-    });
+  const handleSave = async () => {
+    if (!currentProduct || !articleTitle.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide an article title before saving.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const articleData = {
+        product_id: productId,
+        title: articleTitle,
+        content: sections as any, // Cast to satisfy Json type
+        created_by: (await supabase.auth.getUser()).data.user?.id,
+        status: 'published'
+      };
+
+      // Check if article already exists
+      const { data: existingArticle, error: fetchError } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('product_id', productId)
+        .maybeSingle();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
+
+      let result;
+      if (existingArticle) {
+        // Update existing article
+        result = await supabase
+          .from('articles')
+          .update(articleData)
+          .eq('id', existingArticle.id);
+      } else {
+        // Create new article
+        result = await supabase
+          .from('articles')
+          .insert([articleData]);
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      toast({
+        title: "Article published successfully!",
+        description: `"${articleTitle}" has been saved with ${sections.length} sections.`,
+      });
+    } catch (error: any) {
+      console.error('Error saving article:', error);
+      toast({
+        title: "Error saving article",
+        description: error.message || "Failed to save the article. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleViewArticle = () => {
@@ -495,37 +573,62 @@ const ProductEditor = () => {
                         <span className="font-medium text-foreground">Document Sections</span>
                         <span className="text-sm text-muted-foreground">({sections.length})</span>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={addSection}
-                        className="flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/20 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md"
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>New Section</span>
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addSection(0)}
+                          className="flex items-center space-x-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/20 hover:border-primary/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>New Section</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addSection(1)}
+                          className="flex items-center space-x-2 bg-gradient-to-r from-accent/10 to-secondary/10 hover:from-accent/20 hover:to-secondary/20 border-accent/20 hover:border-accent/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Add Subsection</span>
+                        </Button>
+                      </div>
                     </div>
                     
                     {/* Document Sections */}
                     <div className="space-y-6">
                       {sections.map((section, index) => (
-                        <div key={section.id} className="group animate-fade-in bg-white dark:bg-gray-900/50 border border-border/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+                        <div 
+                          key={section.id} 
+                          className={`group animate-fade-in bg-white dark:bg-gray-900/50 border border-border/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 ${
+                            section.level > 0 ? `ml-${section.level * 8} border-l-4 border-l-accent/50` : ''
+                          }`}
+                        >
                           {/* Section Header */}
                           <div className="flex items-center justify-between p-4 border-b border-border/30 bg-gradient-to-r from-muted/30 via-muted/10 to-muted/30 rounded-t-xl">
                             <div className="flex items-center space-x-3 flex-1">
                               <div className="flex items-center space-x-2">
-                                <div className="w-6 h-6 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                  {index + 1}
+                                <div className={`w-6 h-6 ${
+                                  section.level === 0 
+                                    ? 'bg-gradient-to-r from-primary to-accent' 
+                                    : 'bg-gradient-to-r from-accent to-secondary'
+                                } rounded-full flex items-center justify-center text-white text-xs font-bold`}>
+                                  {section.level === 0 ? index + 1 : '•'}
                                 </div>
                                 <div className="cursor-grab hover:cursor-grabbing text-muted-foreground/50 hover:text-muted-foreground transition-colors">
                                   <GripVertical className="h-4 w-4" />
                                 </div>
+                                {section.level > 0 && (
+                                  <span className="text-xs text-accent font-medium px-2 py-1 bg-accent/10 rounded-full">
+                                    Subsection
+                                  </span>
+                                )}
                               </div>
                               <Input
                                 value={section.title}
                                 onChange={(e) => updateSectionTitle(section.id, e.target.value)}
                                 className="font-semibold text-lg border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0"
-                                placeholder={`Section ${index + 1} title...`}
+                                placeholder={section.level === 0 ? `Section ${index + 1} title...` : `Subsection title...`}
                               />
                             </div>
                             {sections.length > 1 && (
@@ -671,7 +774,7 @@ const ProductEditor = () => {
                           </div>
                           
                           <Button
-                            onClick={addSection}
+                            onClick={() => addSection(0)}
                             className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
                           >
                             <Plus className="h-4 w-4 mr-2" />
@@ -746,7 +849,7 @@ const ProductEditor = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={addSection}
+                        onClick={() => addSection(0)}
                         className="text-primary hover:text-primary hover:bg-primary/10"
                       >
                         <Plus className="h-4 w-4 mr-1" />
