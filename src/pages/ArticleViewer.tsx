@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Search, ChevronRight, BookOpen, Home, FileText, Settings, Edit3, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -61,7 +62,20 @@ const ArticleViewer = () => {
           description: "Required parameters are missing",
           variant: "destructive",
         });
-        navigate('/');
+        navigate('/dashboard');
+        return;
+      }
+
+      // Validate UUID format for articleId
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(articleId)) {
+        console.error('ArticleViewer - Invalid article ID format:', articleId);
+        toast({
+          title: "Invalid Article",
+          description: "The article ID format is invalid.",
+          variant: "destructive",
+        });
+        navigate(`/product/${productId}/docs`);
         return;
       }
 
@@ -71,7 +85,7 @@ const ArticleViewer = () => {
           .from('clients')
           .select('id')
           .eq('profile_id', profile.id)
-          .single();
+          .maybeSingle();
 
         if (clientData) {
           const { data: accessData } = await supabase
@@ -86,7 +100,7 @@ const ArticleViewer = () => {
               description: "You don't have access to this product.",
               variant: "destructive",
             });
-            navigate('/');
+            navigate('/dashboard');
             return;
           }
         }
@@ -97,7 +111,7 @@ const ArticleViewer = () => {
         .from('products')
         .select('*')
         .eq('id', productId)
-        .single();
+        .maybeSingle();
 
       if (productError) {
         console.error('Error fetching product:', productError);
@@ -106,6 +120,17 @@ const ArticleViewer = () => {
           description: "Failed to load product information",
           variant: "destructive",
         });
+        navigate('/dashboard');
+        return;
+      }
+
+      if (!productData) {
+        toast({
+          title: "Product Not Found",
+          description: "The requested product could not be found.",
+          variant: "destructive",
+        });
+        navigate('/dashboard');
         return;
       }
 
@@ -135,11 +160,27 @@ const ArticleViewer = () => {
         .select('*')
         .eq('id', articleId)
         .eq('product_id', productId)
-        .single();
+        .eq('status', 'published')
+        .maybeSingle();
 
       if (articleError) {
         console.error('Error fetching article:', articleError);
-        setArticle(null);
+        toast({
+          title: "Error",
+          description: "Failed to load article",
+          variant: "destructive",
+        });
+        navigate(`/product/${productId}/docs`);
+        return;
+      }
+
+      if (!articleData) {
+        toast({
+          title: "Article Not Found",
+          description: "The requested article could not be found.",
+          variant: "destructive",
+        });
+        navigate(`/product/${productId}/docs`);
         return;
       }
 
@@ -167,6 +208,7 @@ const ArticleViewer = () => {
         description: "Failed to load article",
         variant: "destructive",
       });
+      navigate('/dashboard');
     } finally {
       setLoading(false);
     }
@@ -475,13 +517,13 @@ const ArticleViewer = () => {
         <aside className="w-64 border-r border-border bg-background/50 h-[calc(100vh-3.5rem)] overflow-y-auto sticky top-14">
           <div className="p-6">
             <div className="mb-6">
-              <Link 
-                to={`/docs/${productId}`}
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              <button 
+                onClick={() => navigate(`/product/${productId}/docs`)}
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors w-full text-left"
               >
                 <Home className="h-4 w-4" />
                 <span>Overview</span>
-              </Link>
+              </button>
             </div>
 
             <Separator className="my-4" />
@@ -491,10 +533,10 @@ const ArticleViewer = () => {
               <h4 className="text-sm font-medium text-foreground mb-2">Articles</h4>
               <div className="space-y-1">
                 {allArticles.map((art) => (
-                  <Link
+                  <button
                     key={art.id}
-                    to={`/docs/${productId}/${art.id}`}
-                    className={`block px-3 py-2 text-sm rounded-md transition-colors ${
+                    onClick={() => navigate(`/docs/${productId}/${art.id}`)}
+                    className={`block px-3 py-2 text-sm rounded-md transition-colors w-full text-left ${
                       art.id === articleId
                         ? 'bg-primary/10 text-primary font-medium'
                         : 'text-muted-foreground hover:text-foreground hover:bg-accent'
@@ -502,11 +544,8 @@ const ArticleViewer = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span className="truncate">{art.title}</span>
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {art.status}
-                      </Badge>
                     </div>
-                  </Link>
+                  </button>
                 ))}
                 {allArticles.length === 0 && (
                   <p className="text-sm text-muted-foreground px-3 py-2">
@@ -522,19 +561,31 @@ const ArticleViewer = () => {
         <main className="flex-1 min-w-0">
           <div className="max-w-4xl mx-auto px-6 py-8">
             {/* Breadcrumb */}
-            <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-              <Link to="/" className="hover:text-foreground transition-colors">
-                Home
-              </Link>
-              <ChevronRight className="h-4 w-4" />
-              <Link to={`/docs/${productId}`} className="hover:text-foreground transition-colors">
-                {product?.name}
-              </Link>
-              <ChevronRight className="h-4 w-4" />
-              <span className="text-primary font-medium">
-                {article?.title || 'Article Not Found'}
-              </span>
-            </nav>
+            <Breadcrumb className="mb-6">
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink onClick={() => navigate('/dashboard')} className="cursor-pointer hover:text-primary">
+                    <Home className="h-4 w-4" />
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="h-4 w-4" />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <BreadcrumbLink onClick={() => navigate(`/product/${productId}/docs`)} className="cursor-pointer hover:text-primary">
+                    {product?.name}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="h-4 w-4" />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-foreground font-medium">
+                    {article?.title || 'Article Not Found'}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
 
             {/* Article Header */}
             <div className="mb-8">
@@ -597,9 +648,9 @@ const ArticleViewer = () => {
                           const prevArticle = currentIndex > 0 ? allArticles[currentIndex - 1] : null;
                           
                           return prevArticle ? (
-                            <Link
-                              to={`/docs/${productId}/${prevArticle.id}`}
-                              className="group flex items-center space-x-3 p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 transition-all duration-200 max-w-sm"
+                            <button
+                              onClick={() => navigate(`/docs/${productId}/${prevArticle.id}`)}
+                              className="group flex items-center space-x-3 p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 transition-all duration-200 max-w-sm w-full text-left"
                             >
                               <ArrowLeft className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                               <div className="text-left">
@@ -608,7 +659,7 @@ const ArticleViewer = () => {
                                   {prevArticle.title}
                                 </p>
                               </div>
-                            </Link>
+                            </button>
                           ) : (
                             <div className="max-w-sm" /> // Empty space for alignment
                           );
@@ -622,9 +673,9 @@ const ArticleViewer = () => {
                           const nextArticle = currentIndex < allArticles.length - 1 ? allArticles[currentIndex + 1] : null;
                           
                           return nextArticle ? (
-                            <Link
-                              to={`/docs/${productId}/${nextArticle.id}`}
-                              className="group flex items-center space-x-3 p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 transition-all duration-200 max-w-sm text-right"
+                            <button
+                              onClick={() => navigate(`/docs/${productId}/${nextArticle.id}`)}
+                              className="group flex items-center space-x-3 p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-accent/50 transition-all duration-200 max-w-sm w-full text-right"
                             >
                               <div className="text-right">
                                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Next</p>
@@ -633,7 +684,7 @@ const ArticleViewer = () => {
                                 </p>
                               </div>
                               <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </Link>
+                            </button>
                           ) : (
                             <div className="max-w-sm" /> // Empty space for alignment
                           );
