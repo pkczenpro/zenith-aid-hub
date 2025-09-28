@@ -67,6 +67,7 @@ const ClientManagement = () => {
   const [newClient, setNewClient] = useState({
     name: '',
     email: '',
+    password: '',
     industry: '',
     company: '',
     assignedProducts: [] as string[]
@@ -145,11 +146,27 @@ const ClientManagement = () => {
 
   const handleCreateClient = async () => {
     try {
+      if (!newClient.password) {
+        toast({
+          title: "Error",
+          description: "Password is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get current user to use as granted_by
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        throw new Error('You must be logged in to create clients');
+      }
+
       // First, create a user account for the client
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newClient.email,
-        password: 'tempPassword123!', // Temporary password - client should change it
+        password: newClient.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: newClient.name,
             role: 'client'
@@ -159,14 +176,21 @@ const ClientManagement = () => {
 
       if (authError) throw authError;
 
+      if (!authData.user) {
+        throw new Error('Failed to create user account');
+      }
+
+      // Wait a bit for the profile to be created by the trigger
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Create client record
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .insert({
-          profile_id: authData.user?.id,
+          profile_id: authData.user.id,
           name: newClient.name,
-          industry: newClient.industry,
-          company: newClient.company,
+          industry: newClient.industry || null,
+          company: newClient.company || null,
           status: 'active'
         })
         .select()
@@ -179,7 +203,7 @@ const ClientManagement = () => {
         const accessRecords = newClient.assignedProducts.map(productId => ({
           client_id: clientData.id,
           product_id: productId,
-          granted_by: authData.user?.id // Should be current admin user
+          granted_by: currentUser.id // Use current admin user ID
         }));
 
         const { error: accessError } = await supabase
@@ -192,7 +216,7 @@ const ClientManagement = () => {
       // Refresh the clients list
       await fetchClientsAndProducts();
 
-      setNewClient({ name: '', email: '', industry: '', company: '', assignedProducts: [] });
+      setNewClient({ name: '', email: '', password: '', industry: '', company: '', assignedProducts: [] });
       setIsCreateDialogOpen(false);
       
       toast({
@@ -203,7 +227,7 @@ const ClientManagement = () => {
       console.error('Error creating client:', error);
       toast({
         title: "Error",
-        description: "Failed to create client. Please try again.",
+        description: error.message || "Failed to create client. Please try again.",
         variant: "destructive",
       });
     }
@@ -514,6 +538,17 @@ const ClientManagement = () => {
                   placeholder="john@company.com"
                 />
               </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={newClient.password}
+                onChange={(e) => setNewClient({ ...newClient, password: e.target.value })}
+                placeholder="Enter secure password"
+              />
             </div>
             
             <div className="grid grid-cols-2 gap-4">

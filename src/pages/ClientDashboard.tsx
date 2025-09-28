@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Search, 
   BookOpen, 
@@ -12,112 +15,166 @@ import {
   Building2, 
   FileText, 
   ExternalLink,
-  Shield
+  Shield,
+  LogOut
 } from 'lucide-react';
 
 interface Client {
   id: string;
   name: string;
-  email: string;
-  industry: string;
-  company: string;
-  assignedProducts: string[];
+  company?: string;
+  industry?: string;
+  profile_id: string;
 }
 
 interface Product {
   id: string;
   name: string;
-  icon: string;
-  color: string;
-  description: string;
+  description?: string;
+  category?: string;
+  icon_url?: string;
+  status: string;
   articles: number;
   lastUpdated: string;
 }
 
 const ClientDashboard = () => {
-  const { clientId, productId } = useParams();
+  const { clientId } = useParams();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const [client, setClient] = useState<Client | null>(null);
+  const [accessibleProducts, setAccessibleProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock client data (in real app, this would be fetched from Supabase)
-  const client: Client = {
-    id: clientId || '1',
-    name: 'John Smith',
-    email: 'john@techcorp.com',
-    industry: 'Technology',
-    company: 'TechCorp Inc.',
-    assignedProducts: ['mobile', 'web', 'api']
+  useEffect(() => {
+    fetchClientData();
+  }, [clientId, user]);
+
+  const fetchClientData = async () => {
+    try {
+      setLoading(true);
+
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      // Get client data
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('*, profiles!inner(full_name, email)')
+        .eq('profile_id', user.id)
+        .single();
+
+      if (clientError) {
+        console.error('Client error:', clientError);
+        toast({
+          title: "Access Denied",
+          description: "You don't have access to this client dashboard.",
+          variant: "destructive",
+        });
+        navigate('/');
+        return;
+      }
+
+      setClient({
+        id: clientData.id,
+        name: clientData.profiles.full_name || clientData.name,
+        company: clientData.company,
+        industry: clientData.industry,
+        profile_id: clientData.profile_id
+      });
+
+      // Get client's accessible products with article counts
+      const { data: accessData, error: accessError } = await supabase
+        .from('client_product_access')
+        .select(`
+          products!inner(
+            id,
+            name,
+            description,
+            category,
+            icon_url,
+            status,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('client_id', clientData.id);
+
+      if (accessError) throw accessError;
+
+      // Get article counts for each product (only published articles)
+      const productsWithCounts = await Promise.all(
+        accessData.map(async (item) => {
+          const { count, error: countError } = await supabase
+            .from('articles')
+            .select('*', { count: 'exact', head: true })
+            .eq('product_id', item.products.id)
+            .eq('status', 'published');
+
+          if (countError) console.error('Count error:', countError);
+
+          return {
+            id: item.products.id,
+            name: item.products.name,
+            description: item.products.description,
+            category: item.products.category,
+            icon_url: item.products.icon_url,
+            status: item.products.status,
+            articles: count || 0,
+            lastUpdated: new Date(item.products.updated_at).toLocaleDateString()
+          };
+        })
+      );
+
+      setAccessibleProducts(productsWithCounts);
+    } catch (error) {
+      console.error('Error fetching client data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // All products with access status
-  const allProducts: Product[] = [
-    { 
-      id: 'mobile', 
-      name: 'Mobile App', 
-      icon: '📱', 
-      color: 'from-blue-500 to-blue-600', 
-      description: 'iOS and Android app documentation',
-      articles: 24,
-      lastUpdated: '2024-01-20'
-    },
-    { 
-      id: 'web', 
-      name: 'Web Platform', 
-      icon: '💻', 
-      color: 'from-purple-500 to-purple-600', 
-      description: 'Web application user guides',
-      articles: 18,
-      lastUpdated: '2024-01-19'
-    },
-    { 
-      id: 'cloud', 
-      name: 'Cloud Services', 
-      icon: '☁️', 
-      color: 'from-cyan-500 to-cyan-600', 
-      description: 'Cloud infrastructure docs',
-      articles: 32,
-      lastUpdated: '2024-01-18'
-    },
-    { 
-      id: 'security', 
-      name: 'Security Suite', 
-      icon: '🛡️', 
-      color: 'from-emerald-500 to-emerald-600', 
-      description: 'Security protocols and compliance',
-      articles: 15,
-      lastUpdated: '2024-01-17'
-    },
-    { 
-      id: 'analytics', 
-      name: 'Analytics', 
-      icon: '📊', 
-      color: 'from-orange-500 to-orange-600', 
-      description: 'Data analytics and reporting',
-      articles: 28,
-      lastUpdated: '2024-01-16'
-    },
-    { 
-      id: 'api', 
-      name: 'API & Integrations', 
-      icon: '⚡', 
-      color: 'from-violet-500 to-violet-600', 
-      description: 'API documentation and integrations',
-      articles: 22,
-      lastUpdated: '2024-01-15'
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
-  ];
-
-  const accessibleProducts = allProducts.filter(product => 
-    client.assignedProducts.includes(product.id)
-  );
-
-  const restrictedProducts = allProducts.filter(product => 
-    !client.assignedProducts.includes(product.id)
-  );
+  };
 
   const filteredAccessibleProducts = accessibleProducts.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!client) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">You don't have access to this dashboard.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -151,10 +208,15 @@ const ClientDashboard = () => {
               <User className="h-4 w-4" />
               <span>{client.name}</span>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Building2 className="h-4 w-4" />
-              <span>{client.company}</span>
-            </div>
+            {client.company && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Building2 className="h-4 w-4" />
+                <span>{client.company}</span>
+              </div>
+            )}
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
@@ -168,17 +230,19 @@ const ClientDashboard = () => {
                 Welcome back, {client.name.split(' ')[0]}! 👋
               </h1>
               <p className="text-muted-foreground mb-4">
-                Access your assigned documentation and resources for {client.company}
+                Access your assigned documentation and resources{client.company ? ` for ${client.company}` : ''}
               </p>
               <div className="flex items-center space-x-6 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                    {client.industry}
-                  </Badge>
-                </div>
+                {client.industry && (
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                      {client.industry}
+                    </Badge>
+                  </div>
+                )}
                 <div className="flex items-center space-x-2 text-muted-foreground">
                   <Shield className="h-4 w-4" />
-                  <span>Access to {client.assignedProducts.length} products</span>
+                  <span>Access to {accessibleProducts.length} products</span>
                 </div>
                 <div className="flex items-center space-x-2 text-muted-foreground">
                   <Clock className="h-4 w-4" />
@@ -200,100 +264,36 @@ const ClientDashboard = () => {
               </Badge>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAccessibleProducts.map((product) => (
-                <Card key={product.id} className="shadow-card border-0 bg-gradient-card hover:shadow-lg transition-all duration-300 group">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-3 rounded-lg bg-gradient-to-br ${product.color} text-white text-xl`}>
-                          {product.icon}
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">{product.name}</CardTitle>
-                          <p className="text-sm text-muted-foreground">{product.description}</p>
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                        <Shield className="h-3 w-3 mr-1" />
-                        Access
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-2 text-muted-foreground">
-                        <FileText className="h-4 w-4" />
-                        <span>{product.articles} articles</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>Updated {product.lastUpdated}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        asChild 
-                        className="flex-1 bg-gradient-button text-white border-0 group-hover:shadow-md transition-all duration-200"
-                      >
-                        <Link to={`/docs/${product.id}/article-1`}>
-                          <BookOpen className="h-4 w-4 mr-2" />
-                          View Documentation
-                        </Link>
-                      </Button>
-                      <Button variant="outline" size="icon" asChild>
-                        <Link to={`/docs/${product.id}/article-1`}>
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {filteredAccessibleProducts.length === 0 && searchQuery && (
-              <div className="text-center py-12">
-                <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No results found</h3>
+            {accessibleProducts.length === 0 ? (
+              <div className="text-center py-16">
+                <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No products assigned</h3>
                 <p className="text-muted-foreground">
-                  Try adjusting your search terms or browse all available documentation.
+                  Contact your administrator to get access to documentation.
                 </p>
               </div>
-            )}
-          </div>
-
-          {/* Restricted Products (for transparency) */}
-          {restrictedProducts.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">Other Products</h2>
-                  <p className="text-muted-foreground">Additional products that may be available</p>
-                </div>
-                <Badge variant="outline" className="bg-muted/50 text-muted-foreground">
-                  Contact admin for access
-                </Badge>
-              </div>
-
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {restrictedProducts.map((product) => (
-                  <Card key={product.id} className="opacity-60 hover:opacity-75 transition-opacity">
+                {filteredAccessibleProducts.map((product) => (
+                  <Card key={product.id} className="shadow-card border-0 bg-gradient-card hover:shadow-lg transition-all duration-300 group">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className={`p-3 rounded-lg bg-gradient-to-br ${product.color} text-white text-xl opacity-50`}>
-                            {product.icon}
+                          <div className="p-3 rounded-lg bg-gradient-to-br from-primary to-accent text-white">
+                            {product.icon_url ? (
+                              <img src={product.icon_url} alt="" className="h-6 w-6" />
+                            ) : (
+                              <BookOpen className="h-6 w-6" />
+                            )}
                           </div>
                           <div>
-                            <CardTitle className="text-lg text-muted-foreground">{product.name}</CardTitle>
+                            <CardTitle className="text-lg">{product.name}</CardTitle>
                             <p className="text-sm text-muted-foreground">{product.description}</p>
                           </div>
                         </div>
-                        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                          No Access
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                          <Shield className="h-3 w-3 mr-1" />
+                          Access
                         </Badge>
                       </div>
                     </CardHeader>
@@ -310,16 +310,39 @@ const ClientDashboard = () => {
                         </div>
                       </div>
 
-                      <Button disabled className="w-full" variant="outline">
-                        <Shield className="h-4 w-4 mr-2" />
-                        Request Access
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          asChild 
+                          className="flex-1 bg-gradient-button text-white border-0 group-hover:shadow-md transition-all duration-200"
+                          disabled={product.articles === 0}
+                        >
+                          <Link to={`/product/${product.id}/docs`}>
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            View Documentation
+                          </Link>
+                        </Button>
+                        <Button variant="outline" size="icon" asChild disabled={product.articles === 0}>
+                          <Link to={`/product/${product.id}/docs`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+
+            {filteredAccessibleProducts.length === 0 && searchQuery && (
+              <div className="text-center py-12">
+                <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No results found</h3>
+                <p className="text-muted-foreground">
+                  Try adjusting your search terms or browse all available documentation.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
