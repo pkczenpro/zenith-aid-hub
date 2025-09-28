@@ -212,7 +212,7 @@ const ProductCategories = () => {
                 <Card 
                   key={product.id} 
                   className="group cursor-pointer card-hover border-0 shadow-card bg-gradient-card"
-                  onClick={() => navigate(`/product/${product.id}`)}
+                  onClick={() => navigate(isAdmin ? `/product/${product.id}` : `/product/${product.id}/docs`)}
                 >
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -253,7 +253,7 @@ const ProductCategories = () => {
                         className="group/btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/product/${product.id}`);
+                          navigate(isAdmin ? `/product/${product.id}` : `/product/${product.id}/docs`);
                         }}
                       >
                         {isAdmin ? 'Manage' : 'View Docs'}

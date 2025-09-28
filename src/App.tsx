@@ -12,6 +12,7 @@ import ProductManagement from "./pages/ProductManagement";
 import ArticleViewer from "./pages/ArticleViewer";
 import ClientManagement from "./pages/ClientManagement";
 import ClientDashboard from "./pages/ClientDashboard";
+import ProductDashboard from "./pages/ProductDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,11 @@ const App = () => (
             <Route path="/product/:productId" element={
               <ProtectedRoute requireAdmin>
                 <ProductEditor />
+              </ProtectedRoute>
+            } />
+            <Route path="/product/:productId/docs" element={
+              <ProtectedRoute>
+                <ProductDashboard />
               </ProtectedRoute>
             } />
             <Route path="/docs/:productId/:articleId" element={

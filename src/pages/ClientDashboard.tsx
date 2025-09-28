@@ -35,7 +35,7 @@ interface Product {
 }
 
 const ClientDashboard = () => {
-  const { clientId } = useParams();
+  const { clientId, productId } = useParams();
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mock client data (in real app, this would be fetched from Supabase)
