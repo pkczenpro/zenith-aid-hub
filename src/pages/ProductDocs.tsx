@@ -23,7 +23,8 @@ import {
   Video,
   FileSpreadsheet,
   Briefcase,
-  Plus
+  Plus,
+  Share2
 } from 'lucide-react';
 
 interface Article {
@@ -777,11 +778,11 @@ const ProductDocs = () => {
                               <span className="font-medium truncate ml-2">{product.name}</span>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="space-y-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1"
+                              className="w-full"
                               onClick={() => {
                                 setSelectedResource(resource);
                                 setPreviewOpen(true);
@@ -790,36 +791,53 @@ const ProductDocs = () => {
                               <Eye className="h-4 w-4 mr-2" />
                               Preview
                             </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={async () => {
-                              try {
-                                await logDownload(resource.id);
-                                const response = await fetch(resource.file_url);
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = resource.file_name;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                window.URL.revokeObjectURL(url);
-                              } catch (error) {
-                                console.error('Download error:', error);
-                                toast({
-                                  title: "Download Failed",
-                                  description: "Failed to download the file.",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={async () => {
+                                  try {
+                                    await logDownload(resource.id);
+                                    const response = await fetch(resource.file_url);
+                                    const blob = await response.blob();
+                                    const url = window.URL.createObjectURL(blob);
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.download = resource.file_name;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    window.URL.revokeObjectURL(url);
+                                  } catch (error) {
+                                    console.error('Download error:', error);
+                                    toast({
+                                      title: "Download Failed",
+                                      description: "Failed to download the file.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(resource.file_url);
+                                  toast({
+                                    title: "Link Copied",
+                                    description: "Shareable link copied to clipboard.",
+                                  });
+                                }}
+                              >
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Share Link
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       );
