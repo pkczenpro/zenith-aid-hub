@@ -14,7 +14,8 @@ import {
   BookOpen,
   Edit3,
   Trash2,
-  Eye
+  Eye,
+  Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +23,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+import ProductEditModal from "./ProductEditModal";
 
 interface Product {
   id: string;
@@ -41,6 +48,7 @@ const ProductCategories = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const getProductIcon = (category: string | null) => {
     const categoryIconMap: { [key: string]: typeof Smartphone } = {
@@ -71,6 +79,40 @@ const ProductCategories = () => {
   useEffect(() => {
     fetchProducts();
   }, [user]);
+
+  const updateProduct = async (productId: string, updates: { name?: string; description?: string; icon_url?: string }) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', productId);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update product",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
+      });
+      
+      fetchProducts();
+      return true;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to update product",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -303,6 +345,16 @@ const ProductCategories = () => {
                           )}
                         </div>
                       </div>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingProduct(product)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                      )}
                       <div className="flex flex-col items-end gap-2">
                         <Badge 
                           variant={product.status === 'published' ? 'default' : 'secondary'}
@@ -343,37 +395,17 @@ const ProductCategories = () => {
                             Articles
                           </Button>
                         </div>
-                        <div className="flex gap-2 mb-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/product/${product.id}`)}
-                            className="flex-1"
-                          >
-                            <Edit3 className="mr-2 h-4 w-4" />
-                            Edit Product
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/product/${product.id}/docs`)}
-                            className="flex-1"
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Docs
-                          </Button>
-                        </div>
                       </>
                     ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/product/${product.id}/docs`)}
-                        className="w-full"
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Documentation
-                      </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/product/${product.id}/docs`)}
+                          className="w-full"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Documentation
+                        </Button>
                     )}
                   </CardContent>
                 </Card>
@@ -382,6 +414,15 @@ const ProductCategories = () => {
           </div>
         )}
       </div>
+
+      {editingProduct && (
+        <ProductEditModal
+          product={editingProduct}
+          isOpen={!!editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onUpdate={updateProduct}
+        />
+      )}
     </section>
   );
 };
