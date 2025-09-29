@@ -12,6 +12,7 @@ import ProductDocs from "./pages/ProductDocs";
 import ProductManagement from "./pages/ProductManagement";
 import ArticleViewer from "./pages/ArticleViewer";
 import ArticleList from "./pages/ArticleList";
+import ArticleOrder from "./pages/ArticleOrder";
 import ClientManagement from "./pages/ClientManagement";
 import ClientDashboard from "./pages/ClientDashboard";
 import ProductDashboard from "./pages/ProductDashboard";
@@ -47,6 +48,11 @@ const App = () => (
             <Route path="/product/:productId/articles" element={
               <ProtectedRoute requireAdmin>
                 <ArticleList />
+              </ProtectedRoute>
+            } />
+            <Route path="/product/:productId/articles/order" element={
+              <ProtectedRoute requireAdmin>
+                <ArticleOrder />
               </ProtectedRoute>
             } />
             <Route path="/product/:productId/docs" element={

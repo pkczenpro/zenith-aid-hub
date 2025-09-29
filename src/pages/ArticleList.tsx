@@ -16,7 +16,8 @@ import {
   Edit3,
   Eye,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  GripVertical
 } from 'lucide-react';
 
 interface Article {
@@ -76,12 +77,12 @@ const ArticleList = () => {
 
       setProduct(productData);
 
-      // Get articles for this product
+      // Get articles for this product - first published should be on top
       const { data: articlesData, error: articlesError } = await supabase
         .from('articles')
         .select('*')
         .eq('product_id', productId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (articlesError) {
         console.error('Articles error:', articlesError);
@@ -177,10 +178,19 @@ const ArticleList = () => {
           </div>
           
           {isAdmin && (
-            <Button onClick={handleCreateArticle} className="ml-4">
-              <Plus className="h-4 w-4 mr-2" />
-              New Article
-            </Button>
+            <div className="flex items-center gap-2 ml-4">
+              <Button 
+                variant="outline"
+                onClick={() => navigate(`/product/${productId}/articles/order`)}
+              >
+                <GripVertical className="h-4 w-4 mr-2" />
+                Manage Order
+              </Button>
+              <Button onClick={handleCreateArticle}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Article
+              </Button>
+            </div>
           )}
         </div>
       </header>

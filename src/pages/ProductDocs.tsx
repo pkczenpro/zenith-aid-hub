@@ -135,7 +135,7 @@ const ProductDocs = () => {
         .select('*')
         .eq('product_id', productId)
         .eq('status', 'published')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (articlesError) {
         console.error('Articles error:', articlesError);
