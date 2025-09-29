@@ -94,12 +94,12 @@ const ResourceManagement = () => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       const validPdfTypes = ['application/pdf'];
-      const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+      const validPptxTypes = ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint'];
       
-      if (!validPdfTypes.includes(selectedFile.type) && !validVideoTypes.includes(selectedFile.type)) {
+      if (!validPdfTypes.includes(selectedFile.type) && !validPptxTypes.includes(selectedFile.type)) {
         toast({
           title: "Invalid File",
-          description: "Please upload a PDF or video file (MP4, WebM, OGG, MOV).",
+          description: "Please upload a PDF or PPTX file only.",
           variant: "destructive",
         });
         return;
@@ -108,8 +108,8 @@ const ResourceManagement = () => {
       // Auto-detect file type
       if (validPdfTypes.includes(selectedFile.type)) {
         setFileType('pdf');
-      } else if (validVideoTypes.includes(selectedFile.type)) {
-        setFileType('video');
+      } else if (validPptxTypes.includes(selectedFile.type)) {
+        setFileType('pptx');
       }
       
       setFile(selectedFile);
@@ -256,8 +256,8 @@ const ResourceManagement = () => {
         return BookOpen;
       case 'brochure':
         return FileText;
-      case 'video':
-        return Video;
+      case 'tutorial':
+        return BookOpen;
       default:
         return FileText;
     }
@@ -301,7 +301,7 @@ const ResourceManagement = () => {
                 <DialogHeader>
                   <DialogTitle>Upload New Resource</DialogTitle>
                   <DialogDescription>
-                    Upload a PDF resource for this product.
+                    Upload PDF or PowerPoint (PPTX) files for this product.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -338,18 +338,17 @@ const ResourceManagement = () => {
                         <SelectItem value="case_study">Case Study</SelectItem>
                         <SelectItem value="brochure">Product Brochure</SelectItem>
                         <SelectItem value="tutorial">Tutorial</SelectItem>
-                        <SelectItem value="video">Video</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label htmlFor="file">File * (PDF or Video)</Label>
+                    <Label htmlFor="file">File * (PDF or PPTX)</Label>
                     <Input
                       id="file"
                       type="file"
-                      accept=".pdf,video/*"
+                      accept=".pdf,.pptx,.ppt"
                       onChange={handleFileChange}
                     />
                     {file && (
@@ -447,7 +446,15 @@ const ResourceManagement = () => {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => window.open(resource.file_url, '_blank')}
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = resource.file_url;
+                        link.download = resource.file_name;
+                        link.target = '_blank';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Download
@@ -469,28 +476,43 @@ const ResourceManagement = () => {
 
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogContent className="max-w-5xl h-[85vh]">
           <DialogHeader>
             <DialogTitle>{selectedResource?.title}</DialogTitle>
             <DialogDescription>
               {selectedResource?.description || `Preview ${getResourceTypeLabel(selectedResource?.resource_type || '')}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden h-full">
             {selectedResource?.file_type === 'pdf' ? (
               <iframe
-                src={selectedResource.file_url}
-                className="w-full h-full border rounded"
+                src={`${selectedResource.file_url}#view=FitH`}
+                className="w-full h-full border-0 rounded"
                 title={selectedResource.title}
+                style={{ minHeight: '600px' }}
               />
-            ) : selectedResource?.file_type === 'video' ? (
-              <video
-                controls
-                className="w-full h-full rounded"
-                src={selectedResource.file_url}
-              >
-                Your browser does not support the video tag.
-              </video>
+            ) : selectedResource?.file_type === 'pptx' ? (
+              <div className="flex flex-col items-center justify-center h-full space-y-4">
+                <FileText className="h-16 w-16 text-primary" />
+                <p className="text-lg font-medium">PowerPoint Preview</p>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  PowerPoint files cannot be previewed directly in the browser. Please download the file to view it.
+                </p>
+                <Button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = selectedResource.file_url;
+                    link.download = selectedResource.file_name;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download File
+                </Button>
+              </div>
             ) : null}
           </div>
         </DialogContent>

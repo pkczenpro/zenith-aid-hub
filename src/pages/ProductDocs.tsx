@@ -295,8 +295,8 @@ const ProductDocs = () => {
         return BookOpen;
       case 'brochure':
         return FileText;
-      case 'video':
-        return Video;
+      case 'tutorial':
+        return BookOpen;
       default:
         return FileText;
     }
@@ -696,7 +696,15 @@ const ProductDocs = () => {
                               variant="outline"
                               size="sm"
                               className="flex-1"
-                              onClick={() => window.open(resource.file_url, '_blank')}
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = resource.file_url;
+                                link.download = resource.file_name;
+                                link.target = '_blank';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
                             >
                               <Download className="h-4 w-4 mr-2" />
                               Download
@@ -745,28 +753,43 @@ const ProductDocs = () => {
 
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl h-[80vh]">
+        <DialogContent className="max-w-5xl h-[85vh]">
           <DialogHeader>
             <DialogTitle>{selectedResource?.title}</DialogTitle>
             <DialogDescription>
               {selectedResource?.description || `${getResourceTypeLabel(selectedResource?.resource_type || '')} - ${product.name}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden h-full">
             {selectedResource?.file_type === 'pdf' ? (
               <iframe
-                src={selectedResource.file_url}
-                className="w-full h-full border rounded"
+                src={`${selectedResource.file_url}#view=FitH`}
+                className="w-full h-full border-0 rounded"
                 title={selectedResource.title}
+                style={{ minHeight: '600px' }}
               />
-            ) : selectedResource?.file_type === 'video' ? (
-              <video
-                controls
-                className="w-full h-full rounded"
-                src={selectedResource.file_url}
-              >
-                Your browser does not support the video tag.
-              </video>
+            ) : selectedResource?.file_type === 'pptx' ? (
+              <div className="flex flex-col items-center justify-center h-full space-y-4">
+                <FileText className="h-16 w-16 text-primary" />
+                <p className="text-lg font-medium">PowerPoint Preview</p>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  PowerPoint files cannot be previewed directly in the browser. Please download the file to view it.
+                </p>
+                <Button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = selectedResource.file_url;
+                    link.download = selectedResource.file_name;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download File
+                </Button>
+              </div>
             ) : null}
           </div>
         </DialogContent>
