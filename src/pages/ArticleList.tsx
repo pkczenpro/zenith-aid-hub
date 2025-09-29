@@ -17,7 +17,8 @@ import {
   Eye,
   Calendar,
   ChevronRight,
-  GripVertical
+  GripVertical,
+  Trash2
 } from 'lucide-react';
 
 interface Article {
@@ -120,6 +121,43 @@ const ArticleList = () => {
 
   const handleViewArticle = (articleId: string, index: number) => {
     navigate(`/product/${productId}/article/article-${index + 1}`);
+  };
+
+  const handleDeleteArticle = async (articleId: string, articleTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${articleTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', articleId);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete article",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Article deleted successfully",
+      });
+      
+      // Refresh the articles list
+      fetchProductAndArticles();
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete article",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -250,13 +288,23 @@ const ArticleList = () => {
                       View
                     </Button>
                     {isAdmin && (
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleEditArticle(article.id)}
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleEditArticle(article.id)}
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleDeleteArticle(article.id, article.title)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </CardContent>
