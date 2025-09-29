@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { highlightSearchTerms, scrollToFirstHighlight } from '@/utils/textHighlight';
 import { 
   Search, 
   BookOpen, 
@@ -49,6 +50,7 @@ interface CategoryGroup {
 
 const ProductDocs = () => {
   const { productId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
@@ -67,6 +69,9 @@ const ProductDocs = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<any | null>(null);
+  const highlightTerm = searchParams.get('search') || '';
+  const searchType = searchParams.get('type') || '';
+  const searchId = searchParams.get('id') || '';
 
   useEffect(() => {
     if (user && productId) {
@@ -202,6 +207,35 @@ const ProductDocs = () => {
           setSelectedArticle(articlesData[0]);
           generateTableOfContents(articlesData[0]);
         }
+      }
+
+      // Handle search navigation
+      if (searchType && searchId) {
+        if (searchType === 'resource') {
+          setActiveTab('resources');
+          const resource = resources.find(r => r.id === searchId);
+          if (resource) {
+            setTimeout(() => {
+              const resourceElement = document.getElementById(`resource-${searchId}`);
+              if (resourceElement) {
+                resourceElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                resourceElement.classList.add('ring-2', 'ring-primary');
+                setTimeout(() => {
+                  resourceElement.classList.remove('ring-2', 'ring-primary');
+                }, 3000);
+              }
+            }, 300);
+          }
+        } else if (searchType === 'release') {
+          setActiveTab('releases');
+          const release = releaseNotes.find(r => r.id === searchId);
+          if (release) {
+            setSelectedRelease(release);
+            setTimeout(() => scrollToFirstHighlight(), 300);
+          }
+        }
+      } else if (highlightTerm) {
+        scrollToFirstHighlight();
       }
     } catch (error) {
       console.error('Error fetching product data:', error);
@@ -411,10 +445,15 @@ const ProductDocs = () => {
     // Handle content based on type or render as rich HTML
     let contentElement;
     if (typeof section.content === 'string' && section.content.includes('<')) {
+      // Apply highlighting if search term exists
+      const processedContent = highlightTerm 
+        ? highlightSearchTerms(section.content, highlightTerm)
+        : section.content;
+      
       // Rich HTML content
       contentElement = (
         <div 
-          dangerouslySetInnerHTML={{ __html: section.content }}
+          dangerouslySetInnerHTML={{ __html: processedContent }}
           className="prose prose-base max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-code:text-primary prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-blockquote:border-l-4 prose-blockquote:border-border prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/80 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg"
         />
       );
@@ -705,6 +744,7 @@ const ProductDocs = () => {
                       return (
                         <div
                           key={resource.id}
+                          id={`resource-${resource.id}`}
                           className="border border-border rounded-lg p-6 hover:border-primary/50 hover:shadow-lg transition-all"
                         >
                           <div className="flex items-start justify-between mb-4">

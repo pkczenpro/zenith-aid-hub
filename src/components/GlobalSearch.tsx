@@ -137,19 +137,20 @@ export const GlobalSearch = () => {
   }, [searchQuery]);
 
   const handleResultClick = (result: SearchResult) => {
+    const query = searchQuery;
     setIsOpen(false);
     setSearchQuery("");
     setResults([]);
 
     switch (result.type) {
       case 'article':
-        navigate(`/docs/${result.productId}/${result.id}`);
+        navigate(`/docs/${result.productId}/${result.id}?search=${encodeURIComponent(query)}`);
         break;
       case 'resource':
-        navigate(`/product/${result.productId}/docs`);
+        navigate(`/product/${result.productId}/docs?search=${encodeURIComponent(query)}&type=resource&id=${result.id}`);
         break;
       case 'release':
-        navigate(`/product/${result.productId}/docs`);
+        navigate(`/product/${result.productId}/docs?search=${encodeURIComponent(query)}&type=release&id=${result.id}`);
         break;
     }
   };

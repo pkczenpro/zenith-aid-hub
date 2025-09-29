@@ -675,3 +675,22 @@ iframe.ql-video {
   width: 100%;
   height: 500px !important;
 }
+
+/* Search highlight styling */
+.search-highlight {
+  background-color: hsl(var(--primary) / 0.3);
+  color: hsl(var(--primary-foreground));
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  animation: highlight-pulse 2s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0%, 100% {
+    background-color: hsl(var(--primary) / 0.3);
+  }
+  50% {
+    background-color: hsl(var(--primary) / 0.5);
+  }
+}

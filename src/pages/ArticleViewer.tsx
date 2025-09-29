@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ChevronRight, BookOpen, Home, FileText, Settings, Edit3, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import LMSVideoPlayer from '@/components/LMSVideoPlayer';
+import { highlightSearchTerms, scrollToFirstHighlight } from '@/utils/textHighlight';
 
 interface Article {
   id: string;
@@ -31,6 +32,7 @@ interface Product {
 
 const ArticleViewer = () => {
   const { productId, articleId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, isAdmin, profile } = useAuth();
   const { toast } = useToast();
@@ -41,6 +43,7 @@ const ArticleViewer = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string; level: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const highlightTerm = searchParams.get('search') || '';
 
   useEffect(() => {
     if (articleId && productId) {
@@ -212,6 +215,11 @@ const ArticleViewer = () => {
         setTableOfContents(toc);
       }
 
+      // Scroll to first highlight if search term exists
+      if (highlightTerm) {
+        scrollToFirstHighlight();
+      }
+
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -265,13 +273,18 @@ const ArticleViewer = () => {
     // Handle content based on type or render as rich HTML
     let contentElement;
     if (typeof section.content === 'string' && section.content.includes('<')) {
+      // Apply highlighting if search term exists
+      const processedContent = highlightTerm 
+        ? highlightSearchTerms(section.content, highlightTerm)
+        : section.content;
+      
       // Check for video embed containers and process them
-      if (section.content.includes('video-embed-container')) {
+      if (processedContent.includes('video-embed-container')) {
         const parser = new DOMParser();
-        const doc = parser.parseFromString(section.content, 'text/html');
+        const doc = parser.parseFromString(processedContent, 'text/html');
         const videoContainers = doc.querySelectorAll('.video-embed-container');
         
-        let processedContent = section.content;
+        let finalContent = processedContent;
         
         videoContainers.forEach((container) => {
           const videoUrl = container.getAttribute('data-video-url');
@@ -312,13 +325,13 @@ const ArticleViewer = () => {
             }
             
             // Replace the thumbnail container with the playable embed
-            processedContent = processedContent.replace(container.outerHTML, playableEmbed);
+            finalContent = finalContent.replace(container.outerHTML, playableEmbed);
           }
         });
         
         contentElement = (
           <div 
-            dangerouslySetInnerHTML={{ __html: processedContent }}
+            dangerouslySetInnerHTML={{ __html: finalContent }}
             className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-player-wrapper]:my-4"
           />
         );
@@ -326,7 +339,7 @@ const ArticleViewer = () => {
         // Regular rich HTML content
         contentElement = (
           <div 
-            dangerouslySetInnerHTML={{ __html: section.content }}
+            dangerouslySetInnerHTML={{ __html: processedContent }}
             className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-container]:my-4"
           />
         );
