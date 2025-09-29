@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { soundService } from '@/utils/soundNotifications';
+import SoundControls from './SoundControls';
 import { 
   MessageCircle, 
   Send, 
@@ -70,24 +72,26 @@ const ClientChat = () => {
     // Set up real-time subscription for chat messages
     const channel = supabase
       .channel('chat-messages')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        (payload) => {
-          const newMessage: Message = {
-            id: payload.new.id,
-            content: payload.new.content,
-            sender: payload.new.sender as 'user' | 'support' | 'system',
-            timestamp: payload.new.created_at,
-            type: 'chat'
-          };
-          
-          // Only add message if it's not from current user to avoid duplicates
-          if (payload.new.profile_id !== user?.id) {
-            setMessages(prev => [...prev, newMessage]);
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+          (payload) => {
+            const newMessage: Message = {
+              id: payload.new.id,
+              content: payload.new.content,
+              sender: payload.new.sender as 'user' | 'support' | 'system',
+              timestamp: payload.new.created_at,
+              type: 'chat'
+            };
+            
+            // Only add message if it's not from current user to avoid duplicates
+            if (payload.new.profile_id !== user?.id) {
+              setMessages(prev => [...prev, newMessage]);
+              // Play sound notification for received messages
+              soundService.playMessageReceived();
+            }
           }
-        }
-      )
+        )
       .subscribe();
 
     return () => {
@@ -213,6 +217,9 @@ const ClientChat = () => {
 
       setMessages(prev => [...prev, message]);
       setNewMessage('');
+
+      // Play sound notification for sent messages
+      soundService.playMessageSent();
 
       // Save message to database
       const { error } = await supabase
@@ -385,14 +392,17 @@ const ClientChat = () => {
       {activeTab === 'chat' && (
         <Card className="shadow-card border-0 bg-gradient-card">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <MessageCircle className="h-5 w-5" />
-              <span>{isAdmin ? 'Admin Support Chat' : 'Live Support Chat'}</span>
-              {profile && (
-                <span className="text-sm font-normal text-muted-foreground">
-                  - {(profile as any).full_name || user?.email || 'User'}
-                </span>
-              )}
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <MessageCircle className="h-5 w-5" />
+                <span>{isAdmin ? 'Admin Support Chat' : 'Live Support Chat'}</span>
+                {profile && (
+                  <span className="text-sm font-normal text-muted-foreground">
+                    - {(profile as any).full_name || user?.email || 'User'}
+                  </span>
+                )}
+              </div>
+              <SoundControls />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

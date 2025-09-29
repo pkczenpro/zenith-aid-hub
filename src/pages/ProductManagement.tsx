@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/Header';
 import ClientChat from '@/components/ClientChat';
+import TicketManagement from '@/components/TicketManagement';
 import { 
   Plus, 
   Package, 
@@ -508,7 +509,14 @@ const ProductManagement = () => {
               <h2 className="text-2xl font-bold text-foreground">Support Management</h2>
               <p className="text-muted-foreground">View and manage customer support tickets and chat</p>
             </div>
-            <ClientChat />
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="xl:col-span-2">
+                <TicketManagement />
+              </div>
+              <div className="xl:col-span-1">
+                <ClientChat />
+              </div>
+            </div>
           </div>
         )}
       </div>

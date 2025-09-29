@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, CheckCircle, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle, Upload, X, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { soundService } from "@/utils/soundNotifications";
 
 const TicketForm = () => {
   const { user } = useAuth();
@@ -22,6 +23,9 @@ const TicketForm = () => {
   });
   const [products, setProducts] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -48,6 +52,69 @@ const TicketForm = () => {
     } catch (error) {
       console.error('Error fetching products:', error);
     }
+  };
+
+  const handleFileUpload = async (file: File): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user!.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('ticket-attachments')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('ticket-attachments')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload attachment.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select a file smaller than 10MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAttachmentFile(file);
+      
+      // Create preview for images
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAttachmentPreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setAttachmentPreview(null);
+      }
+    }
+  };
+
+  const removeAttachment = () => {
+    setAttachmentFile(null);
+    setAttachmentPreview(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,6 +151,16 @@ const TicketForm = () => {
         throw new Error('Profile not found');
       }
 
+      // Upload attachment if present
+      let attachmentUrl = null;
+      if (attachmentFile) {
+        attachmentUrl = await handleFileUpload(attachmentFile);
+        if (!attachmentUrl) {
+          // File upload failed, but continue anyway
+          console.warn('File upload failed, submitting without attachment');
+        }
+      }
+
       const { error } = await supabase
         .from('support_tickets')
         .insert({
@@ -92,12 +169,16 @@ const TicketForm = () => {
           subject: formData.subject,
           description: formData.description,
           priority: formData.priority,
-          product_id: formData.product || null
+          product_id: formData.product || null,
+          attachment_url: attachmentUrl
         });
 
       if (error) {
         throw error;
       }
+
+      // Play success sound
+      soundService.playTicketSubmitted();
 
       toast({
         title: "Ticket submitted successfully!",
@@ -105,9 +186,12 @@ const TicketForm = () => {
       });
       
       setFormData({ subject: "", product: "", priority: "", description: "", email: user.email || "" });
+      setAttachmentFile(null);
+      setAttachmentPreview(null);
       
     } catch (error) {
       console.error('Error submitting ticket:', error);
+      soundService.playError();
       toast({
         title: "Submission Failed",
         description: "There was an error submitting your ticket. Please try again.",
@@ -229,15 +313,61 @@ const TicketForm = () => {
               {/* File Upload */}
               <div className="space-y-2">
                 <Label>Attachments (Optional)</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Drop files here or click to upload screenshots, logs, or documents
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-2">
-                    Choose Files
-                  </Button>
-                </div>
+                {!attachmentFile ? (
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                    <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Upload screenshots, logs, or documents (max 10MB)
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.txt,.doc,.docx,.log"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="attachment-upload"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => document.getElementById('attachment-upload')?.click()}
+                    >
+                      Choose Files
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {attachmentPreview ? (
+                          <img 
+                            src={attachmentPreview} 
+                            alt="Preview" 
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-background rounded flex items-center justify-center">
+                            <Paperclip className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium">{attachmentFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(attachmentFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeAttachment}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
@@ -247,11 +377,14 @@ const TicketForm = () => {
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || uploading}
                   className="bg-gradient-button text-white border-0 shadow-button hover:shadow-lg"
                 >
-                  {isSubmitting ? (
-                    "Submitting..."
+                  {isSubmitting || uploading ? (
+                    <>
+                      <Upload className="h-4 w-4 mr-2 animate-spin" />
+                      {uploading ? "Uploading..." : "Submitting..."}
+                    </>
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4 mr-2" />
