@@ -7,24 +7,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
-  Save, 
-  Eye, 
+import {
+  ArrowLeft,
+  Save,
+  Eye,
   Settings,
   Edit3,
-  Video, 
-  Image, 
+  Video,
+  Image,
   Link,
   Upload,
   Play,
   FileText,
   Plus,
   Trash2,
-  GripVertical
+  GripVertical,
 } from "lucide-react";
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -45,7 +45,7 @@ const ProductEditor = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile } = useAuth();
-  
+
   // Load products from database instead of hardcoded data
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,46 +57,47 @@ const ProductEditor = () => {
   const fetchProducts = async () => {
     try {
       const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error("Error fetching products:", error);
       toast({
         title: "Error loading products",
-        description: "Failed to load product information. Please refresh the page.",
-        variant: "destructive"
+        description:
+          "Failed to load product information. Please refresh the page.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const currentProduct = products.find(p => p.id === productId);
+  const currentProduct = products.find((p) => p.id === productId);
 
   const [productInfo, setProductInfo] = useState({
     name: currentProduct?.name || "",
     description: currentProduct?.description || "",
     version: "1.0.0",
-    status: "Active"
+    status: "Active",
   });
-  
-  const [content, setContent] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
+
+  const [content, setContent] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [isPreview, setIsPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState('editor');
-  const [articleTitle, setArticleTitle] = useState('');
+  const [activeTab, setActiveTab] = useState("editor");
+  const [articleTitle, setArticleTitle] = useState("");
   const [sections, setSections] = useState<Section[]>([
-    { 
-      id: '1', 
-      title: 'Getting Started', 
-      content: '',
+    {
+      id: "1",
+      title: "Getting Started",
+      content: "",
       order: 0,
-      level: 0
-    }
+      level: 0,
+    },
   ]);
   const quillRefs = useRef<{ [key: string]: any }>({});
 
@@ -115,20 +116,22 @@ const ProductEditor = () => {
   useEffect(() => {
     if (productId) {
       const urlParams = new URLSearchParams(window.location.search);
-      const editingArticleId = urlParams.get('articleId');
-      
+      const editingArticleId = urlParams.get("articleId");
+
       if (editingArticleId) {
         loadSpecificArticle(editingArticleId);
       } else {
         // Reset to default for new article
-        setArticleTitle('');
-        setSections([{ 
-          id: '1', 
-          title: 'Getting Started', 
-          content: '',
-          order: 0,
-          level: 0
-        }]);
+        setArticleTitle("");
+        setSections([
+          {
+            id: "1",
+            title: "Getting Started",
+            content: "",
+            order: 0,
+            level: 0,
+          },
+        ]);
       }
     }
   }, [productId]);
@@ -136,9 +139,9 @@ const ProductEditor = () => {
   const loadSpecificArticle = async (articleId: string) => {
     try {
       const { data, error } = await supabase
-        .from('articles')
-        .select('*')
-        .eq('id', articleId)
+        .from("articles")
+        .select("*")
+        .eq("id", articleId)
         .maybeSingle();
 
       if (error) {
@@ -146,24 +149,26 @@ const ProductEditor = () => {
       }
 
       if (data) {
-        setArticleTitle(data.title || '');
+        setArticleTitle(data.title || "");
         if (data.content && Array.isArray(data.content)) {
-          setSections(data.content.map((section: any, index: number) => ({
-            id: section.id || index.toString(),
-            title: section.title || `Section ${index + 1}`,
-            content: section.content || '',
-            order: section.order !== undefined ? section.order : index,
-            level: section.level || 0,
-            parent_id: section.parent_id
-          })));
+          setSections(
+            data.content.map((section: any, index: number) => ({
+              id: section.id || index.toString(),
+              title: section.title || `Section ${index + 1}`,
+              content: section.content || "",
+              order: section.order !== undefined ? section.order : index,
+              level: section.level || 0,
+              parent_id: section.parent_id,
+            }))
+          );
         }
       }
     } catch (error) {
-      console.error('Error loading specific article:', error);
+      console.error("Error loading specific article:", error);
       toast({
         title: "Error loading article",
         description: "Failed to load the article for editing.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -172,50 +177,56 @@ const ProductEditor = () => {
   const modules = {
     toolbar: {
       container: [
-        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-        [{ 'font': [] }],
-        [{ 'size': ['small', false, 'large', 'huge'] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'color': [] }, { 'background': [] }],
-        [{ 'script': 'sub'}, { 'script': 'super' }],
-        ['blockquote', 'code-block'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'indent': '-1'}, { 'indent': '+1' }],
-        [{ 'align': [] }],
-        ['link', 'image', 'video'],
-        ['clean']
+        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+        [{ font: [] }],
+        [{ size: ["small", false, "large", "huge"] }],
+        ["bold", "italic", "underline", "strike"],
+        [{ color: [] }, { background: [] }],
+        [{ script: "sub" }, { script: "super" }],
+        ["blockquote", "code-block"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        [{ indent: "-1" }, { indent: "+1" }],
+        [{ align: [] }],
+        ["link", "image", "video"],
+        ["clean"],
       ],
       handlers: {
-        'video': function() {
+        video: function () {
           const range = this.quill.getSelection();
           if (range) {
-            const url = prompt('Enter video URL (YouTube, Vimeo, Loom, HeyGen, or direct video file):');
+            const url = prompt(
+              "Enter video URL (YouTube, Vimeo, Loom, HeyGen, or direct video file):"
+            );
             if (url) {
-              let embedCode = '';
-              
-              if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+              let embedCode = "";
+
+              if (url.includes("youtube.com") || url.includes("youtu.be")) {
+                const videoId = url.match(
+                  /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/
+                )?.[1];
                 if (videoId) {
                   embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
                 }
-              } else if (url.includes('vimeo.com')) {
+              } else if (url.includes("vimeo.com")) {
                 const videoId = url.match(/vimeo\.com\/(\d+)/)?.[1];
                 if (videoId) {
                   embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
                 }
-              } else if (url.includes('loom.com')) {
-                const videoId = url.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] || url.split('/').pop();
+              } else if (url.includes("loom.com")) {
+                const videoId =
+                  url.match(/loom\.com\/share\/([a-f0-9]+)/)?.[1] ||
+                  url.split("/").pop();
                 if (videoId) {
                   embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
                 }
-              } else if (url.includes('heygen.com')) {
-                let videoId = '';
-                if (url.includes('/share/')) {
+              } else if (url.includes("heygen.com")) {
+                let videoId = "";
+                if (url.includes("/share/")) {
                   videoId = url.match(/\/share\/([^/?#]+)/)?.[1];
-                } else if (url.includes('share-prod.heygen.com')) {
-                  videoId = url.split('/').pop()?.split('?')[0];
+                } else if (url.includes("share-prod.heygen.com")) {
+                  videoId = url.split("/").pop()?.split("?")[0];
                 }
-                
+
                 if (videoId) {
                   embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="https://share-prod.heygen.com/${videoId}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
                 } else {
@@ -228,37 +239,60 @@ const ProductEditor = () => {
                 // For any other URL, try embedding as iframe
                 embedCode = `<div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><iframe src="${url}" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;"></iframe></div>`;
               }
-              
+
               if (embedCode) {
-                this.quill.clipboard.dangerouslyPasteHTML(range.index, embedCode);
+                this.quill.clipboard.dangerouslyPasteHTML(
+                  range.index,
+                  embedCode
+                );
               }
             }
           }
-        }
-      }
-    }
+        },
+      },
+    },
   };
 
   const formats = [
-    'header', 'font', 'size',
-    'bold', 'italic', 'underline', 'strike', 'blockquote',
-    'list', 'bullet', 'indent',
-    'link', 'image', 'video', 'color', 'background',
-    'align', 'script', 'code-block'
+    "header",
+    "font",
+    "size",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "blockquote",
+    "list",
+    "bullet",
+    "indent",
+    "link",
+    "image",
+    "video",
+    "color",
+    "background",
+    "align",
+    "script",
+    "code-block",
   ];
 
   const handleVideoEmbedInSection = (sectionId: string, videoHtml: string) => {
     if (!videoHtml) return;
-    
+
     const quillRef = quillRefs.current[sectionId];
     if (!quillRef) return;
-    
+
     const range = quillRef.getSelection() || quillRef.getLength();
-    const insertIndex = typeof range === 'number' ? range : range.index || quillRef.getLength();
-    
+    const insertIndex =
+      typeof range === "number" ? range : range.index || quillRef.getLength();
+
     // Insert the video HTML directly into the Quill editor
-    quillRef.clipboard.dangerouslyPasteHTML(insertIndex, videoHtml);
-    
+    //quillRef.clipboard.dangerouslyPasteHTML(insertIndex, videoHtml);
+    quillRef.insertEmbed(
+      insertIndex,
+      "video",
+      videoHtml
+    );
+
     toast({
       title: "Video embedded successfully!",
       description: "Your video thumbnail has been added to the section.",
@@ -266,16 +300,21 @@ const ProductEditor = () => {
   };
 
   const addSection = (level: number = 0, parentId?: string) => {
-    const parentSections = sections.filter(s => s.level === 0);
-    const allSubsections = sections.filter(s => s.level === 1);
-    
+    const parentSections = sections.filter((s) => s.level === 0);
+    const allSubsections = sections.filter((s) => s.level === 1);
+
     const newSection: Section = {
       id: Date.now().toString(),
-      title: level === 0 ? `Section ${parentSections.length + 1}` : `Subsection ${allSubsections.filter(s => s.parent_id === parentId).length + 1}`,
-      content: '',
+      title:
+        level === 0
+          ? `Section ${parentSections.length + 1}`
+          : `Subsection ${
+              allSubsections.filter((s) => s.parent_id === parentId).length + 1
+            }`,
+      content: "",
       order: sections.length,
       level: level,
-      parent_id: parentId
+      parent_id: parentId,
     };
     setSections([...sections, newSection]);
   };
@@ -286,28 +325,32 @@ const ProductEditor = () => {
 
   const getSectionHierarchy = () => {
     const hierarchy: Array<Section & { children: Section[] }> = [];
-    const mainSections = sections.filter(s => s.level === 0).sort((a, b) => a.order - b.order);
-    
-    mainSections.forEach(section => {
+    const mainSections = sections
+      .filter((s) => s.level === 0)
+      .sort((a, b) => a.order - b.order);
+
+    mainSections.forEach((section) => {
       const children = sections
-        .filter(s => s.level === 1 && s.parent_id === section.id)
+        .filter((s) => s.level === 1 && s.parent_id === section.id)
         .sort((a, b) => a.order - b.order);
       hierarchy.push({ ...section, children });
     });
-    
+
     return hierarchy;
   };
 
   const updateSectionTitle = (id: string, title: string) => {
-    setSections(sections.map(section => 
-      section.id === id ? { ...section, title } : section
-    ));
+    setSections(
+      sections.map((section) =>
+        section.id === id ? { ...section, title } : section
+      )
+    );
   };
 
   const updateSectionContent = (id: string, content: string) => {
-    console.log('Updating section content:', id, content);
-    setSections(prevSections => 
-      prevSections.map(section => 
+    console.log("Updating section content:", id, content);
+    setSections((prevSections) =>
+      prevSections.map((section) =>
         section.id === id ? { ...section, content } : section
       )
     );
@@ -315,7 +358,7 @@ const ProductEditor = () => {
 
   const deleteSection = (id: string) => {
     if (sections.length > 1) {
-      setSections(sections.filter(section => section.id !== id));
+      setSections(sections.filter((section) => section.id !== id));
     }
   };
 
@@ -324,7 +367,7 @@ const ProductEditor = () => {
       toast({
         title: "Missing Information",
         description: "Please provide an article title before saving.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -335,49 +378,49 @@ const ProductEditor = () => {
       const articleData = {
         product_id: productId,
         title: articleTitle,
-        content: sections.map(section => ({
+        content: sections.map((section) => ({
           ...section,
-          id: section.id || newSectionId + '_' + Math.random().toString(36).substr(2, 9)
+          id:
+            section.id ||
+            newSectionId + "_" + Math.random().toString(36).substr(2, 9),
         })) as any, // Cast to satisfy Json type
         created_by: profile?.id,
-        status: 'published'
+        status: "published",
       };
 
       // Check if we're editing a specific article or creating new one
       const urlParams = new URLSearchParams(window.location.search);
-      const editingArticleId = urlParams.get('articleId');
-      
+      const editingArticleId = urlParams.get("articleId");
+
       let result;
       if (editingArticleId) {
         // Update specific article
         result = await supabase
-          .from('articles')
+          .from("articles")
           .update(articleData)
-          .eq('id', editingArticleId);
+          .eq("id", editingArticleId);
       } else {
         // Check if article with same title already exists
         const { data: existingArticle, error: fetchError } = await supabase
-          .from('articles')
-          .select('id')
-          .eq('product_id', productId)
-          .eq('title', articleTitle)
+          .from("articles")
+          .select("id")
+          .eq("product_id", productId)
+          .eq("title", articleTitle)
           .maybeSingle();
 
-        if (fetchError && fetchError.code !== 'PGRST116') {
+        if (fetchError && fetchError.code !== "PGRST116") {
           throw fetchError;
         }
 
         if (existingArticle) {
           // Update existing article with same title
           result = await supabase
-            .from('articles')
+            .from("articles")
             .update(articleData)
-            .eq('id', existingArticle.id);
+            .eq("id", existingArticle.id);
         } else {
           // Create new article
-          result = await supabase
-            .from('articles')
-            .insert([articleData]);
+          result = await supabase.from("articles").insert([articleData]);
         }
       }
 
@@ -390,11 +433,12 @@ const ProductEditor = () => {
         description: `"${articleTitle}" has been saved with ${sections.length} sections.`,
       });
     } catch (error: any) {
-      console.error('Error saving article:', error);
+      console.error("Error saving article:", error);
       toast({
         title: "Error saving article",
-        description: error.message || "Failed to save the article. Please try again.",
-        variant: "destructive"
+        description:
+          error.message || "Failed to save the article. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -427,12 +471,15 @@ const ProductEditor = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="mb-4">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Product Not Found</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Product Not Found
+            </h1>
             <p className="text-muted-foreground mb-4">
-              The product you're looking for doesn't exist or you don't have access to it.
+              The product you're looking for doesn't exist or you don't have
+              access to it.
             </p>
           </div>
-          <Button onClick={() => navigate('/')} variant="default">
+          <Button onClick={() => navigate("/")} variant="default">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Products
           </Button>
@@ -444,14 +491,14 @@ const ProductEditor = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="py-8 px-4">
         <div className="container mx-auto max-w-7xl">
           {/* Navigation */}
           <div className="flex items-center space-x-4 mb-8">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/')}
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
               className="hover:bg-muted/50"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -459,7 +506,9 @@ const ProductEditor = () => {
             </Button>
             <div className="h-6 w-px bg-border"></div>
             <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-lg bg-gradient-to-br ${currentProduct.color} text-white text-lg`}>
+              <div
+                className={`p-2 rounded-lg bg-gradient-to-br ${currentProduct.color} text-white text-lg`}
+              >
                 {currentProduct.icon}
               </div>
               <div>
@@ -470,13 +519,20 @@ const ProductEditor = () => {
           </div>
 
           {/* Main Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-6"
+          >
             <TabsList className="bg-muted/50">
               <TabsTrigger value="info" className="flex items-center space-x-2">
                 <Settings className="h-4 w-4" />
                 <span>Product Info</span>
               </TabsTrigger>
-              <TabsTrigger value="editor" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="editor"
+                className="flex items-center space-x-2"
+              >
                 <Edit3 className="h-4 w-4" />
                 <span>Content Editor</span>
               </TabsTrigger>
@@ -499,17 +555,27 @@ const ProductEditor = () => {
                         <Input
                           id="product-name"
                           value={productInfo.name}
-                          onChange={(e) => setProductInfo(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) =>
+                            setProductInfo((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                           className="mt-1"
                         />
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="product-description">Description</Label>
                         <Textarea
                           id="product-description"
                           value={productInfo.description}
-                          onChange={(e) => setProductInfo(prev => ({ ...prev, description: e.target.value }))}
+                          onChange={(e) =>
+                            setProductInfo((prev) => ({
+                              ...prev,
+                              description: e.target.value,
+                            }))
+                          }
                           placeholder="Describe your product and its key features..."
                           rows={4}
                           className="mt-1"
@@ -522,23 +588,33 @@ const ProductEditor = () => {
                           <Input
                             id="version"
                             value={productInfo.version}
-                            onChange={(e) => setProductInfo(prev => ({ ...prev, version: e.target.value }))}
+                            onChange={(e) =>
+                              setProductInfo((prev) => ({
+                                ...prev,
+                                version: e.target.value,
+                              }))
+                            }
                             className="mt-1"
                           />
                         </div>
-                        
+
                         <div>
                           <Label htmlFor="status">Status</Label>
                           <Input
                             id="status"
                             value={productInfo.status}
-                            onChange={(e) => setProductInfo(prev => ({ ...prev, status: e.target.value }))}
+                            onChange={(e) =>
+                              setProductInfo((prev) => ({
+                                ...prev,
+                                status: e.target.value,
+                              }))
+                            }
                             className="mt-1"
                           />
                         </div>
                       </div>
-                      
-                      <Button 
+
+                      <Button
                         onClick={handleProductInfoSave}
                         className="w-full bg-gradient-button text-white border-0"
                       >
@@ -556,30 +632,47 @@ const ProductEditor = () => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-primary">24</div>
-                        <div className="text-sm text-muted-foreground">Articles</div>
+                        <div className="text-2xl font-bold text-primary">
+                          24
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Articles
+                        </div>
                       </div>
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
                         <div className="text-2xl font-bold text-accent">8</div>
-                        <div className="text-sm text-muted-foreground">Video Tours</div>
+                        <div className="text-sm text-muted-foreground">
+                          Video Tours
+                        </div>
                       </div>
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-success">156</div>
-                        <div className="text-sm text-muted-foreground">Views</div>
+                        <div className="text-2xl font-bold text-success">
+                          156
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Views
+                        </div>
                       </div>
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-warning">12</div>
-                        <div className="text-sm text-muted-foreground">Tickets</div>
+                        <div className="text-2xl font-bold text-warning">
+                          12
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Tickets
+                        </div>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">Documentation Coverage</span>
                         <Badge variant="secondary">78%</Badge>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
-                        <div className="bg-gradient-to-r from-primary to-accent h-2 rounded-full" style={{ width: '78%' }}></div>
+                        <div
+                          className="bg-gradient-to-r from-primary to-accent h-2 rounded-full"
+                          style={{ width: "78%" }}
+                        ></div>
                       </div>
                     </div>
                   </CardContent>
@@ -594,12 +687,19 @@ const ProductEditor = () => {
                 <div className="bg-gradient-to-r from-background via-muted/10 to-background border border-border/50 rounded-lg p-6 mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className={`p-3 rounded-lg bg-gradient-to-br ${currentProduct.color} text-white text-xl`}>
+                      <div
+                        className={`p-3 rounded-lg bg-gradient-to-br ${currentProduct.color} text-white text-xl`}
+                      >
                         {currentProduct.icon}
                       </div>
                       <div>
-                        <h2 className="text-xl font-semibold text-foreground">Document Editor</h2>
-                        <p className="text-sm text-muted-foreground">Create comprehensive documentation for {currentProduct.name}</p>
+                        <h2 className="text-xl font-semibold text-foreground">
+                          Document Editor
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                          Create comprehensive documentation for{" "}
+                          {currentProduct.name}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -619,7 +719,7 @@ const ProductEditor = () => {
                         className="bg-gradient-to-r from-accent/10 to-primary/10 hover:from-accent/20 hover:to-primary/20 border-accent/20 hover:border-accent/30"
                       >
                         <Eye className="h-4 w-4 mr-2" />
-                        {isPreview ? 'Edit Mode' : 'Preview'}
+                        {isPreview ? "Edit Mode" : "Preview"}
                       </Button>
                       <Button
                         size="sm"
@@ -631,13 +731,13 @@ const ProductEditor = () => {
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* Article Title Input */}
                   <div>
-                    <Input 
+                    <Input
                       value={articleTitle}
                       onChange={(e) => setArticleTitle(e.target.value)}
-                      placeholder="Enter your article title here..." 
+                      placeholder="Enter your article title here..."
                       className="text-2xl font-bold border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0 py-2"
                     />
                   </div>
@@ -650,8 +750,12 @@ const ProductEditor = () => {
                     <div className="flex items-center justify-between mb-6 px-4">
                       <div className="flex items-center space-x-2">
                         <FileText className="h-5 w-5 text-primary" />
-                        <span className="font-medium text-foreground">Document Sections</span>
-                        <span className="text-sm text-muted-foreground">({sections.length})</span>
+                        <span className="font-medium text-foreground">
+                          Document Sections
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          ({sections.length})
+                        </span>
                       </div>
                       <Button
                         variant="outline"
@@ -663,7 +767,7 @@ const ProductEditor = () => {
                         <span>New Section</span>
                       </Button>
                     </div>
-                    
+
                     {/* Document Sections - Hierarchical Structure */}
                     <div className="space-y-6">
                       {getSectionHierarchy().map((section, index) => (
@@ -683,7 +787,12 @@ const ProductEditor = () => {
                                 </div>
                                 <Input
                                   value={section.title}
-                                  onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                                  onChange={(e) =>
+                                    updateSectionTitle(
+                                      section.id,
+                                      e.target.value
+                                    )
+                                  }
                                   className="font-semibold text-lg border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0"
                                   placeholder={`Section ${index + 1} title...`}
                                 />
@@ -700,8 +809,13 @@ const ProductEditor = () => {
                                 </Button>
                                 {sections.length > 1 && (
                                   <>
-                                    <VideoEmbedButton 
-                                      onVideoEmbed={(videoHtml) => handleVideoEmbedInSection(section.id, videoHtml)}
+                                    <VideoEmbedButton
+                                      onVideoEmbed={(videoHtml) =>
+                                        handleVideoEmbedInSection(
+                                          section.id,
+                                          videoHtml
+                                        )
+                                      }
                                     />
                                     <Button
                                       variant="ghost"
@@ -715,7 +829,7 @@ const ProductEditor = () => {
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* Rich Text Editor for Main Section */}
                             <div className="bg-background border border-border/20 rounded-b-xl">
                               <div className="editor-wrapper-stable">
@@ -727,25 +841,40 @@ const ProductEditor = () => {
                                   }}
                                   key={`stable-editor-${section.id}`}
                                   theme="snow"
-                                  value={section.content || ''}
-                                  onChange={(content) => updateSectionContent(section.id, content)}
+                                  value={section.content || ""}
+                                  onChange={(content) =>
+                                    updateSectionContent(section.id, content)
+                                  }
                                   modules={{
                                     toolbar: [
-                                      [{ 'header': [1, 2, 3, false] }],
-                                      ['bold', 'italic', 'underline', 'strike'],
-                                      [{ 'color': [] }, { 'background': [] }],
-                                      ['blockquote', 'code-block'],
-                                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                      ['link', 'image', 'video'],
-                                      ['clean']
-                                    ]
+                                      [{ header: [1, 2, 3, false] }],
+                                      ["bold", "italic", "underline", "strike"],
+                                      [{ color: [] }, { background: [] }],
+                                      ["blockquote", "code-block"],
+                                      [{ list: "ordered" }, { list: "bullet" }],
+                                      ["link", "image", "video"],
+                                      ["clean"],
+                                    ],
                                   }}
                                   formats={[
-                                    'header', 'bold', 'italic', 'underline', 'strike',
-                                    'list', 'bullet', 'link', 'image', 'video',
-                                    'blockquote', 'code-block', 'color', 'background'
+                                    "header",
+                                    "bold",
+                                    "italic",
+                                    "underline",
+                                    "strike",
+                                    "list",
+                                    "bullet",
+                                    "link",
+                                    "image",
+                                    "video",
+                                    "blockquote",
+                                    "code-block",
+                                    "color",
+                                    "background",
                                   ]}
-                                  placeholder={`Start writing content for "${section.title || `Section ${index + 1}`}"...`}
+                                  placeholder={`Start writing content for "${
+                                    section.title || `Section ${index + 1}`
+                                  }"...`}
                                   className="stable-section-editor"
                                 />
                               </div>
@@ -754,7 +883,7 @@ const ProductEditor = () => {
 
                           {/* Subsections */}
                           {section.children.map((subsection, subIndex) => (
-                            <div 
+                            <div
                               key={subsection.id}
                               className="ml-8 group animate-fade-in bg-white dark:bg-gray-900/50 border border-border/40 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-l-accent/50"
                             >
@@ -771,14 +900,26 @@ const ProductEditor = () => {
                                   </div>
                                   <Input
                                     value={subsection.title}
-                                    onChange={(e) => updateSectionTitle(subsection.id, e.target.value)}
+                                    onChange={(e) =>
+                                      updateSectionTitle(
+                                        subsection.id,
+                                        e.target.value
+                                      )
+                                    }
                                     className="font-medium text-base border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none px-0"
-                                    placeholder={`Subsection ${subIndex + 1} title...`}
+                                    placeholder={`Subsection ${
+                                      subIndex + 1
+                                    } title...`}
                                   />
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                  <VideoEmbedButton 
-                                    onVideoEmbed={(videoHtml) => handleVideoEmbedInSection(subsection.id, videoHtml)}
+                                  <VideoEmbedButton
+                                    onVideoEmbed={(videoHtml) =>
+                                      handleVideoEmbedInSection(
+                                        subsection.id,
+                                        videoHtml
+                                      )
+                                    }
                                   />
                                   <Button
                                     variant="ghost"
@@ -790,35 +931,57 @@ const ProductEditor = () => {
                                   </Button>
                                 </div>
                               </div>
-                              
+
                               {/* Rich Text Editor for Subsection */}
                               <div className="bg-background border border-border/10 rounded-b-lg">
                                 <div className="editor-wrapper-stable">
                                   <ReactQuill
                                     ref={(el) => {
                                       if (el) {
-                                        setQuillRef(subsection.id, el.getEditor());
+                                        setQuillRef(
+                                          subsection.id,
+                                          el.getEditor()
+                                        );
                                       }
                                     }}
                                     key={`stable-editor-${subsection.id}`}
                                     theme="snow"
-                                    value={subsection.content || ''}
-                                    onChange={(content) => updateSectionContent(subsection.id, content)}
+                                    value={subsection.content || ""}
+                                    onChange={(content) =>
+                                      updateSectionContent(
+                                        subsection.id,
+                                        content
+                                      )
+                                    }
                                     modules={{
                                       toolbar: [
-                                        [{ 'header': [2, 3, false] }],
-                                        ['bold', 'italic', 'underline'],
-                                        ['blockquote', 'code-block'],
-                                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                        ['link', 'image', 'video']
-                                      ]
+                                        [{ header: [2, 3, false] }],
+                                        ["bold", "italic", "underline"],
+                                        ["blockquote", "code-block"],
+                                        [
+                                          { list: "ordered" },
+                                          { list: "bullet" },
+                                        ],
+                                        ["link", "image", "video"],
+                                      ],
                                     }}
                                     formats={[
-                                      'header', 'bold', 'italic', 'underline',
-                                      'list', 'bullet', 'link', 'image', 'video',
-                                      'blockquote', 'code-block'
+                                      "header",
+                                      "bold",
+                                      "italic",
+                                      "underline",
+                                      "list",
+                                      "bullet",
+                                      "link",
+                                      "image",
+                                      "video",
+                                      "blockquote",
+                                      "code-block",
                                     ]}
-                                    placeholder={`Write content for "${subsection.title || `Subsection ${subIndex + 1}`}"...`}
+                                    placeholder={`Write content for "${
+                                      subsection.title ||
+                                      `Subsection ${subIndex + 1}`
+                                    }"...`}
                                     className="stable-section-editor"
                                   />
                                 </div>
@@ -827,47 +990,65 @@ const ProductEditor = () => {
                           ))}
                         </div>
                       ))}
-                      
+
                       {/* Add First Section Prompt */}
                       {sections.length === 0 && (
                         <div className="text-center py-16 bg-gradient-to-br from-muted/20 to-muted/5 border-2 border-dashed border-border rounded-xl">
                           <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-                          <h3 className="text-lg font-semibold text-foreground mb-2">Start Your Documentation</h3>
+                          <h3 className="text-lg font-semibold text-foreground mb-2">
+                            Start Your Documentation
+                          </h3>
                           <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                            Create structured sections to organize your content effectively. Here's how your content will look when published:
+                            Create structured sections to organize your content
+                            effectively. Here's how your content will look when
+                            published:
                           </p>
                           <div className="bg-white dark:bg-gray-900/50 border border-border rounded-lg p-6 mb-6 max-w-3xl mx-auto">
-                            <h4 className="font-semibold mb-4 text-left">Preview: How videos and images will appear</h4>
-                            
+                            <h4 className="font-semibold mb-4 text-left">
+                              Preview: How videos and images will appear
+                            </h4>
+
                             {/* Sample Video Embed */}
                             <div className="mb-6">
-                              <h5 className="text-sm font-medium text-muted-foreground mb-2">Video Embeds:</h5>
+                              <h5 className="text-sm font-medium text-muted-foreground mb-2">
+                                Video Embeds:
+                              </h5>
                               <div className="video-embed-container">
                                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center rounded-lg">
                                   <div className="text-center">
                                     <Video className="h-12 w-12 mx-auto mb-2 text-primary" />
-                                    <p className="text-sm text-muted-foreground">YouTube / Loom / HeyGen Video</p>
-                                    <p className="text-xs text-muted-foreground">Responsive 16:9 aspect ratio</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      YouTube / Loom / HeyGen Video
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Responsive 16:9 aspect ratio
+                                    </p>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                            
+
                             {/* Sample Image Embed */}
                             <div className="mb-4">
-                              <h5 className="text-sm font-medium text-muted-foreground mb-2">Image Embeds:</h5>
+                              <h5 className="text-sm font-medium text-muted-foreground mb-2">
+                                Image Embeds:
+                              </h5>
                               <div className="image-embed-container">
                                 <div className="bg-gradient-to-br from-secondary/10 to-accent/10 border border-border rounded-lg p-8 flex items-center justify-center">
                                   <div className="text-center">
                                     <Image className="h-8 w-8 mx-auto mb-2 text-secondary" />
-                                    <p className="text-sm text-muted-foreground">Screenshots & Images</p>
-                                    <p className="text-xs text-muted-foreground">Automatically optimized</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Screenshots & Images
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Automatically optimized
+                                    </p>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          
+
                           <Button
                             onClick={() => addSection(0)}
                             className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
@@ -885,12 +1066,14 @@ const ProductEditor = () => {
                     <div className="bg-white dark:bg-gray-900/50 border border-border/50 rounded-xl shadow-lg p-8">
                       <div className="text-center mb-12">
                         <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mb-4">
-                          {articleTitle || 'Untitled Article'}
+                          {articleTitle || "Untitled Article"}
                         </h1>
                         <div className="w-24 h-1 bg-gradient-to-r from-primary to-accent mx-auto rounded-full mb-6"></div>
                         <div className="flex items-center justify-center space-x-4 text-sm text-muted-foreground">
                           <div className="flex items-center space-x-1">
-                            <div className={`w-4 h-4 rounded ${currentProduct.color}`}></div>
+                            <div
+                              className={`w-4 h-4 rounded ${currentProduct.color}`}
+                            ></div>
                             <span>{currentProduct.name}</span>
                           </div>
                           <span>•</span>
@@ -899,9 +1082,13 @@ const ProductEditor = () => {
                           <span>Documentation</span>
                         </div>
                       </div>
-                      
+
                       {sections.map((section, index) => (
-                        <div key={section.id} className="mb-16 animate-fade-in" style={{animationDelay: `${index * 0.1}s`}}>
+                        <div
+                          key={section.id}
+                          className="mb-16 animate-fade-in"
+                          style={{ animationDelay: `${index * 0.1}s` }}
+                        >
                           <div className="flex items-start mb-6">
                             <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-white text-sm font-bold mr-6 mt-1">
                               {index + 1}
@@ -914,19 +1101,25 @@ const ProductEditor = () => {
                             </div>
                           </div>
                           <div className="ml-16">
-                            <div 
-                              dangerouslySetInnerHTML={{ __html: section.content }}
+                            <div
+                              dangerouslySetInnerHTML={{
+                                __html: section.content,
+                              }}
                               className="prose prose-lg max-w-none text-foreground/90 leading-relaxed"
                             />
                           </div>
                         </div>
                       ))}
-                      
+
                       {sections.length === 0 && (
                         <div className="text-center py-12 text-muted-foreground">
                           <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                          <h3 className="text-xl font-semibold mb-2">No content to preview</h3>
-                          <p className="text-lg">Switch to edit mode and start adding sections.</p>
+                          <h3 className="text-xl font-semibold mb-2">
+                            No content to preview
+                          </h3>
+                          <p className="text-lg">
+                            Switch to edit mode and start adding sections.
+                          </p>
                         </div>
                       )}
                     </div>
