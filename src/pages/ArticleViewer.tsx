@@ -454,7 +454,7 @@ const ArticleViewer = () => {
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
-              onClick={() => navigate(`/docs/${productId}`)}
+              onClick={() => navigate(`/product/${productId}/docs`)}
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="h-4 w-4" />
