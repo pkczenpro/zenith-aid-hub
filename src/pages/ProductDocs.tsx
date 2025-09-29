@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +17,11 @@ import {
   Menu,
   ArrowLeft,
   Download,
-  Settings
+  Settings,
+  Eye,
+  Video,
+  FileSpreadsheet,
+  Briefcase
 } from 'lucide-react';
 
 interface Article {
@@ -57,6 +62,8 @@ const ProductDocs = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'documentation' | 'resources'>('documentation');
   const [resources, setResources] = useState<any[]>([]);
+  const [selectedResource, setSelectedResource] = useState<any | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (user && productId) {
@@ -266,12 +273,33 @@ const ProductDocs = () => {
 
   const getResourceTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
+      sales_deck: 'Sales Deck',
       factsheet: 'Product Factsheet',
-      sales_material: 'Sales Material',
+      case_study: 'Case Study',
+      brochure: 'Product Brochure',
       tutorial: 'Tutorial',
+      video: 'Video',
       other: 'Other',
     };
     return labels[type] || type;
+  };
+
+
+  const getResourceIcon = (type: string) => {
+    switch (type) {
+      case 'sales_deck':
+        return Briefcase;
+      case 'factsheet':
+        return FileSpreadsheet;
+      case 'case_study':
+        return BookOpen;
+      case 'brochure':
+        return FileText;
+      case 'video':
+        return Video;
+      default:
+        return FileText;
+    }
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -614,39 +642,69 @@ const ProductDocs = () => {
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {resources.map((resource) => (
-                      <div
-                        key={resource.id}
-                        className="border border-border rounded-lg p-6 hover:border-primary/50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <FileText className="h-8 w-8 text-primary" />
-                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                            {getResourceTypeLabel(resource.resource_type)}
-                          </span>
-                        </div>
-                        <h3 className="text-lg font-semibold text-foreground mb-2">
-                          {resource.title}
-                        </h3>
-                        {resource.description && (
-                          <p className="text-sm text-muted-foreground mb-4">
-                            {resource.description}
-                          </p>
-                        )}
-                        <div className="space-y-1 text-xs text-muted-foreground mb-4">
-                          <p>File: {resource.file_name}</p>
-                          <p>Size: {formatFileSize(resource.file_size)}</p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => window.open(resource.file_url, '_blank')}
+                    {resources.map((resource) => {
+                      const ResourceIcon = getResourceIcon(resource.resource_type);
+                      return (
+                        <div
+                          key={resource.id}
+                          className="border border-border rounded-lg p-6 hover:border-primary/50 hover:shadow-lg transition-all"
                         >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>
-                      </div>
-                    ))}
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="p-3 bg-primary/10 rounded-lg">
+                              <ResourceIcon className="h-8 w-8 text-primary" />
+                            </div>
+                            <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-medium">
+                              {getResourceTypeLabel(resource.resource_type)}
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-foreground mb-2">
+                            {resource.title}
+                          </h3>
+                          {resource.description && (
+                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                              {resource.description}
+                            </p>
+                          )}
+                          <div className="space-y-1 text-xs text-muted-foreground mb-4 pb-4 border-b border-border">
+                            <div className="flex justify-between">
+                              <span>Type:</span>
+                              <span className="font-medium">{resource.file_type?.toUpperCase() || 'PDF'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Size:</span>
+                              <span className="font-medium">{formatFileSize(resource.file_size)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Product:</span>
+                              <span className="font-medium truncate ml-2">{product.name}</span>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => {
+                                setSelectedResource(resource);
+                                setPreviewOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Preview
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => window.open(resource.file_url, '_blank')}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -684,6 +742,35 @@ const ProductDocs = () => {
           </aside>
         )}
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{selectedResource?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedResource?.description || `${getResourceTypeLabel(selectedResource?.resource_type || '')} - ${product.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {selectedResource?.file_type === 'pdf' ? (
+              <iframe
+                src={selectedResource.file_url}
+                className="w-full h-full border rounded"
+                title={selectedResource.title}
+              />
+            ) : selectedResource?.file_type === 'video' ? (
+              <video
+                controls
+                className="w-full h-full rounded"
+                src={selectedResource.file_url}
+              >
+                Your browser does not support the video tag.
+              </video>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

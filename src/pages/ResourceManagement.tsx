@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Eye, Video, FileSpreadsheet, Briefcase, BookOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Resource {
@@ -17,6 +17,7 @@ interface Resource {
   title: string;
   description: string | null;
   resource_type: string;
+  file_type: string;
   file_url: string;
   file_name: string;
   file_size: number | null;
@@ -35,6 +36,8 @@ const ResourceManagement = () => {
   const { toast } = useToast();
   const [product, setProduct] = useState<Product | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -42,7 +45,8 @@ const ResourceManagement = () => {
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [resourceType, setResourceType] = useState<string>('factsheet');
+  const [resourceType, setResourceType] = useState<string>('sales_deck');
+  const [fileType, setFileType] = useState<string>('pdf');
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -89,14 +93,25 @@ const ResourceManagement = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      if (selectedFile.type !== 'application/pdf') {
+      const validPdfTypes = ['application/pdf'];
+      const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+      
+      if (!validPdfTypes.includes(selectedFile.type) && !validVideoTypes.includes(selectedFile.type)) {
         toast({
           title: "Invalid File",
-          description: "Please upload a PDF file.",
+          description: "Please upload a PDF or video file (MP4, WebM, OGG, MOV).",
           variant: "destructive",
         });
         return;
       }
+      
+      // Auto-detect file type
+      if (validPdfTypes.includes(selectedFile.type)) {
+        setFileType('pdf');
+      } else if (validVideoTypes.includes(selectedFile.type)) {
+        setFileType('video');
+      }
+      
       setFile(selectedFile);
     }
   };
@@ -137,6 +152,7 @@ const ResourceManagement = () => {
           title,
           description: description || null,
           resource_type: resourceType,
+          file_type: fileType,
           file_url: publicUrl,
           file_name: file.name,
           file_size: file.size,
@@ -153,7 +169,8 @@ const ResourceManagement = () => {
       // Reset form
       setTitle('');
       setDescription('');
-      setResourceType('factsheet');
+      setResourceType('sales_deck');
+      setFileType('pdf');
       setFile(null);
       setIsDialogOpen(false);
 
@@ -218,12 +235,32 @@ const ResourceManagement = () => {
 
   const getResourceTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
+      sales_deck: 'Sales Deck',
       factsheet: 'Product Factsheet',
-      sales_material: 'Sales Material',
+      case_study: 'Case Study',
+      brochure: 'Product Brochure',
       tutorial: 'Tutorial',
+      video: 'Video',
       other: 'Other',
     };
     return labels[type] || type;
+  };
+
+  const getResourceIcon = (type: string) => {
+    switch (type) {
+      case 'sales_deck':
+        return Briefcase;
+      case 'factsheet':
+        return FileSpreadsheet;
+      case 'case_study':
+        return BookOpen;
+      case 'brochure':
+        return FileText;
+      case 'video':
+        return Video;
+      default:
+        return FileText;
+    }
   };
 
   if (loading) {
@@ -296,20 +333,23 @@ const ResourceManagement = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="sales_deck">Sales Deck</SelectItem>
                         <SelectItem value="factsheet">Product Factsheet</SelectItem>
-                        <SelectItem value="sales_material">Sales Material</SelectItem>
+                        <SelectItem value="case_study">Case Study</SelectItem>
+                        <SelectItem value="brochure">Product Brochure</SelectItem>
                         <SelectItem value="tutorial">Tutorial</SelectItem>
+                        <SelectItem value="video">Video</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label htmlFor="file">PDF File *</Label>
+                    <Label htmlFor="file">File * (PDF or Video)</Label>
                     <Input
                       id="file"
                       type="file"
-                      accept=".pdf"
+                      accept=".pdf,video/*"
                       onChange={handleFileChange}
                     />
                     {file && (
@@ -356,27 +396,53 @@ const ResourceManagement = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resources.map((resource) => (
-              <Card key={resource.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                      {getResourceTypeLabel(resource.resource_type)}
-                    </span>
-                  </div>
-                  <CardTitle className="text-lg mt-2">{resource.title}</CardTitle>
-                  {resource.description && (
-                    <CardDescription>{resource.description}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                    <p>File: {resource.file_name}</p>
-                    <p>Size: {formatFileSize(resource.file_size)}</p>
-                    <p>Uploaded: {new Date(resource.created_at).toLocaleDateString()}</p>
-                  </div>
-                  <div className="flex space-x-2">
+            {resources.map((resource) => {
+              const ResourceIcon = getResourceIcon(resource.resource_type);
+              return (
+                <Card key={resource.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-3 bg-primary/10 rounded-lg">
+                        <ResourceIcon className="h-8 w-8 text-primary" />
+                      </div>
+                      <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-medium">
+                        {getResourceTypeLabel(resource.resource_type)}
+                      </span>
+                    </div>
+                    <CardTitle className="text-lg">{resource.title}</CardTitle>
+                    {resource.description && (
+                      <CardDescription className="line-clamp-2">{resource.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center justify-between">
+                        <span>Type:</span>
+                        <span className="font-medium">{resource.file_type.toUpperCase()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Size:</span>
+                        <span className="font-medium">{formatFileSize(resource.file_size)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Product:</span>
+                        <span className="font-medium truncate ml-2">{product?.name}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => {
+                        setSelectedResource(resource);
+                        setPreviewOpen(true);
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -393,13 +459,42 @@ const ResourceManagement = () => {
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
         )}
       </main>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{selectedResource?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedResource?.description || `Preview ${getResourceTypeLabel(selectedResource?.resource_type || '')}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {selectedResource?.file_type === 'pdf' ? (
+              <iframe
+                src={selectedResource.file_url}
+                className="w-full h-full border rounded"
+                title={selectedResource.title}
+              />
+            ) : selectedResource?.file_type === 'video' ? (
+              <video
+                controls
+                className="w-full h-full rounded"
+                src={selectedResource.file_url}
+              >
+                Your browser does not support the video tag.
+              </video>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
