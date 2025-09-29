@@ -350,7 +350,7 @@ const ProductDocs = () => {
                     }`}
                     onClick={() => setSelectedArticle(article)}
                   >
-                    <div className="flex items-start space-x-3">
+                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 mt-0.5">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
                           selectedArticle?.id === article.id 
@@ -361,11 +361,13 @@ const ProductDocs = () => {
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className={`font-medium mb-1 line-clamp-2 ${
+                        <h3 className={`font-medium mb-1 line-clamp-2 cursor-pointer ${
                           selectedArticle?.id === article.id 
                             ? 'text-primary' 
                             : 'text-foreground group-hover:text-primary'
-                        }`}>
+                        }`}
+                        onClick={() => navigate(`/product/${productId}/article/article-${index + 1}`)}
+                        >
                           {article.title}
                         </h3>
                         <p className="text-xs text-muted-foreground">

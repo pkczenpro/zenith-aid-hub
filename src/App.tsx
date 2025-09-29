@@ -11,6 +11,7 @@ import ProductEditor from "./pages/ProductEditor";
 import ProductDocs from "./pages/ProductDocs";
 import ProductManagement from "./pages/ProductManagement";
 import ArticleViewer from "./pages/ArticleViewer";
+import ArticleList from "./pages/ArticleList";
 import ClientManagement from "./pages/ClientManagement";
 import ClientDashboard from "./pages/ClientDashboard";
 import ProductDashboard from "./pages/ProductDashboard";
@@ -33,9 +34,14 @@ const App = () => (
                 <ProductManagement />
               </ProtectedRoute>
             } />
-            <Route path="/product/:productId" element={
+            <Route path="/product/:productId/editor" element={
               <ProtectedRoute requireAdmin>
                 <ProductEditor />
+              </ProtectedRoute>
+            } />
+            <Route path="/product/:productId/articles" element={
+              <ProtectedRoute requireAdmin>
+                <ArticleList />
               </ProtectedRoute>
             } />
             <Route path="/product/:productId/docs" element={
@@ -44,6 +50,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/docs/:productId/:articleId" element={
+              <ProtectedRoute>
+                <ArticleViewer />
+              </ProtectedRoute>
+            } />
+            <Route path="/product/:productId/article/:articleId" element={
               <ProtectedRoute>
                 <ArticleViewer />
               </ProtectedRoute>

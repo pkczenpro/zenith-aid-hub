@@ -66,18 +66,10 @@ const ArticleViewer = () => {
         return;
       }
 
-      // Validate UUID format for articleId
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(articleId)) {
-        console.error('ArticleViewer - Invalid article ID format:', articleId);
-        toast({
-          title: "Invalid Article",
-          description: "The article ID format is invalid.",
-          variant: "destructive",
-        });
-        navigate(`/product/${productId}/docs`);
-        return;
-      }
+      // Allow both UUID and friendly ID formats
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(articleId);
+      
+      console.log('ArticleViewer - Article ID format check:', { articleId, isUUID });
 
       // Check access for non-admin users
       if (!isAdmin && user && profile) {
@@ -154,14 +146,33 @@ const ArticleViewer = () => {
         setAllArticles(processedArticles);
       }
 
-      // Fetch specific article
-      const { data: articleData, error: articleError } = await supabase
+      // Fetch specific article - support both UUID and friendly IDs
+      let articleQuery = supabase
         .from('articles')
         .select('*')
-        .eq('id', articleId)
         .eq('product_id', productId)
-        .eq('status', 'published')
-        .maybeSingle();
+        .eq('status', 'published');
+      
+      if (isUUID) {
+        articleQuery = articleQuery.eq('id', articleId);
+      } else {
+        // For friendly IDs, try to match by position or title
+        const articleIndex = parseInt(articleId.replace('article-', '')) - 1;
+        if (!isNaN(articleIndex)) {
+          const { data: allArticles } = await supabase
+            .from('articles')
+            .select('*')
+            .eq('product_id', productId)
+            .eq('status', 'published')
+            .order('created_at', { ascending: true });
+          
+          if (allArticles && allArticles[articleIndex]) {
+            articleQuery = articleQuery.eq('id', allArticles[articleIndex].id);
+          }
+        }
+      }
+      
+      const { data: articleData, error: articleError } = await articleQuery.maybeSingle();
 
       if (articleError) {
         console.error('Error fetching article:', articleError);

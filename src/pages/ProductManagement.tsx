@@ -27,7 +27,8 @@ import {
   Search,
   Image as ImageIcon,
   MessageCircle,
-  Headphones
+  Headphones,
+  BookOpen
 } from 'lucide-react';
 
 interface Product {
@@ -459,18 +460,31 @@ const ProductManagement = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/product/${product.id}`)}
+                        onClick={() => navigate(`/product/${product.id}/editor`)}
                         className="flex-1"
                       >
                         <FileText className="mr-2 h-4 w-4" />
-                        Docs
+                        Edit Docs
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => openEditDialog(product)}
+                        onClick={() => navigate(`/product/${product.id}/articles`)}
+                        className="flex-1"
                       >
-                        <Edit3 className="h-4 w-4" />
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        Articles
+                      </Button>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(product)}
+                        className="flex-1"
+                      >
+                        <Edit3 className="mr-2 h-4 w-4" />
+                        Edit Product
                       </Button>
                       <Button
                         variant="outline"

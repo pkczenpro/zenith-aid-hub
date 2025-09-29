@@ -113,22 +113,35 @@ const ProductEditor = () => {
 
   // Load existing article content on mount
   useEffect(() => {
-    if (productId && currentProduct) {
-      loadExistingArticle();
+    if (productId) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const editingArticleId = urlParams.get('articleId');
+      
+      if (editingArticleId) {
+        loadSpecificArticle(editingArticleId);
+      } else {
+        // Reset to default for new article
+        setArticleTitle('');
+        setSections([{ 
+          id: '1', 
+          title: 'Getting Started', 
+          content: '',
+          order: 0,
+          level: 0
+        }]);
+      }
     }
-  }, [productId, currentProduct]);
+  }, [productId]);
 
-  const loadExistingArticle = async () => {
+  const loadSpecificArticle = async (articleId: string) => {
     try {
       const { data, error } = await supabase
         .from('articles')
         .select('*')
-        .eq('product_id', productId)
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('id', articleId)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
@@ -146,7 +159,12 @@ const ProductEditor = () => {
         }
       }
     } catch (error) {
-      console.error('Error loading article:', error);
+      console.error('Error loading specific article:', error);
+      toast({
+        title: "Error loading article",
+        description: "Failed to load the article for editing.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -312,37 +330,55 @@ const ProductEditor = () => {
     }
 
     try {
+      // Handle new article creation with proper unique IDs and better structure
+      const newSectionId = Date.now().toString();
       const articleData = {
         product_id: productId,
         title: articleTitle,
-        content: sections as any, // Cast to satisfy Json type
+        content: sections.map(section => ({
+          ...section,
+          id: section.id || newSectionId + '_' + Math.random().toString(36).substr(2, 9)
+        })) as any, // Cast to satisfy Json type
         created_by: profile?.id,
         status: 'published'
       };
 
-      // Check if article already exists
-      const { data: existingArticle, error: fetchError } = await supabase
-        .from('articles')
-        .select('id')
-        .eq('product_id', productId)
-        .maybeSingle();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
-
+      // Check if we're editing a specific article or creating new one
+      const urlParams = new URLSearchParams(window.location.search);
+      const editingArticleId = urlParams.get('articleId');
+      
       let result;
-      if (existingArticle) {
-        // Update existing article
+      if (editingArticleId) {
+        // Update specific article
         result = await supabase
           .from('articles')
           .update(articleData)
-          .eq('id', existingArticle.id);
+          .eq('id', editingArticleId);
       } else {
-        // Create new article
-        result = await supabase
+        // Check if article with same title already exists
+        const { data: existingArticle, error: fetchError } = await supabase
           .from('articles')
-          .insert([articleData]);
+          .select('id')
+          .eq('product_id', productId)
+          .eq('title', articleTitle)
+          .maybeSingle();
+
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          throw fetchError;
+        }
+
+        if (existingArticle) {
+          // Update existing article with same title
+          result = await supabase
+            .from('articles')
+            .update(articleData)
+            .eq('id', existingArticle.id);
+        } else {
+          // Create new article
+          result = await supabase
+            .from('articles')
+            .insert([articleData]);
+        }
       }
 
       if (result.error) {
@@ -364,8 +400,8 @@ const ProductEditor = () => {
   };
 
   const handleViewArticle = () => {
-    // Navigate to the article viewer with the current product and a mock article ID
-    navigate(`/docs/${productId}/article-1`);
+    // Navigate to the article viewer with the current product
+    navigate(`/product/${productId}/docs`);
   };
 
   const handleProductInfoSave = () => {
