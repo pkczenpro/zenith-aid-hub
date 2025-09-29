@@ -442,7 +442,7 @@ const ClientManagement = () => {
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+                            <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
                               {client.logo_url ? (
                                 <img 
                                   src={client.logo_url} 
