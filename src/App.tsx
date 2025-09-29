@@ -34,6 +34,11 @@ const App = () => (
                 <ProductManagement />
               </ProtectedRoute>
             } />
+            <Route path="/product/:productId" element={
+              <ProtectedRoute requireAdmin>
+                <ProductEditor />
+              </ProtectedRoute>
+            } />
             <Route path="/product/:productId/editor" element={
               <ProtectedRoute requireAdmin>
                 <ProductEditor />
