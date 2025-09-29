@@ -1,15 +1,13 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Bell, Search, Settings, User, Menu, Shield, LogOut, Users, Plus, MessageCircle } from "lucide-react";
+import { Bell, Settings, User, Menu, Shield, LogOut, Users, Plus, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const Header = () => {
-  const [searchQuery, setSearchQuery] = useState("");
   const { user, profile, signOut, isAdmin } = useAuth();
 
   return (
@@ -31,16 +29,7 @@ const Header = () => {
 
           {/* Search Bar */}
           <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search documentation..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-muted/50 border-0 focus-visible:ring-1"
-              />
-            </div>
+            <GlobalSearch />
           </div>
 
           {/* Right Navigation */}
