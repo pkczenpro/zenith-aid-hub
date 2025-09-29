@@ -498,12 +498,46 @@ const ResourceManagement = () => {
           </DialogHeader>
           <div className="flex-1 overflow-hidden h-full">
             {selectedResource?.file_type === 'pdf' ? (
-              <iframe
-                src={`${selectedResource.file_url}#view=FitH`}
+              <object
+                data={selectedResource.file_url}
+                type="application/pdf"
                 className="w-full h-full border-0 rounded"
-                title={selectedResource.title}
                 style={{ minHeight: '600px' }}
-              />
+              >
+                <div className="flex flex-col items-center justify-center h-full space-y-4">
+                  <FileText className="h-16 w-16 text-primary" />
+                  <p className="text-lg font-medium">Unable to display PDF</p>
+                  <p className="text-sm text-muted-foreground text-center max-w-md">
+                    Your browser cannot display this PDF. Please download it to view.
+                  </p>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(selectedResource.file_url);
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = selectedResource.file_name;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+                      } catch (error) {
+                        console.error('Download error:', error);
+                        toast({
+                          title: "Download Failed",
+                          description: "Failed to download the file.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </div>
+              </object>
             ) : selectedResource?.file_type === 'pptx' ? (
               <div className="flex flex-col items-center justify-center h-full space-y-4">
                 <FileText className="h-16 w-16 text-primary" />
