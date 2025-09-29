@@ -319,7 +319,7 @@ const TicketManagement = () => {
                     {product.name}
                   </SelectItem>
                 ))}
-                <SelectItem value="">General</SelectItem>
+                <SelectItem value="general">General</SelectItem>
               </SelectContent>
             </Select>
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
