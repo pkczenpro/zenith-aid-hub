@@ -395,6 +395,15 @@ const ProductCategories = () => {
                             Articles
                           </Button>
                         </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/product/${product.id}/docs`)}
+                          className="w-full"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Documentation
+                        </Button>
                       </>
                     ) : (
                         <Button
