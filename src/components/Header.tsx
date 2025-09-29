@@ -62,14 +62,22 @@ const Header = () => {
                         Products
                       </Button>
                     </Link>
+                    <Link to="/support">
+                      <Button variant="ghost" size="sm" className="hidden sm:flex">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Support
+                      </Button>
+                    </Link>
                   </>
                 )}
 
-                {/* Chat Support */}
-                <Button variant="ghost" size="sm" className="hidden sm:flex">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Chat
-                </Button>
+                {/* Chat Support for Clients */}
+                {!isAdmin && (
+                  <Button variant="ghost" size="sm" className="hidden sm:flex">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Chat
+                  </Button>
+                )}
 
                 {/* Notifications */}
                 <Button variant="ghost" size="icon" className="relative">

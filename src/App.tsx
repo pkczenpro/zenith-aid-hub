@@ -53,6 +53,11 @@ const App = () => (
                 <ClientManagement />
               </ProtectedRoute>
             } />
+            <Route path="/support" element={
+              <ProtectedRoute requireAdmin>
+                <ProductManagement />
+              </ProtectedRoute>
+            } />
             <Route path="/client/:clientId/docs" element={
               <ProtectedRoute>
                 <ClientDashboard />

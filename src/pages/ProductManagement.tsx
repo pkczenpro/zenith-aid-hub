@@ -82,6 +82,10 @@ const ProductManagement = () => {
       navigate('/');
       return;
     }
+    // Check if we're on /support route and set appropriate tab
+    if (window.location.pathname === '/support') {
+      setActiveTab('support');
+    }
     fetchProducts();
   }, [isAdmin, navigate]);
 
@@ -346,11 +350,14 @@ const ProductManagement = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-gradient flex items-center gap-2">
-                <Package className="h-8 w-8" />
-                Admin Dashboard
+                {activeTab === 'support' ? <Headphones className="h-8 w-8" /> : <Package className="h-8 w-8" />}
+                {activeTab === 'support' ? 'Support & Tickets' : 'Admin Dashboard'}
               </h1>
               <p className="text-muted-foreground mt-1">
-                Manage products, documentation, and customer support
+                {activeTab === 'support' 
+                  ? 'Manage customer support tickets and live chat'
+                  : 'Manage products, documentation, and customer support'
+                }
               </p>
             </div>
           </div>
@@ -358,7 +365,7 @@ const ProductManagement = () => {
           <div className="flex items-center space-x-4">
             <Button
               variant={activeTab === 'products' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('products')}
+              onClick={() => { setActiveTab('products'); navigate('/products'); }}
               className="flex items-center space-x-2"
             >
               <Package className="h-4 w-4" />
@@ -366,11 +373,11 @@ const ProductManagement = () => {
             </Button>
             <Button
               variant={activeTab === 'support' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('support')}
+              onClick={() => { setActiveTab('support'); navigate('/support'); }}
               className="flex items-center space-x-2"
             >
               <Headphones className="h-4 w-4" />
-              <span>Support</span>
+              <span>Support & Tickets</span>
             </Button>
           </div>
         </div>

@@ -85,7 +85,7 @@ const ClientChat = () => {
             };
             
             // Only add message if it's not from current user to avoid duplicates
-            if (payload.new.profile_id !== user?.id) {
+            if (payload.new.user_id !== user?.id) {
               setMessages(prev => [...prev, newMessage]);
               // Play sound notification for received messages
               soundService.playMessageReceived();
@@ -161,6 +161,7 @@ const ClientChat = () => {
         `);
 
       // If not admin, only show user's messages
+      // If admin, show all messages for admin interface
       if (!isAdmin) {
         query = query.eq('profile_id', currentProfile.id);
       }
