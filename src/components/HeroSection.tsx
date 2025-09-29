@@ -1,20 +1,194 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, ArrowRight, BookOpen, Users, MessageCircle, Plus, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Search, ArrowRight, BookOpen, Users, MessageCircle, Plus, FileText, Package, Megaphone, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SearchResult {
+  id: string;
+  type: 'article' | 'resource' | 'release';
+  title: string;
+  description?: string;
+  productId: string;
+  productName?: string;
+  category?: string;
+}
 
 const HeroSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const { user, profile, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   const stats = [
     { icon: BookOpen, label: "Articles", value: "500+" },
     { icon: Users, label: "Happy Users", value: "10K+" },
     { icon: MessageCircle, label: "Tickets Resolved", value: "25K+" },
   ];
+
+  useEffect(() => {
+    const performSearch = async () => {
+      if (searchQuery.length < 2) {
+        setResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+
+      try {
+        const searchTerm = `%${searchQuery}%`;
+
+        // Search articles
+        const { data: articles } = await supabase
+          .from('articles')
+          .select(`
+            id,
+            title,
+            product_id,
+            products (name, category)
+          `)
+          .ilike('title', searchTerm)
+          .limit(10);
+
+        // Search resources
+        const { data: resources } = await supabase
+          .from('product_resources')
+          .select(`
+            id,
+            title,
+            description,
+            product_id,
+            products (name, category)
+          `)
+          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
+          .limit(10);
+
+        // Search release notes
+        const { data: releases } = await supabase
+          .from('release_notes')
+          .select(`
+            id,
+            title,
+            version,
+            product_id,
+            products (name, category)
+          `)
+          .eq('status', 'published')
+          .or(`title.ilike.${searchTerm},version.ilike.${searchTerm}`)
+          .limit(10);
+
+        const allResults: SearchResult[] = [];
+
+        if (articles) {
+          articles.forEach((article: any) => {
+            allResults.push({
+              id: article.id,
+              type: 'article',
+              title: article.title,
+              productId: article.product_id,
+              productName: article.products?.name,
+              category: article.products?.category,
+            });
+          });
+        }
+
+        if (resources) {
+          resources.forEach((resource: any) => {
+            allResults.push({
+              id: resource.id,
+              type: 'resource',
+              title: resource.title,
+              description: resource.description,
+              productId: resource.product_id,
+              productName: resource.products?.name,
+              category: resource.products?.category,
+            });
+          });
+        }
+
+        if (releases) {
+          releases.forEach((release: any) => {
+            allResults.push({
+              id: release.id,
+              type: 'release',
+              title: release.title,
+              description: release.version,
+              productId: release.product_id,
+              productName: release.products?.name,
+              category: release.products?.category,
+            });
+          });
+        }
+
+        setResults(allResults);
+      } catch (error) {
+        console.error('Search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(performSearch, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
+  const handleResultClick = (result: SearchResult) => {
+    setIsOpen(false);
+    setSearchQuery("");
+    setResults([]);
+
+    switch (result.type) {
+      case 'article':
+        navigate(`/docs/${result.productId}/${result.id}`);
+        break;
+      case 'resource':
+        navigate(`/product/${result.productId}/docs`);
+        break;
+      case 'release':
+        navigate(`/product/${result.productId}/docs`);
+        break;
+    }
+  };
+
+  const handleSearch = () => {
+    if (searchQuery.length >= 2) {
+      setIsOpen(true);
+    }
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'article':
+        return <FileText className="h-4 w-4" />;
+      case 'resource':
+        return <Package className="h-4 w-4" />;
+      case 'release':
+        return <Megaphone className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'article':
+        return 'Article';
+      case 'resource':
+        return 'Resource';
+      case 'release':
+        return 'Release Note';
+      default:
+        return type;
+    }
+  };
 
   return (
     <section className="relative py-20 px-4 bg-gradient-hero overflow-hidden">
@@ -56,9 +230,13 @@ const HeroSection = () => {
                 placeholder={user ? "Search your documentation..." : "What can we help you with today?"}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-12 pr-4 py-6 text-lg bg-white/95 backdrop-blur border-0 rounded-2xl shadow-2xl focus-visible:ring-2 focus-visible:ring-white/50"
               />
-              <Button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-button text-white border-0 rounded-xl px-6">
+              <Button 
+                onClick={handleSearch}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-button text-white border-0 rounded-xl px-6"
+              >
                 Search
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -158,6 +336,78 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+
+      {/* Search Results Dialog */}
+      <Dialog open={isOpen && searchQuery.length >= 2} onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+          setSearchQuery("");
+          setResults([]);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Search Results
+            </DialogTitle>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[400px] pr-4">
+            {isSearching ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : results.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No results found for "{searchQuery}"
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {results.map((result) => (
+                  <button
+                    key={`${result.type}-${result.id}`}
+                    onClick={() => handleResultClick(result)}
+                    className="w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 text-muted-foreground">
+                        {getIcon(result.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium truncate">{result.title}</h4>
+                          <Badge variant="secondary" className="text-xs">
+                            {getTypeLabel(result.type)}
+                          </Badge>
+                        </div>
+                        {result.description && (
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                            {result.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {result.productName && (
+                            <>
+                              <span>{result.productName}</span>
+                              {result.category && (
+                                <>
+                                  <span>•</span>
+                                  <span>{result.category}</span>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

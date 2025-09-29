@@ -193,7 +193,13 @@ export const GlobalSearch = () => {
         />
       </div>
 
-      <Dialog open={isOpen && searchQuery.length >= 2} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen && searchQuery.length >= 2} onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+          setSearchQuery("");
+          setResults([]);
+        }
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
