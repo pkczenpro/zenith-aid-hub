@@ -176,6 +176,27 @@ const ProductDocs = () => {
     article.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Build hierarchical structure for navigation
+  const buildHierarchicalStructure = () => {
+    return filteredArticles.map(article => {
+      const contentArray = Array.isArray(article.content) ? article.content : [];
+      const mainSections = contentArray.filter((s: any) => s.level === 0 || !s.level);
+      
+      return {
+        ...article,
+        sections: mainSections.map((section: any) => {
+          const subsections = contentArray.filter((sub: any) => sub.level === 1 && sub.parent_id === section.id);
+          return {
+            ...section,
+            subsections: subsections
+          };
+        })
+      };
+    });
+  };
+
+  const hierarchicalArticles = buildHierarchicalStructure();
+
   const renderArticleContent = (content: any) => {
     if (!content) return <p className="text-muted-foreground">No content available.</p>;
     
@@ -320,17 +341,36 @@ const ProductDocs = () => {
       </header>
 
       <div className="flex h-[calc(100vh-4rem)]">
-        {/* Sidebar - Articles List */}
+        {/* Sidebar - Hierarchical Navigation */}
         <div className="w-80 border-r border-border bg-background overflow-y-auto">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-foreground flex items-center">
                 <BookOpen className="h-5 w-5 mr-2 text-primary" />
-                Help Articles
+                Documentation
               </h2>
             </div>
 
-            {filteredArticles.length === 0 ? (
+            {/* Product Overview */}
+            <div className="mb-4">
+              <div 
+                className={`group cursor-pointer rounded-lg p-3 transition-all duration-200 hover:bg-muted/80 border border-transparent ${
+                  !selectedArticle 
+                    ? 'bg-primary/5 border-primary/20 shadow-sm' 
+                    : 'hover:border-border/50'
+                }`}
+                onClick={() => setSelectedArticle(null)}
+              >
+                <div className="flex items-center space-x-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className={`font-medium ${!selectedArticle ? 'text-primary' : 'text-foreground'}`}>
+                    Product Overview
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {hierarchicalArticles.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No articles found</h3>
@@ -340,41 +380,89 @@ const ProductDocs = () => {
               </div>
             ) : (
               <div className="space-y-1">
-                {filteredArticles.map((article, index) => (
-                  <div 
-                    key={article.id} 
-                    className={`group cursor-pointer rounded-lg p-3 transition-all duration-200 hover:bg-muted/80 border border-transparent ${
-                      selectedArticle?.id === article.id 
-                        ? 'bg-primary/5 border-primary/20 shadow-sm' 
-                        : 'hover:border-border/50'
-                    }`}
-                    onClick={() => setSelectedArticle(article)}
-                  >
-                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 mt-0.5">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                          selectedArticle?.id === article.id 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
-                        }`}>
-                          {index + 1}
+                {hierarchicalArticles.map((article, articleIndex) => (
+                  <div key={article.id} className="mb-2">
+                    {/* Article Header */}
+                    <div 
+                      className={`group cursor-pointer rounded-lg p-3 transition-all duration-200 hover:bg-muted/80 border border-transparent ${
+                        selectedArticle?.id === article.id 
+                          ? 'bg-primary/5 border-primary/20 shadow-sm' 
+                          : 'hover:border-border/50'
+                      }`}
+                      onClick={() => setSelectedArticle(article)}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                            selectedArticle?.id === article.id 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                          }`}>
+                            {articleIndex + 1}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`font-medium mb-1 line-clamp-2 ${
+                            selectedArticle?.id === article.id 
+                              ? 'text-primary' 
+                              : 'text-foreground group-hover:text-primary'
+                          }`}>
+                            {article.title}
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            Updated {new Date(article.updated_at).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`font-medium mb-1 line-clamp-2 cursor-pointer ${
-                          selectedArticle?.id === article.id 
-                            ? 'text-primary' 
-                            : 'text-foreground group-hover:text-primary'
-                        }`}
-                        onClick={() => navigate(`/product/${productId}/article/article-${index + 1}`)}
-                        >
-                          {article.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          Updated {new Date(article.updated_at).toLocaleDateString()}
-                        </p>
-                      </div>
                     </div>
+
+                    {/* Sections and Subsections */}
+                    {selectedArticle?.id === article.id && article.sections.length > 0 && (
+                      <div className="ml-4 mt-2 space-y-1">
+                        {article.sections.map((section: any, sectionIndex: number) => (
+                          <div key={section.id || sectionIndex}>
+                            {/* Section */}
+                            <div 
+                              className="cursor-pointer rounded-md p-2 text-sm hover:bg-muted/60 transition-colors"
+                              onClick={() => {
+                                const element = document.getElementById(`section-${sectionIndex}`);
+                                element?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                            >
+                              <div className="flex items-center space-x-2">
+                                <div className="w-1 h-1 bg-primary/60 rounded-full"></div>
+                                <span className="text-foreground/80 hover:text-primary">
+                                  {section.title || `Section ${sectionIndex + 1}`}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Subsections */}
+                            {section.subsections && section.subsections.length > 0 && (
+                              <div className="ml-4 space-y-1">
+                                {section.subsections.map((subsection: any, subsectionIndex: number) => (
+                                  <div 
+                                    key={subsection.id || subsectionIndex}
+                                    className="cursor-pointer rounded-md p-2 text-sm hover:bg-muted/40 transition-colors"
+                                    onClick={() => {
+                                      const element = document.getElementById(`subsection-${sectionIndex}-${subsectionIndex}`);
+                                      element?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
+                                  >
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-1 h-1 bg-primary/40 rounded-full"></div>
+                                      <span className="text-foreground/70 hover:text-primary text-xs">
+                                        {subsection.title || `Subsection ${subsectionIndex + 1}`}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -402,10 +490,10 @@ const ProductDocs = () => {
                   </BreadcrumbSeparator>
                   <BreadcrumbItem>
                     <BreadcrumbLink 
-                      onClick={() => navigate('/dashboard')}
+                      onClick={() => setSelectedArticle(null)}
                       className="cursor-pointer hover:text-primary transition-colors"
                     >
-                      Help Center
+                      {product?.name}
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator>
@@ -413,7 +501,7 @@ const ProductDocs = () => {
                   </BreadcrumbSeparator>
                   <BreadcrumbItem>
                     <BreadcrumbPage className="text-foreground font-medium">
-                      {product?.name}
+                      {selectedArticle.title}
                     </BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
@@ -430,9 +518,66 @@ const ProductDocs = () => {
                 </div>
               </div>
               
-              {/* Article Content */}
+              {/* Article Content with proper section IDs */}
               <div className="prose prose-lg max-w-none">
-                {renderArticleContent(selectedArticle.content)}
+                {(() => {
+                  const contentArray = Array.isArray(selectedArticle.content) ? selectedArticle.content : [];
+                  const mainSections = contentArray.filter((s: any) => s.level === 0 || !s.level);
+                  const subsections = contentArray.filter((s: any) => s.level === 1);
+                  
+                  return mainSections.map((section: any, sectionIndex: number) => {
+                    const sectionSubsections = subsections.filter((sub: any) => sub.parent_id === section.id);
+                    
+                    return (
+                      <div key={sectionIndex} className="mb-8" id={`section-${sectionIndex}`}>
+                        <div className="mb-4">
+                          <h3 className="font-semibold text-xl text-primary border-b border-primary/20 pb-2">
+                            {section.title}
+                          </h3>
+                        </div>
+                        <div className="mb-6">
+                          {typeof section.content === 'string' && section.content.includes('<') ? (
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: section.content }}
+                              className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-container]:my-4"
+                            />
+                          ) : (
+                            <div className="text-foreground/90 leading-relaxed">
+                              {section.content}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Subsections */}
+                        {sectionSubsections.length > 0 && (
+                          <div className="ml-6 mt-4 space-y-4">
+                            {sectionSubsections.map((subsection: any, subsectionIndex: number) => (
+                              <div key={subsectionIndex} id={`subsection-${sectionIndex}-${subsectionIndex}`}>
+                                <div className="mb-4">
+                                  <h4 className="font-semibold text-lg text-foreground/90">
+                                    {subsection.title}
+                                  </h4>
+                                </div>
+                                <div className="mb-6">
+                                  {typeof subsection.content === 'string' && subsection.content.includes('<') ? (
+                                    <div 
+                                      dangerouslySetInnerHTML={{ __html: subsection.content }}
+                                      className="prose prose-lg max-w-none text-foreground/90 leading-relaxed prose-headings:text-foreground prose-p:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-md prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4 prose-ul:list-disc prose-ol:list-decimal prose-li:text-foreground/90 [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-container]:my-4"
+                                    />
+                                  ) : (
+                                    <div className="text-foreground/90 leading-relaxed">
+                                      {subsection.content}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
 
               {/* Article Navigation */}
@@ -477,21 +622,23 @@ const ProductDocs = () => {
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center max-w-md">
-                <div className="mb-6">
-                  <div className="w-24 h-24 mx-auto mb-4 bg-muted/50 rounded-full flex items-center justify-center">
-                    <BookOpen className="h-12 w-12 text-muted-foreground/50" />
-                  </div>
+                <div className="h-24 w-24 bg-gradient-to-br from-primary to-primary/60 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  {product.icon_url ? (
+                    <img src={product.icon_url} alt="" className="h-12 w-12" />
+                  ) : (
+                    <BookOpen className="h-12 w-12 text-primary-foreground" />
+                  )}
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-3">Welcome to {product?.name} Help Center</h3>
+                <h2 className="text-2xl font-bold text-foreground mb-4">{product?.name}</h2>
                 <p className="text-muted-foreground mb-6">
-                  Select an article from the sidebar to get started, or use the search bar to find specific topics.
+                  {product?.description || 'Welcome to the product documentation. Select an article from the sidebar to get started.'}
                 </p>
-                {filteredArticles.length > 0 && (
+                {hierarchicalArticles.length > 0 && (
                   <Button 
-                    onClick={() => setSelectedArticle(filteredArticles[0])}
+                    onClick={() => setSelectedArticle(hierarchicalArticles[0])}
                     className="bg-primary hover:bg-primary/90"
                   >
-                    Read First Article
+                    Start Reading
                   </Button>
                 )}
               </div>
