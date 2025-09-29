@@ -9,7 +9,12 @@ import {
   Zap,
   ArrowRight,
   PlayCircle,
-  Package
+  Package,
+  FileText,
+  BookOpen,
+  Edit3,
+  Trash2,
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -268,63 +273,108 @@ const ProductCategories = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((product) => {
               const ProductIcon = getProductIcon(product.category);
               const colorClass = getProductColor(product.category);
               
               return (
-                <Card 
-                  key={product.id} 
-                  className="group cursor-pointer card-hover border-0 shadow-card bg-gradient-card"
-                  onClick={() => navigate(isAdmin ? `/product/${product.id}` : `/product/${product.id}/docs`)}
-                >
-                  <CardHeader className="pb-4">
+                <Card key={product.id} className="card-hover">
+                  <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClass} shadow-lg`}>
+                      <div className="flex items-center gap-3">
                         {product.icon_url ? (
                           <img 
                             src={product.icon_url} 
                             alt={product.name}
-                            className="h-6 w-6 object-contain"
+                            className="w-10 h-10 rounded-lg object-cover"
                           />
                         ) : (
-                          <ProductIcon className="h-6 w-6 text-white" />
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
+                            <ProductIcon className="h-5 w-5 text-white" />
+                          </div>
                         )}
+                        <div>
+                          <CardTitle className="text-lg">{product.name}</CardTitle>
+                          {product.category && (
+                            <Badge variant="secondary" className="mt-1 text-xs">
+                              {product.category}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {product.articles_count} articles
-                      </Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge 
+                          variant={product.status === 'published' ? 'default' : 'secondary'}
+                          className={`capitalize ${product.status === 'published' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                        >
+                          {product.status}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {product.articles_count} articles
+                        </Badge>
+                      </div>
                     </div>
-                    <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                      {product.name}
-                    </CardTitle>
                   </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {product.description || "No description available"}
+                  <CardContent>
+                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                      {product.description || 'No description provided'}
                     </p>
                     
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <PlayCircle className="h-4 w-4" />
-                        <span>{product.status}</span>
-                      </div>
-                      
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="group/btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(isAdmin ? `/product/${product.id}` : `/product/${product.id}/docs`);
-                        }}
+                    {isAdmin ? (
+                      <>
+                        <div className="flex gap-2 mb-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/product/${product.id}/editor`)}
+                            className="flex-1"
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Edit Docs
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/product/${product.id}/articles`)}
+                            className="flex-1"
+                          >
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            Articles
+                          </Button>
+                        </div>
+                        <div className="flex gap-2 mb-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/product/${product.id}`)}
+                            className="flex-1"
+                          >
+                            <Edit3 className="mr-2 h-4 w-4" />
+                            Edit Product
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/product/${product.id}/docs`)}
+                            className="flex-1"
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Docs
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/product/${product.id}/docs`)}
+                        className="w-full"
                       >
-                        {isAdmin ? 'Manage' : 'View Docs'}
-                        <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Documentation
                       </Button>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               );
