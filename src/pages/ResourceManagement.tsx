@@ -102,6 +102,7 @@ const ResourceManagement = () => {
           description: "Please upload a PDF or PPTX file only.",
           variant: "destructive",
         });
+        e.target.value = ''; // Reset input
         return;
       }
       
@@ -117,7 +118,7 @@ const ResourceManagement = () => {
   };
 
   const handleUpload = async () => {
-    if (!file || !title || !productId) {
+    if (!file || !title || !productId || !resourceType || !fileType) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields and select a file.",
@@ -446,14 +447,26 @@ const ResourceManagement = () => {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = resource.file_url;
-                        link.download = resource.file_name;
-                        link.target = '_blank';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(resource.file_url);
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = resource.file_name;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          window.URL.revokeObjectURL(url);
+                        } catch (error) {
+                          console.error('Download error:', error);
+                          toast({
+                            title: "Download Failed",
+                            description: "Failed to download the file.",
+                            variant: "destructive",
+                          });
+                        }
                       }}
                     >
                       <Download className="h-4 w-4 mr-2" />
@@ -499,14 +512,26 @@ const ResourceManagement = () => {
                   PowerPoint files cannot be previewed directly in the browser. Please download the file to view it.
                 </p>
                 <Button
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = selectedResource.file_url;
-                    link.download = selectedResource.file_name;
-                    link.target = '_blank';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(selectedResource.file_url);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = selectedResource.file_name;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(url);
+                    } catch (error) {
+                      console.error('Download error:', error);
+                      toast({
+                        title: "Download Failed",
+                        description: "Failed to download the file.",
+                        variant: "destructive",
+                      });
+                    }
                   }}
                 >
                   <Download className="h-4 w-4 mr-2" />

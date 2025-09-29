@@ -692,23 +692,35 @@ const ProductDocs = () => {
                               <Eye className="h-4 w-4 mr-2" />
                               Preview
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => {
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(resource.file_url);
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
                                 const link = document.createElement('a');
-                                link.href = resource.file_url;
+                                link.href = url;
                                 link.download = resource.file_name;
-                                link.target = '_blank';
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);
-                              }}
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
-                            </Button>
+                                window.URL.revokeObjectURL(url);
+                              } catch (error) {
+                                console.error('Download error:', error);
+                                toast({
+                                  title: "Download Failed",
+                                  description: "Failed to download the file.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
                           </div>
                         </div>
                       );
@@ -775,20 +787,32 @@ const ProductDocs = () => {
                 <p className="text-sm text-muted-foreground text-center max-w-md">
                   PowerPoint files cannot be previewed directly in the browser. Please download the file to view it.
                 </p>
-                <Button
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = selectedResource.file_url;
-                    link.download = selectedResource.file_name;
-                    link.target = '_blank';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download File
-                </Button>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(selectedResource.file_url);
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = selectedResource.file_name;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          window.URL.revokeObjectURL(url);
+                        } catch (error) {
+                          console.error('Download error:', error);
+                          toast({
+                            title: "Download Failed",
+                            description: "Failed to download the file.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download File
+                    </Button>
               </div>
             ) : null}
           </div>
