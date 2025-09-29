@@ -321,28 +321,36 @@ const ProductCategories = () => {
               const colorClass = getProductColor(product.category);
               
               return (
-                <Card key={product.id} className="card-hover">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                <Card key={product.id} className="card-hover overflow-hidden">
+                  <CardHeader className="pb-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
                         {product.icon_url ? (
                           <img 
                             src={product.icon_url} 
                             alt={product.name}
-                            className="w-10 h-10 rounded-lg object-cover"
+                            className="w-12 h-12 rounded-lg object-cover"
                           />
                         ) : (
-                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
-                            <ProductIcon className="h-5 w-5 text-white" />
+                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center`}>
+                            <ProductIcon className="h-6 w-6 text-white" />
                           </div>
                         )}
-                        <div>
-                          <CardTitle className="text-lg">{product.name}</CardTitle>
-                          {product.category && (
-                            <Badge variant="secondary" className="mt-1 text-xs">
-                              {product.category}
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-lg truncate">{product.name}</CardTitle>
+                          <div className="flex items-center gap-2 mt-1">
+                            {product.category && (
+                              <Badge variant="secondary" className="text-xs">
+                                {product.category}
+                              </Badge>
+                            )}
+                            <Badge 
+                              variant={product.status === 'published' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {product.status}
                             </Badge>
-                          )}
+                          </div>
                         </div>
                       </div>
                       {isAdmin && (
@@ -350,71 +358,68 @@ const ProductCategories = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => setEditingProduct(product)}
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 shrink-0"
                         >
                           <Edit3 className="h-4 w-4" />
                         </Button>
                       )}
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge 
-                          variant={product.status === 'published' ? 'default' : 'secondary'}
-                          className={`capitalize ${product.status === 'published' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
-                        >
-                          {product.status}
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {product.articles_count} articles
-                        </Badge>
-                      </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                    
+                    <p className="text-muted-foreground text-sm line-clamp-2">
                       {product.description || 'No description provided'}
                     </p>
-                    
-                    {isAdmin ? (
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0 space-y-2">
+                    {/* View Documentation - Always visible */}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => navigate(`/product/${product.id}/docs`)}
+                      className="w-full justify-start"
+                    >
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      View Documentation
+                      <Badge variant="secondary" className="ml-auto text-xs">
+                        {product.articles_count}
+                      </Badge>
+                    </Button>
+
+                    {isAdmin && (
                       <>
-                        <div className="flex gap-2 mb-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/product/${product.id}/editor`)}
-                            className="flex-1"
-                          >
-                            <FileText className="mr-2 h-4 w-4" />
-                            Edit Docs
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/product/${product.id}/articles`)}
-                            className="flex-1"
-                          >
-                            <BookOpen className="mr-2 h-4 w-4" />
-                            Articles
-                          </Button>
-                        </div>
+                        {/* Articles Management */}
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate(`/product/${product.id}/docs`)}
-                          className="w-full"
+                          onClick={() => navigate(`/product/${product.id}/articles`)}
+                          className="w-full justify-start"
                         >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Documentation
+                          <FileText className="h-4 w-4 mr-2" />
+                          Manage Articles
+                        </Button>
+
+                        {/* Edit Documentation */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/product/${product.id}/editor`)}
+                          className="w-full justify-start"
+                        >
+                          <Edit3 className="h-4 w-4 mr-2" />
+                          Edit Documentation
+                        </Button>
+
+                        {/* Upload Resources */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/product/${product.id}/resources`)}
+                          className="w-full justify-start"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Resources
                         </Button>
                       </>
-                    ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/product/${product.id}/docs`)}
-                          className="w-full"
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Documentation
-                        </Button>
                     )}
                   </CardContent>
                 </Card>
