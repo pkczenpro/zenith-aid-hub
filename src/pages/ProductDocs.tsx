@@ -13,7 +13,10 @@ import {
   LogOut,
   ChevronRight,
   ChevronDown,
-  Menu
+  Menu,
+  ArrowLeft,
+  Download,
+  Settings
 } from 'lucide-react';
 
 interface Article {
@@ -52,6 +55,8 @@ const ProductDocs = () => {
   const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string; level: number }[]>([]);
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'documentation' | 'resources'>('documentation');
+  const [resources, setResources] = useState<any[]>([]);
 
   useEffect(() => {
     if (user && productId) {
@@ -67,6 +72,9 @@ const ProductDocs = () => {
         navigate('/auth');
         return;
       }
+
+      // Fetch resources
+      await fetchResources();
 
       // Get user profile
       const { data: profile } = await supabase
@@ -196,6 +204,23 @@ const ProductDocs = () => {
     }
   };
 
+  const fetchResources = async () => {
+    if (!productId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_resources')
+        .select('*')
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setResources(data || []);
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -237,6 +262,22 @@ const ProductDocs = () => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  const getResourceTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      factsheet: 'Product Factsheet',
+      sales_material: 'Sales Material',
+      tutorial: 'Tutorial',
+      other: 'Other',
+    };
+    return labels[type] || type;
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return 'Unknown size';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)} MB`;
   };
 
   const currentCategoryArticles = categories.find(cat => cat.name === selectedCategory)?.articles || [];
@@ -345,6 +386,16 @@ const ProductDocs = () => {
       <header className="border-b border-border bg-background sticky top-0 z-50">
         <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-4">
+            {userProfile?.role === 'admin' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/product/${productId}`)}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+            )}
             {product.icon_url ? (
               <img src={product.icon_url} alt="" className="h-8 w-8" />
             ) : (
@@ -370,14 +421,50 @@ const ProductDocs = () => {
                 <span>{userProfile.full_name || userProfile.email}</span>
               </div>
             )}
+            {userProfile?.role === 'admin' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/product/${productId}/resources`)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Resources
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
         
-        {/* Horizontal Tabs */}
-        {categories.length > 0 && (
+        {/* Main Navigation Tabs */}
+        <div className="px-6 border-t border-border">
+          <div className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('documentation')}
+              className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'documentation'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+            >
+              Documentation
+            </button>
+            <button
+              onClick={() => setActiveTab('resources')}
+              className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'resources'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+            >
+              Resources
+            </button>
+          </div>
+        </div>
+        
+        {/* Category Tabs - Only show when Documentation tab is active */}
+        {activeTab === 'documentation' && categories.length > 0 && (
           <div className="px-6 border-t border-border">
             <div className="flex space-x-8 overflow-x-auto">
               {categories.map((category) => (
@@ -399,9 +486,10 @@ const ProductDocs = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Navigation */}
-        <aside className="w-72 border-r border-border bg-background overflow-y-auto">
-          <div className="p-4">
+        {/* Left Sidebar - Navigation (only for documentation) */}
+        {activeTab === 'documentation' && (
+          <aside className="w-72 border-r border-border bg-background overflow-y-auto">
+            <div className="p-4">
             {categories.map((category) => (
               <div key={category.name} className="mb-4">
                 <button
@@ -444,19 +532,21 @@ const ProductDocs = () => {
               </div>
             ))}
             
-            {categories.length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">No articles available</p>
-              </div>
-            )}
-          </div>
-        </aside>
+              {categories.length === 0 && (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground">No articles available</p>
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-background">
-          <div className="max-w-3xl mx-auto px-8 py-8">
-            {selectedArticle ? (
+          {activeTab === 'documentation' ? (
+            <div className="max-w-3xl mx-auto px-8 py-8">
+              {selectedArticle ? (
               <div className="animate-fade-in">
                 {/* Category Badge */}
                 <div className="mb-4">
@@ -498,15 +588,74 @@ const ProductDocs = () => {
                     <Button onClick={() => handleArticleSelect(filteredCategoryArticles[0])}>
                       Start Reading
                     </Button>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <div className="container mx-auto px-8 py-8">
+              {resources.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+                  <h2 className="text-2xl font-semibold text-foreground mb-2">
+                    No Resources Available
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Resources will appear here once they are uploaded.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div className="mb-6">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Resources</h1>
+                    <p className="text-muted-foreground">
+                      Download product factsheets, sales materials, and tutorials
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {resources.map((resource) => (
+                      <div
+                        key={resource.id}
+                        className="border border-border rounded-lg p-6 hover:border-primary/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <FileText className="h-8 w-8 text-primary" />
+                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                            {getResourceTypeLabel(resource.resource_type)}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-foreground mb-2">
+                          {resource.title}
+                        </h3>
+                        {resource.description && (
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {resource.description}
+                          </p>
+                        )}
+                        <div className="space-y-1 text-xs text-muted-foreground mb-4">
+                          <p>File: {resource.file_name}</p>
+                          <p>Size: {formatFileSize(resource.file_size)}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => window.open(resource.file_url, '_blank')}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </main>
 
-        {/* Right Sidebar - Table of Contents */}
-        {selectedArticle && tableOfContents.length > 0 && (
+        {/* Right Sidebar - Table of Contents (only for documentation with selected article) */}
+        {activeTab === 'documentation' && selectedArticle && tableOfContents.length > 0 && (
           <aside className="w-64 border-l border-border bg-background overflow-y-auto">
             <div className="p-6 sticky top-0">
               <div className="flex items-center space-x-2 mb-4">
