@@ -38,16 +38,17 @@ export const GlobalSearch = () => {
       try {
         const searchTerm = `%${searchQuery}%`;
 
-        // Search articles
+        // Search articles (title and content)
         const { data: articles } = await supabase
           .from('articles')
           .select(`
             id,
             title,
+            content,
             product_id,
             products (name, category)
           `)
-          .ilike('title', searchTerm)
+          .or(`title.ilike.${searchTerm},content::text.ilike.${searchTerm}`)
           .limit(10);
 
         // Search resources
