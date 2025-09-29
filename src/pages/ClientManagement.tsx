@@ -24,7 +24,10 @@ import {
   Settings,
   FileText,
   Search,
-  Filter
+  Filter,
+  Upload,
+  CircleCheck,
+  CircleX
 } from 'lucide-react';
 import Header from '@/components/Header';
 
@@ -37,6 +40,7 @@ interface Client {
   status: string;
   created_at: string;
   last_access?: string;
+  logo_url?: string;
   assignedProducts: Product[];
 }
 
@@ -70,7 +74,8 @@ const ClientManagement = () => {
     password: '',
     industry: '',
     company: '',
-    assignedProducts: [] as string[]
+    assignedProducts: [] as string[],
+    logoFile: null as File | null
   });
 
   // Fetch clients and products from database
@@ -125,6 +130,7 @@ const ClientManagement = () => {
             status: client.status,
             created_at: client.created_at,
             last_access: client.last_access,
+            logo_url: client.logo_url,
             assignedProducts: accessData.map(item => item.products).filter(Boolean)
           };
         })
@@ -155,6 +161,36 @@ const ClientManagement = () => {
         return;
       }
 
+      let logoUrl = null;
+
+      // Upload logo if provided
+      if (newClient.logoFile) {
+        const fileExt = newClient.logoFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('client-logos')
+          .upload(filePath, newClient.logoFile);
+
+        if (uploadError) {
+          console.error('Error uploading logo:', uploadError);
+          toast({
+            title: "Error",
+            description: "Failed to upload logo. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('client-logos')
+          .getPublicUrl(filePath);
+        
+        logoUrl = urlData.publicUrl;
+      }
+
       // Use edge function to create client with auto-verified email
       const { data, error } = await supabase.functions.invoke('create-client', {
         body: {
@@ -163,7 +199,8 @@ const ClientManagement = () => {
           full_name: newClient.name,
           company: newClient.company,
           industry: newClient.industry,
-          assignedProducts: newClient.assignedProducts
+          assignedProducts: newClient.assignedProducts,
+          logoUrl: logoUrl
         }
       });
 
@@ -172,7 +209,7 @@ const ClientManagement = () => {
       // Refresh the clients list
       await fetchClientsAndProducts();
 
-      setNewClient({ name: '', email: '', password: '', industry: '', company: '', assignedProducts: [] });
+      setNewClient({ name: '', email: '', password: '', industry: '', company: '', assignedProducts: [], logoFile: null });
       setIsCreateDialogOpen(false);
       
       toast({
@@ -193,9 +230,13 @@ const ClientManagement = () => {
     try {
       const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
       
+      // Update client status and last access
       const { error } = await supabase
         .from('clients')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          last_access: new Date().toISOString()
+        })
         .eq('id', clientId);
 
       if (error) throw error;
@@ -401,8 +442,16 @@ const ClientManagement = () => {
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
-                              {client.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+                              {client.logo_url ? (
+                                <img 
+                                  src={client.logo_url} 
+                                  alt={`${client.name} logo`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                client.name.split(' ').map(n => n[0]).join('').slice(0, 2)
+                              )}
                             </div>
                             <div>
                               <h3 className="font-semibold text-foreground">{client.name}</h3>
@@ -446,18 +495,19 @@ const ClientManagement = () => {
                            </div>
                          </div>
 
-                         <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                           <div className="text-xs text-muted-foreground">
-                             Last access: {client.last_access ? new Date(client.last_access).toLocaleDateString() : 'Never'}
-                           </div>
+                          <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                            <div className="text-xs text-muted-foreground">
+                              Last access: {client.last_access ? new Date(client.last_access).toLocaleString() : 'Never'}
+                            </div>
                            <div className="flex items-center space-x-2">
                              <Button
                                variant="ghost"
                                size="sm"
                                onClick={() => handleToggleClientStatus(client.id, client.status)}
                                title={client.status === 'active' ? 'Deactivate client' : 'Activate client'}
+                               className={client.status === 'active' ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}
                              >
-                               {client.status === 'active' ? '🔴' : '🟢'}
+                               {client.status === 'active' ? <CircleCheck className="h-4 w-4" /> : <CircleX className="h-4 w-4" />}
                              </Button>
                              <Button
                                variant="ghost"
@@ -601,24 +651,45 @@ const ClientManagement = () => {
                   placeholder="Company Inc."
                 />
               </div>
-              <div>
-                <Label htmlFor="industry">Industry</Label>
-                <Select value={newClient.industry} onValueChange={(value) => setNewClient({ ...newClient, industry: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="technology">Technology</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="retail">Retail</SelectItem>
-                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label htmlFor="industry">Industry</Label>
+              <Select value={newClient.industry} onValueChange={(value) => setNewClient({ ...newClient, industry: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="technology">Technology</SelectItem>
+                  <SelectItem value="healthcare">Healthcare</SelectItem>
+                  <SelectItem value="finance">Finance</SelectItem>
+                  <SelectItem value="retail">Retail</SelectItem>
+                  <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="logo">Client Logo (Optional)</Label>
+            <div className="mt-2">
+              <Input
+                id="logo"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setNewClient({ ...newClient, logoFile: file });
+                }}
+                className="cursor-pointer"
+              />
+              {newClient.logoFile && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Selected: {newClient.logoFile.name}
+                </p>
+              )}
+            </div>
+          </div>
 
             <div>
               <Label className="text-base font-medium">Product Access</Label>

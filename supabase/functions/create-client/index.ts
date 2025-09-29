@@ -14,6 +14,7 @@ interface CreateClientRequest {
   company?: string;
   industry?: string;
   assignedProducts: string[];
+  logoUrl?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -34,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    const { email, password, full_name, company, industry, assignedProducts }: CreateClientRequest = await req.json();
+    const { email, password, full_name, company, industry, assignedProducts, logoUrl }: CreateClientRequest = await req.json();
 
     // Create user with admin privileges (bypasses email confirmation)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -73,7 +74,8 @@ const handler = async (req: Request): Promise<Response> => {
         name: full_name,
         industry: industry || null,
         company: company || null,
-        status: 'active'
+        status: 'active',
+        logo_url: logoUrl || null
       })
       .select()
       .single();

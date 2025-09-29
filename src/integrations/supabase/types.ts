@@ -156,6 +156,7 @@ export type Database = {
           id: string
           industry: string | null
           last_access: string | null
+          logo_url: string | null
           name: string
           profile_id: string
           status: string
@@ -167,6 +168,7 @@ export type Database = {
           id?: string
           industry?: string | null
           last_access?: string | null
+          logo_url?: string | null
           name: string
           profile_id: string
           status?: string
@@ -178,6 +180,7 @@ export type Database = {
           id?: string
           industry?: string | null
           last_access?: string | null
+          logo_url?: string | null
           name?: string
           profile_id?: string
           status?: string
