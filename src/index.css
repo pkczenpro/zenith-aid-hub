@@ -669,5 +669,6 @@
 .ql-editor .ql-video {
   width: 50%;
   height: 100%;
+  display:none !important;
 }
 
