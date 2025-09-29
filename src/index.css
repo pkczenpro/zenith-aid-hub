@@ -667,6 +667,12 @@
   /* Make Quill’s built-in <iframe class="ql-video"> responsive */
 .ql-editor .ql-video {
   width: 50%;
+    aspect-ratio: 16/9;
   height: 100%;
 }
 
+.ql-video {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
