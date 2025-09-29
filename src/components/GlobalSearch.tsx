@@ -38,7 +38,7 @@ export const GlobalSearch = () => {
       try {
         const searchTerm = `%${searchQuery}%`;
 
-        // Search articles (title and content)
+        // Search articles - search title only, then filter content in JS
         const { data: articles } = await supabase
           .from('articles')
           .select(`
@@ -49,8 +49,8 @@ export const GlobalSearch = () => {
             products (name, category)
           `)
           .eq('status', 'published')
-          .or(`title.ilike.${searchTerm},content::text.ilike.${searchTerm}`)
-          .limit(10);
+          .ilike('title', searchTerm)
+          .limit(20);
 
         // Search resources
         const { data: resources } = await supabase
@@ -65,7 +65,7 @@ export const GlobalSearch = () => {
           .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
           .limit(10);
 
-        // Search release notes (title, version, and content)
+        // Search release notes - search title and version only, then filter content in JS
         const { data: releases } = await supabase
           .from('release_notes')
           .select(`
@@ -77,22 +77,28 @@ export const GlobalSearch = () => {
             products (name, category)
           `)
           .eq('status', 'published')
-          .or(`title.ilike.${searchTerm},version.ilike.${searchTerm},content::text.ilike.${searchTerm}`)
-          .limit(10);
+          .or(`title.ilike.${searchTerm},version.ilike.${searchTerm}`)
+          .limit(20);
 
         const allResults: SearchResult[] = [];
 
-        // Process articles
+        // Process articles - filter by content in JS
         if (articles) {
           articles.forEach((article: any) => {
-            allResults.push({
-              id: article.id,
-              type: 'article',
-              title: article.title,
-              productId: article.product_id,
-              productName: article.products?.name,
-              category: article.products?.category,
-            });
+            const contentStr = JSON.stringify(article.content || '').toLowerCase();
+            const matchesContent = contentStr.includes(searchQuery.toLowerCase());
+            const matchesTitle = article.title.toLowerCase().includes(searchQuery.toLowerCase());
+            
+            if (matchesTitle || matchesContent) {
+              allResults.push({
+                id: article.id,
+                type: 'article',
+                title: article.title,
+                productId: article.product_id,
+                productName: article.products?.name,
+                category: article.products?.category,
+              });
+            }
           });
         }
 
@@ -111,18 +117,25 @@ export const GlobalSearch = () => {
           });
         }
 
-        // Process release notes
+        // Process release notes - filter by content in JS
         if (releases) {
           releases.forEach((release: any) => {
-            allResults.push({
-              id: release.id,
-              type: 'release',
-              title: release.title,
-              description: release.version,
-              productId: release.product_id,
-              productName: release.products?.name,
-              category: release.products?.category,
-            });
+            const contentStr = JSON.stringify(release.content || '').toLowerCase();
+            const matchesContent = contentStr.includes(searchQuery.toLowerCase());
+            const matchesTitle = release.title.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesVersion = release.version?.toLowerCase().includes(searchQuery.toLowerCase());
+            
+            if (matchesTitle || matchesVersion || matchesContent) {
+              allResults.push({
+                id: release.id,
+                type: 'release',
+                title: release.title,
+                description: release.version,
+                productId: release.product_id,
+                productName: release.products?.name,
+                category: release.products?.category,
+              });
+            }
           });
         }
 
