@@ -56,6 +56,7 @@ const HeroSection = () => {
             product_id,
             products (name, category)
           `)
+          .eq('status', 'published')
           .or(`title.ilike.${searchTerm},content::text.ilike.${searchTerm}`)
           .limit(10);
 
@@ -72,18 +73,19 @@ const HeroSection = () => {
           .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
           .limit(10);
 
-        // Search release notes
+        // Search release notes (title, version, and content)
         const { data: releases } = await supabase
           .from('release_notes')
           .select(`
             id,
             title,
             version,
+            content,
             product_id,
             products (name, category)
           `)
           .eq('status', 'published')
-          .or(`title.ilike.${searchTerm},version.ilike.${searchTerm}`)
+          .or(`title.ilike.${searchTerm},version.ilike.${searchTerm},content::text.ilike.${searchTerm}`)
           .limit(10);
 
         const allResults: SearchResult[] = [];

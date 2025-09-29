@@ -1067,15 +1067,22 @@ const ProductDocs = () => {
               </DialogHeader>
               <div className="space-y-8 mt-6">
                 {selectedRelease.content && Array.isArray(selectedRelease.content) && 
-                  selectedRelease.content.map((section: any) => (
-                    <div key={section.id} className="space-y-4">
-                      <h3 className="text-xl font-semibold text-foreground">{section.title}</h3>
-                      <div
-                        className="prose prose-sm max-w-none dark:prose-invert"
-                        dangerouslySetInnerHTML={{ __html: section.content }}
-                      />
-                    </div>
-                  ))
+                  selectedRelease.content.map((section: any) => {
+                    // Apply highlighting if search term exists
+                    const processedContent = highlightTerm && section.content
+                      ? highlightSearchTerms(section.content, highlightTerm)
+                      : section.content;
+                    
+                    return (
+                      <div key={section.id} className="space-y-4">
+                        <h3 className="text-xl font-semibold text-foreground">{section.title}</h3>
+                        <div
+                          className="prose prose-sm max-w-none dark:prose-invert"
+                          dangerouslySetInnerHTML={{ __html: processedContent }}
+                        />
+                      </div>
+                    );
+                  })
                 }
               </div>
             </>
