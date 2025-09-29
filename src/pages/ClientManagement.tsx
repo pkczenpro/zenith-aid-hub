@@ -189,6 +189,71 @@ const ClientManagement = () => {
     }
   };
 
+  const handleToggleClientStatus = async (clientId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      
+      const { error } = await supabase
+        .from('clients')
+        .update({ status: newStatus })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      // Refresh the clients list
+      await fetchClientsAndProducts();
+      
+      toast({
+        title: "Client status updated!",
+        description: `Client has been marked as ${newStatus}.`,
+      });
+    } catch (error) {
+      console.error('Error updating client status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update client status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteClient = async (clientId: string, clientName: string) => {
+    if (!confirm(`Are you sure you want to delete ${clientName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // First delete client product access
+      await supabase
+        .from('client_product_access')
+        .delete()
+        .eq('client_id', clientId);
+
+      // Then delete the client
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      // Refresh the clients list
+      await fetchClientsAndProducts();
+      
+      toast({
+        title: "Client deleted!",
+        description: `${clientName} has been successfully deleted.`,
+      });
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete client. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAssignProducts = async () => {
     if (selectedClient) {
       try {
@@ -385,25 +450,44 @@ const ClientManagement = () => {
                            <div className="text-xs text-muted-foreground">
                              Last access: {client.last_access ? new Date(client.last_access).toLocaleDateString() : 'Never'}
                            </div>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedClient(client);
-                                setIsAssignDialogOpen(true);
-                              }}
-                            >
-                              <Settings className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/client/${client.id}/docs`)}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                          </div>
+                           <div className="flex items-center space-x-2">
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleToggleClientStatus(client.id, client.status)}
+                               title={client.status === 'active' ? 'Deactivate client' : 'Activate client'}
+                             >
+                               {client.status === 'active' ? '🔴' : '🟢'}
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => {
+                                 setSelectedClient(client);
+                                 setIsAssignDialogOpen(true);
+                               }}
+                               title="Manage product access"
+                             >
+                               <Settings className="h-3 w-3" />
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => navigate(`/client/${client.id}/docs`)}
+                               title="View client docs"
+                             >
+                               <Eye className="h-3 w-3" />
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleDeleteClient(client.id, client.name)}
+                               title="Delete client"
+                               className="text-destructive hover:text-destructive"
+                             >
+                               <Trash2 className="h-3 w-3" />
+                             </Button>
+                           </div>
                         </div>
                       </CardContent>
                     </Card>
