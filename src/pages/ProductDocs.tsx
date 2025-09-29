@@ -21,7 +21,8 @@ import {
   Eye,
   Video,
   FileSpreadsheet,
-  Briefcase
+  Briefcase,
+  Plus
 } from 'lucide-react';
 
 interface Article {
@@ -60,10 +61,12 @@ const ProductDocs = () => {
   const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string; level: number }[]>([]);
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'documentation' | 'resources'>('documentation');
+  const [activeTab, setActiveTab] = useState<'documentation' | 'resources' | 'releases'>('documentation');
   const [resources, setResources] = useState<any[]>([]);
   const [selectedResource, setSelectedResource] = useState<any | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
+  const [selectedRelease, setSelectedRelease] = useState<any | null>(null);
 
   useEffect(() => {
     if (user && productId) {
@@ -80,8 +83,9 @@ const ProductDocs = () => {
         return;
       }
 
-      // Fetch resources
+      // Fetch resources and release notes
       await fetchResources();
+      await fetchReleaseNotes();
 
       // Get user profile
       const { data: profile } = await supabase
@@ -225,6 +229,50 @@ const ProductDocs = () => {
       setResources(data || []);
     } catch (error) {
       console.error('Error fetching resources:', error);
+    }
+  };
+
+  const fetchReleaseNotes = async () => {
+    if (!productId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('release_notes')
+        .select('*')
+        .eq('product_id', productId)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false });
+
+      if (error) throw error;
+      setReleaseNotes(data || []);
+    } catch (error) {
+      console.error('Error fetching release notes:', error);
+    }
+  };
+
+  const logDownload = async (resourceId: string) => {
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (!profileData) return;
+
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', profileData.id)
+        .maybeSingle();
+
+      await supabase.from('resource_downloads').insert({
+        resource_id: resourceId,
+        profile_id: profileData.id,
+        client_id: clientData?.id || null,
+      });
+    } catch (error) {
+      console.error('Error logging download:', error);
     }
   };
 
@@ -488,6 +536,16 @@ const ProductDocs = () => {
             >
               Resources
             </button>
+            <button
+              onClick={() => setActiveTab('releases')}
+              className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'releases'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+            >
+              Release Notes
+            </button>
           </div>
         </div>
         
@@ -698,6 +756,7 @@ const ProductDocs = () => {
                             className="flex-1"
                             onClick={async () => {
                               try {
+                                await logDownload(resource.id);
                                 const response = await fetch(resource.file_url);
                                 const blob = await response.blob();
                                 const url = window.URL.createObjectURL(blob);
@@ -728,6 +787,77 @@ const ProductDocs = () => {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Release Notes Tab */}
+          {activeTab === 'releases' && (
+            <div className="px-6 py-8">
+              <div className="max-w-6xl mx-auto">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground mb-2">Release Notes</h2>
+                    <p className="text-muted-foreground">
+                      View product updates, new features, and improvements
+                    </p>
+                  </div>
+                  {userProfile?.role === 'admin' && (
+                    <Button onClick={() => navigate(`/product/${productId}/release-notes/new`)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Release Note
+                    </Button>
+                  )}
+                </div>
+
+                {releaseNotes.length === 0 ? (
+                  <div className="text-center py-16 border border-dashed border-border rounded-lg">
+                    <FileText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-lg text-muted-foreground mb-2">No release notes yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Release notes will appear here when published
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {releaseNotes.map((release: any) => (
+                      <div
+                        key={release.id}
+                        className="border border-border rounded-lg p-6 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
+                        onClick={() => setSelectedRelease(release)}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="text-xl font-semibold text-foreground mb-2">
+                              {release.title}
+                            </h3>
+                            <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                              {release.version && (
+                                <span className="px-2 py-1 bg-primary/10 text-primary rounded-md font-medium">
+                                  v{release.version}
+                                </span>
+                              )}
+                              <span>
+                                {new Date(release.published_at || release.created_at).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {release.content && Array.isArray(release.content) && release.content.length > 0 && (
+                            <div className="line-clamp-3">
+                              {release.content[0]?.title}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </main>
@@ -850,6 +980,48 @@ const ProductDocs = () => {
               </div>
             ) : null}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Release Note Detail Dialog */}
+      <Dialog open={!!selectedRelease} onOpenChange={() => setSelectedRelease(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          {selectedRelease && (
+            <>
+              <DialogHeader>
+                <div className="space-y-2">
+                  <DialogTitle className="text-2xl">{selectedRelease.title}</DialogTitle>
+                  <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                    {selectedRelease.version && (
+                      <span className="px-2 py-1 bg-primary/10 text-primary rounded-md font-medium">
+                        Version {selectedRelease.version}
+                      </span>
+                    )}
+                    <span>
+                      {new Date(selectedRelease.published_at || selectedRelease.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </DialogHeader>
+              <div className="space-y-8 mt-6">
+                {selectedRelease.content && Array.isArray(selectedRelease.content) && 
+                  selectedRelease.content.map((section: any) => (
+                    <div key={section.id} className="space-y-4">
+                      <h3 className="text-xl font-semibold text-foreground">{section.title}</h3>
+                      <div
+                        className="prose prose-sm max-w-none dark:prose-invert"
+                        dangerouslySetInnerHTML={{ __html: section.content }}
+                      />
+                    </div>
+                  ))
+                }
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

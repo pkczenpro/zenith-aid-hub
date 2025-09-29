@@ -22,6 +22,21 @@ interface Resource {
   file_name: string;
   file_size: number | null;
   created_at: string;
+  download_count?: number;
+}
+
+interface DownloadLog {
+  id: string;
+  downloaded_at: string;
+  profile_id: string;
+  profiles?: {
+    full_name: string | null;
+    email: string;
+  };
+  clients?: {
+    name: string;
+    company: string | null;
+  };
 }
 
 interface Product {
@@ -38,6 +53,8 @@ const ResourceManagement = () => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [downloadLogs, setDownloadLogs] = useState<DownloadLog[]>([]);
+  const [showActivityLog, setShowActivityLog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -69,15 +86,24 @@ const ResourceManagement = () => {
       if (productError) throw productError;
       setProduct(productData);
 
-      // Get resources
+      // Get resources with download counts
       const { data: resourcesData, error: resourcesError } = await supabase
         .from('product_resources')
-        .select('*')
+        .select(`
+          *,
+          resource_downloads(count)
+        `)
         .eq('product_id', productId)
         .order('created_at', { ascending: false });
 
       if (resourcesError) throw resourcesError;
-      setResources(resourcesData || []);
+      
+      const resourcesWithCounts = (resourcesData || []).map((r: any) => ({
+        ...r,
+        download_count: r.resource_downloads?.[0]?.count || 0,
+      }));
+      
+      setResources(resourcesWithCounts);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -186,6 +212,55 @@ const ResourceManagement = () => {
       });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const fetchDownloadLogs = async (resourceId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('resource_downloads')
+        .select(`
+          *,
+          profiles:profile_id(full_name, email),
+          clients:client_id(name, company)
+        `)
+        .eq('resource_id', resourceId)
+        .order('downloaded_at', { ascending: false });
+
+      if (error) throw error;
+      setDownloadLogs(data || []);
+    } catch (error) {
+      console.error('Error fetching download logs:', error);
+    }
+  };
+
+  const logDownload = async (resourceId: string) => {
+    try {
+      // Get current user's client info if they're a client
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (!profileData) return;
+
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', profileData.id)
+        .maybeSingle();
+
+      await supabase.from('resource_downloads').insert({
+        resource_id: resourceId,
+        profile_id: profileData.id,
+        client_id: clientData?.id || null,
+      });
+
+      // Refresh resources to update count
+      fetchProductAndResources();
+    } catch (error) {
+      console.error('Error logging download:', error);
     }
   };
 
@@ -425,8 +500,12 @@ const ResourceManagement = () => {
                         <span className="font-medium">{formatFileSize(resource.file_size)}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Product:</span>
+                       <span>Product:</span>
                         <span className="font-medium truncate ml-2">{product?.name}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <span>Downloads:</span>
+                        <span className="font-medium text-primary">{resource.download_count || 0}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -449,6 +528,7 @@ const ResourceManagement = () => {
                       className="flex-1"
                       onClick={async () => {
                         try {
+                          await logDownload(resource.id);
                           const response = await fetch(resource.file_url);
                           const blob = await response.blob();
                           const url = window.URL.createObjectURL(blob);
@@ -471,6 +551,17 @@ const ResourceManagement = () => {
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Download
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        fetchDownloadLogs(resource.id);
+                        setShowActivityLog(true);
+                      }}
+                      title="View Activity Log"
+                    >
+                      <FileText className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="destructive"

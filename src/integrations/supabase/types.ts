@@ -326,6 +326,106 @@ export type Database = {
         }
         Relationships: []
       }
+      release_notes: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string
+          id: string
+          product_id: string
+          published_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          product_id: string
+          published_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          product_id?: string
+          published_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "release_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "release_notes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_downloads: {
+        Row: {
+          client_id: string | null
+          downloaded_at: string
+          id: string
+          profile_id: string
+          resource_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          downloaded_at?: string
+          id?: string
+          profile_id: string
+          resource_id: string
+        }
+        Update: {
+          client_id?: string | null
+          downloaded_at?: string
+          id?: string
+          profile_id?: string
+          resource_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_downloads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_downloads_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_downloads_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "product_resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           attachment_url: string | null

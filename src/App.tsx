@@ -11,6 +11,7 @@ import ProductEditor from "./pages/ProductEditor";
 import ProductDocs from "./pages/ProductDocs";
 import ProductManagement from "./pages/ProductManagement";
 import ResourceManagement from "./pages/ResourceManagement";
+import ReleaseNotesManager from "./pages/ReleaseNotesManager";
 import ArticleViewer from "./pages/ArticleViewer";
 import ArticleList from "./pages/ArticleList";
 import ArticleOrder from "./pages/ArticleOrder";
@@ -64,6 +65,16 @@ const App = () => (
             <Route path="/product/:productId/resources" element={
               <ProtectedRoute requireAdmin>
                 <ResourceManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/product/:productId/release-notes/new" element={
+              <ProtectedRoute requireAdmin>
+                <ReleaseNotesManager />
+              </ProtectedRoute>
+            } />
+            <Route path="/product/:productId/release-notes/:noteId" element={
+              <ProtectedRoute requireAdmin>
+                <ReleaseNotesManager />
               </ProtectedRoute>
             } />
             <Route path="/docs/:productId/:articleId" element={
