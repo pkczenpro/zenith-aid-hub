@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -528,16 +529,23 @@ const ProductManagement = () => {
           <div>
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-foreground">Support Management</h2>
-              <p className="text-muted-foreground">View and manage customer support tickets and chat</p>
+              <p className="text-muted-foreground">Manage customer support tickets and live chat</p>
             </div>
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2">
+            
+            <Tabs defaultValue="tickets" className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="tickets">Support Tickets</TabsTrigger>
+                <TabsTrigger value="chat">Live Chat</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="tickets">
                 <TicketManagement />
-              </div>
-              <div className="xl:col-span-1">
+              </TabsContent>
+              
+              <TabsContent value="chat">
                 <ClientChat />
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </div>
