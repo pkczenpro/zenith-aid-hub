@@ -63,7 +63,45 @@ const TicketManagement = () => {
   useEffect(() => {
     fetchTickets();
     fetchProducts();
-  }, []);
+
+    // Subscribe to new tickets for admin notifications
+    if (isAdmin) {
+      const channel = supabase
+        .channel('ticket-updates')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'support_tickets' },
+          async (payload) => {
+            // Refresh tickets
+            fetchTickets();
+            
+            // Get client info for notification
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', payload.new.profile_id)
+              .single();
+            
+            const clientName = profileData?.full_name || profileData?.email || 'A client';
+            
+            // Play notification sound
+            soundService.playTicketSubmitted();
+            
+            // Show toast notification
+            toast({
+              title: "New Support Ticket",
+              description: `${clientName} created a new ticket: ${payload.new.subject}`,
+              duration: 7000,
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isAdmin]);
 
   const fetchTickets = async () => {
     try {

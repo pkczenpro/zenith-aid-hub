@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle, Search, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { soundService } from '@/utils/soundNotifications';
 
 interface Conversation {
   conversation_id: string;
@@ -26,6 +28,7 @@ const ConversationList = ({ onSelectConversation, selectedConversation }: Conver
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchConversations();
@@ -36,8 +39,31 @@ const ConversationList = ({ onSelectConversation, selectedConversation }: Conver
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        () => {
+        async (payload) => {
+          // Fetch updated conversations
           fetchConversations();
+          
+          // Show notification if message is from a client (sender: 'user')
+          if (payload.new.sender === 'user') {
+            // Get client name for notification
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', payload.new.profile_id)
+              .single();
+            
+            const clientName = profileData?.full_name || profileData?.email || 'A client';
+            
+            // Play notification sound
+            soundService.playMessageReceived();
+            
+            // Show toast notification
+            toast({
+              title: "New Message",
+              description: `${clientName} sent you a message`,
+              duration: 5000,
+            });
+          }
         }
       )
       .subscribe();
