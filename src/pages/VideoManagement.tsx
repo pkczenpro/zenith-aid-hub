@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Plus, Trash2, Video } from 'lucide-react';
-import VideoEmbed from '@/components/ui/video-embed';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import VideoEmbedButton from '@/components/VideoEmbedButton';
 
 interface ProductVideo {
   id: string;
   product_id: string;
   title: string;
-  caption: string | null;
-  video_url: string;
+  video_content: string;
   order_index: number;
   created_at: string;
   updated_at: string;
@@ -41,8 +40,8 @@ const VideoManagement = () => {
   
   // Form state
   const [title, setTitle] = useState('');
-  const [caption, setCaption] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoContent, setVideoContent] = useState('');
+  const quillRef = useRef<any>(null);
 
   useEffect(() => {
     if (productId) {
@@ -86,15 +85,22 @@ const VideoManagement = () => {
     }
   };
 
-  const handleVideoEmbed = (url: string) => {
-    setVideoUrl(url);
+  const handleVideoEmbed = (videoHtml: string) => {
+    if (!videoHtml || !quillRef.current) return;
+
+    const editor = quillRef.current.getEditor();
+    const range = editor.getSelection() || editor.getLength();
+    const insertIndex = typeof range === 'number' ? range : range.index || editor.getLength();
+
+    // Insert the video HTML into the editor
+    editor.insertEmbed(insertIndex, 'video', videoHtml);
   };
 
   const handleUpload = async () => {
-    if (!title.trim() || !videoUrl.trim()) {
+    if (!title.trim() || !videoContent.trim()) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please add a title and embed a video",
         variant: "destructive",
       });
       return;
@@ -115,8 +121,7 @@ const VideoManagement = () => {
         .insert({
           product_id: productId,
           title: title.trim(),
-          caption: caption.trim() || null,
-          video_url: videoUrl,
+          video_content: videoContent,
           created_by: profile.id,
           order_index: videos.length,
         });
@@ -130,8 +135,7 @@ const VideoManagement = () => {
 
       // Reset form
       setTitle('');
-      setCaption('');
-      setVideoUrl('');
+      setVideoContent('');
       setIsDialogOpen(false);
 
       // Refresh videos
@@ -144,6 +148,63 @@ const VideoManagement = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const processVideoContent = (content: string) => {
+    if (!content) return '';
+    
+    // Check for video embed containers and convert them to playable iframes
+    if (content.includes('video-embed-container')) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const videoContainers = doc.querySelectorAll('.video-embed-container');
+      
+      let finalContent = content;
+      
+      videoContainers.forEach((container) => {
+        const videoUrl = container.getAttribute('data-video-url');
+        const videoType = container.getAttribute('data-video-type');
+        const videoId = container.getAttribute('data-video-id');
+        
+        if (videoUrl && videoType) {
+          let playableEmbed = '';
+          
+          if (videoType === 'youtube' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="YouTube Video"></iframe>
+            </div>`;
+          } else if (videoType === 'vimeo' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <iframe src="https://player.vimeo.com/video/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Vimeo Video"></iframe>
+            </div>`;
+          } else if (videoType === 'loom' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <iframe src="https://www.loom.com/embed/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Loom Video"></iframe>
+            </div>`;
+          } else if (videoType === 'heygen' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <iframe src="https://share-prod.heygen.com/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="HeyGen Video"></iframe>
+            </div>`;
+          } else if (videoType === 'direct') {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background: #000;">
+              <video controls preload="metadata" style="width: 100%; height: auto; display: block; min-height: 300px;" crossorigin="anonymous">
+                <source src="${videoUrl}" type="video/mp4">
+                <source src="${videoUrl}" type="video/webm">
+                <source src="${videoUrl}" type="video/ogg">
+              </video>
+            </div>`;
+          }
+          
+          if (playableEmbed) {
+            finalContent = finalContent.replace(container.outerHTML, playableEmbed);
+          }
+        }
+      });
+      
+      return finalContent;
+    }
+    
+    return content;
   };
 
   const handleDelete = async (videoId: string) => {
@@ -231,41 +292,45 @@ const VideoManagement = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">
-                    Caption
-                  </label>
-                  <Textarea
-                    placeholder="Enter video caption (optional)"
-                    value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">
-                    Video URL <span className="text-destructive">*</span>
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="Paste video URL or use embed button"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      className="flex-1"
-                    />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Video Content <span className="text-destructive">*</span>
+                    </label>
                     <VideoEmbedButton onVideoEmbed={handleVideoEmbed} />
                   </div>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <ReactQuill
+                      ref={quillRef}
+                      theme="snow"
+                      value={videoContent}
+                      onChange={setVideoContent}
+                      modules={{
+                        toolbar: [
+                          [{ header: [1, 2, 3, false] }],
+                          ['bold', 'italic', 'underline'],
+                          [{ list: 'ordered' }, { list: 'bullet' }],
+                          ['link', 'video'],
+                          ['clean'],
+                        ],
+                      }}
+                      formats={[
+                        'header',
+                        'bold',
+                        'italic',
+                        'underline',
+                        'list',
+                        'bullet',
+                        'link',
+                        'video',
+                      ]}
+                      placeholder="Add description and click 'Embed Video' button to add your video..."
+                      className="bg-background"
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Supports YouTube, Vimeo, Loom, HeyGen, and direct video files
+                    Click "Embed Video" button above to add videos from YouTube, Vimeo, Loom, HeyGen, or direct video files
                   </p>
                 </div>
-
-                {videoUrl && (
-                  <div className="border border-border rounded-lg p-4">
-                    <p className="text-sm font-medium mb-2">Preview:</p>
-                    <VideoEmbed url={videoUrl} />
-                  </div>
-                )}
 
                 <div className="flex justify-end gap-2 pt-4">
                   <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -296,7 +361,7 @@ const VideoManagement = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {videos.map((video) => (
               <Card key={video.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
@@ -311,15 +376,13 @@ const VideoManagement = () => {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  {video.caption && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {video.caption}
-                    </p>
-                  )}
                 </CardHeader>
                 <CardContent>
-                  <VideoEmbed url={video.video_url} />
-                  <p className="text-xs text-muted-foreground mt-2">
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
+                    className="prose prose-lg max-w-none [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-player-wrapper]:my-4"
+                  />
+                  <p className="text-xs text-muted-foreground mt-4 pt-4 border-t">
                     Added on {new Date(video.created_at).toLocaleDateString()}
                   </p>
                 </CardContent>
