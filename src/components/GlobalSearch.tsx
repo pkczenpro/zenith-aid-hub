@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, FileText, Package, Megaphone, Loader2, Video } from "lucide-react";
@@ -20,18 +19,34 @@ interface SearchResult {
 
 export const GlobalSearch = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const performSearch = async () => {
       if (searchQuery.length < 2) {
         setResults([]);
+        setShowDropdown(false);
         return;
       }
+
+      setShowDropdown(true);
 
       setIsSearching(true);
 
@@ -181,7 +196,7 @@ export const GlobalSearch = () => {
 
   const handleResultClick = (result: SearchResult) => {
     const query = searchQuery;
-    setIsOpen(false);
+    setShowDropdown(false);
     setSearchQuery("");
     setResults([]);
 
@@ -232,50 +247,34 @@ export const GlobalSearch = () => {
   };
 
   return (
-    <>
-      <div className="relative w-full">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          type="text"
-          placeholder="Search documentation, resources, videos, releases..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={() => setIsOpen(true)}
-          className="pl-10 bg-muted/50 border-0 focus-visible:ring-1"
-        />
-      </div>
+    <div ref={wrapperRef} className="relative w-full">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 z-10" />
+      <Input
+        type="text"
+        placeholder="Search documentation, resources, videos, releases..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="pl-10 bg-muted/50 border-0 focus-visible:ring-1"
+      />
 
-      <Dialog open={isOpen && searchQuery.length >= 2} onOpenChange={(open) => {
-        setIsOpen(open);
-        if (!open) {
-          setSearchQuery("");
-          setResults([]);
-        }
-      }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Search Results
-            </DialogTitle>
-          </DialogHeader>
-
-          <ScrollArea className="max-h-[400px] pr-4">
+      {showDropdown && searchQuery.length >= 2 && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-popover border rounded-lg shadow-lg z-50 max-h-[400px] overflow-hidden">
+          <ScrollArea className="max-h-[400px]">
             {isSearching ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : results.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground px-4">
                 No results found for "{searchQuery}"
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="p-2 space-y-1">
                 {results.map((result) => (
                   <button
                     key={`${result.type}-${result.id}`}
                     onClick={() => handleResultClick(result)}
-                    className="w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    className="w-full text-left p-3 rounded-md hover:bg-accent transition-colors"
                   >
                     <div className="flex items-start gap-3">
                       <div className="mt-1 text-muted-foreground">
@@ -283,13 +282,13 @@ export const GlobalSearch = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium truncate">{result.title}</h4>
-                          <Badge variant="secondary" className="text-xs">
+                          <h4 className="font-medium truncate text-sm">{result.title}</h4>
+                          <Badge variant="secondary" className="text-xs shrink-0">
                             {getTypeLabel(result.type)}
                           </Badge>
                         </div>
                         {result.description && (
-                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                          <p className="text-xs text-muted-foreground mb-1 line-clamp-1">
                             {result.description}
                           </p>
                         )}
@@ -313,8 +312,8 @@ export const GlobalSearch = () => {
               </div>
             )}
           </ScrollArea>
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      )}
+    </div>
   );
 };
