@@ -67,7 +67,7 @@ const ProductDocs = () => {
   const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string; level: number }[]>([]);
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'documentation' | 'resources' | 'releases'>('documentation');
+  const [activeTab, setActiveTab] = useState<'documentation' | 'resources' | 'videos' | 'releases'>('documentation');
   const [resources, setResources] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
@@ -664,6 +664,16 @@ const ProductDocs = () => {
               Resources
             </button>
             <button
+              onClick={() => setActiveTab('videos')}
+              className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'videos'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+            >
+              Videos
+            </button>
+            <button
               onClick={() => setActiveTab('releases')}
               className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === 'releases'
@@ -808,64 +818,26 @@ const ProductDocs = () => {
             </div>
           ) : activeTab === 'resources' ? (
             <div className="container mx-auto px-8 py-8">
-              {resources.length === 0 && videos.length === 0 ? (
+              {resources.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
                   <h2 className="text-2xl font-semibold text-foreground mb-2">
                     No Resources Available
                   </h2>
                   <p className="text-muted-foreground">
-                    Resources will appear here once they are uploaded.
+                    Document resources like product factsheets, sales materials, and tutorials will appear here once they are uploaded.
                   </p>
                 </div>
               ) : (
                 <div>
                   <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-foreground mb-2">Resources</h1>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Document Resources</h1>
                     <p className="text-muted-foreground">
-                      Download product factsheets, sales materials, tutorials, and watch video resources
+                      Download product factsheets, sales materials, brochures, and other documents
                     </p>
                   </div>
                   
-                  {/* Video Resources Section */}
-                  {videos.length > 0 && (
-                    <div className="mb-12">
-                      <div className="flex items-center mb-6">
-                        <Video className="h-6 w-6 text-primary mr-2" />
-                        <h2 className="text-2xl font-semibold text-foreground">Video Resources</h2>
-                        <span className="ml-3 text-sm text-muted-foreground">({videos.length})</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {videos.map((video) => (
-                          <div
-                            key={video.id}
-                            className="border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-xl transition-all"
-                          >
-                            <div 
-                              dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
-                              className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_video]:w-full [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
-                            />
-                            <div className="p-4">
-                              <h3 className="font-semibold text-base line-clamp-2 mb-2">{video.title}</h3>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(video.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Document Resources Section */}
-                  {resources.length > 0 && (
-                    <div>
-                      <div className="flex items-center mb-6">
-                        <FileText className="h-6 w-6 text-primary mr-2" />
-                        <h2 className="text-2xl font-semibold text-foreground">Document Resources</h2>
-                        <span className="ml-3 text-sm text-muted-foreground">({resources.length})</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {resources.map((resource) => {
                       const ResourceIcon = getResourceIcon(resource.resource_type);
                       return (
@@ -957,8 +929,49 @@ const ProductDocs = () => {
                       );
                     })}
                   </div>
-                    </div>
-                  )}
+                </div>
+              )}
+            </div>
+          ) : activeTab === 'videos' ? (
+            <div className="container mx-auto px-8 py-8">
+              {videos.length === 0 ? (
+                <div className="text-center py-12">
+                  <Video className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+                  <h2 className="text-2xl font-semibold text-foreground mb-2">
+                    No Videos Available
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Video resources will appear here once they are uploaded.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div className="mb-6">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Video Resources</h1>
+                    <p className="text-muted-foreground">
+                      Watch product videos, tutorials, and demonstrations
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {videos.map((video) => (
+                      <div
+                        key={video.id}
+                        className="border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-xl transition-all"
+                      >
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
+                          className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_video]:w-full [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
+                        />
+                        <div className="p-4">
+                          <h3 className="font-semibold text-base line-clamp-2 mb-2">{video.title}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(video.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
