@@ -19,7 +19,6 @@ import {
   ArrowLeft,
   Download,
   Settings,
-  Eye,
   Video,
   FileSpreadsheet,
   Briefcase,
@@ -66,8 +65,6 @@ const ProductDocs = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'documentation' | 'resources' | 'releases'>('documentation');
   const [resources, setResources] = useState<any[]>([]);
-  const [selectedResource, setSelectedResource] = useState<any | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<any | null>(null);
   const highlightTerm = searchParams.get('search') || '';
@@ -779,18 +776,6 @@ const ProductDocs = () => {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => {
-                                setSelectedResource(resource);
-                                setPreviewOpen(true);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Preview
-                            </Button>
                             <div className="flex space-x-2">
                               <Button
                                 variant="outline"
@@ -950,69 +935,6 @@ const ProductDocs = () => {
           </aside>
         )}
       </div>
-
-      {/* Preview Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-5xl h-[85vh]">
-          <DialogHeader>
-            <DialogTitle>{selectedResource?.title}</DialogTitle>
-            <DialogDescription>
-              {selectedResource?.description || `${getResourceTypeLabel(selectedResource?.resource_type || '')} - ${product.name}`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-hidden h-full">
-            {selectedResource?.file_type === 'pdf' ? (
-              <iframe
-                src={selectedResource.file_url}
-                className="w-full h-full border-0 rounded"
-                style={{ minHeight: '600px' }}
-                title="PDF Preview"
-              />
-            ) : selectedResource?.file_type === 'pptx' ? (
-              <iframe
-                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedResource.file_url)}`}
-                className="w-full h-full border-0 rounded"
-                style={{ minHeight: '600px' }}
-                title="PowerPoint Preview"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full space-y-4">
-                <FileText className="h-16 w-16 text-primary" />
-                <p className="text-lg font-medium">Preview Not Available</p>
-                <p className="text-sm text-muted-foreground text-center max-w-md">
-                  This file type cannot be previewed. Please download it to view.
-                </p>
-                    <Button
-                      onClick={async () => {
-                        try {
-                          const response = await fetch(selectedResource.file_url);
-                          const blob = await response.blob();
-                          const url = window.URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = url;
-                          link.download = selectedResource.file_name;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          window.URL.revokeObjectURL(url);
-                        } catch (error) {
-                          console.error('Download error:', error);
-                          toast({
-                            title: "Download Failed",
-                            description: "Failed to download the file.",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download File
-                    </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Release Note Detail Dialog */}
       <Dialog open={!!selectedRelease} onOpenChange={() => setSelectedRelease(null)}>

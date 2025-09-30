@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Eye, Video, FileSpreadsheet, Briefcase, BookOpen } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Resource {
@@ -51,8 +51,6 @@ const ResourceManagement = () => {
   const { toast } = useToast();
   const [product, setProduct] = useState<Product | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
-  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [downloadLogs, setDownloadLogs] = useState<DownloadLog[]>([]);
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -514,18 +512,6 @@ const ResourceManagement = () => {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => {
-                        setSelectedResource(resource);
-                        setPreviewOpen(true);
-                      }}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Preview
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
                       onClick={async () => {
                         try {
                           await logDownload(resource.id);
@@ -578,68 +564,6 @@ const ResourceManagement = () => {
         )}
       </main>
 
-      {/* Preview Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-5xl h-[85vh]">
-          <DialogHeader>
-            <DialogTitle>{selectedResource?.title}</DialogTitle>
-            <DialogDescription>
-              {selectedResource?.description || `Preview ${getResourceTypeLabel(selectedResource?.resource_type || '')}`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-hidden h-full">
-            {selectedResource?.file_type === 'pdf' ? (
-              <iframe
-                src={selectedResource.file_url}
-                className="w-full h-full border-0 rounded"
-                style={{ minHeight: '600px' }}
-                title="PDF Preview"
-              />
-            ) : selectedResource?.file_type === 'pptx' ? (
-              <iframe
-                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedResource.file_url)}`}
-                className="w-full h-full border-0 rounded"
-                style={{ minHeight: '600px' }}
-                title="PowerPoint Preview"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full space-y-4">
-                <FileText className="h-16 w-16 text-primary" />
-                <p className="text-lg font-medium">Preview Not Available</p>
-                <p className="text-sm text-muted-foreground text-center max-w-md">
-                  This file type cannot be previewed. Please download it to view.
-                </p>
-                <Button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch(selectedResource.file_url);
-                      const blob = await response.blob();
-                      const url = window.URL.createObjectURL(blob);
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.download = selectedResource.file_name;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                      window.URL.revokeObjectURL(url);
-                    } catch (error) {
-                      console.error('Download error:', error);
-                      toast({
-                        title: "Download Failed",
-                        description: "Failed to download the file.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download File
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
