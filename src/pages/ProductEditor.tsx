@@ -85,6 +85,12 @@ const ProductEditor = () => {
     status: "Active",
   });
 
+  const [stats, setStats] = useState({
+    articles: 0,
+    resources: 0,
+    tickets: 0,
+  });
+
   const [content, setContent] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [isPreview, setIsPreview] = useState(false);
@@ -134,7 +140,56 @@ const ProductEditor = () => {
         ]);
       }
     }
+    fetchProductStats();
   }, [productId]);
+
+  // Update product info when currentProduct changes
+  useEffect(() => {
+    if (currentProduct) {
+      setProductInfo({
+        name: currentProduct.name || "",
+        description: currentProduct.description || "",
+        version: "1.0.0",
+        status: currentProduct.status || "Active",
+      });
+    }
+  }, [currentProduct]);
+
+  const fetchProductStats = async () => {
+    if (!productId) return;
+
+    try {
+      // Fetch articles count
+      const { count: articlesCount, error: articlesError } = await supabase
+        .from('articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('product_id', productId);
+
+      // Fetch resources count
+      const { count: resourcesCount, error: resourcesError } = await supabase
+        .from('product_resources')
+        .select('*', { count: 'exact', head: true })
+        .eq('product_id', productId);
+
+      // Fetch tickets count
+      const { count: ticketsCount, error: ticketsError } = await supabase
+        .from('support_tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('product_id', productId);
+
+      if (articlesError) console.error('Error fetching articles count:', articlesError);
+      if (resourcesError) console.error('Error fetching resources count:', resourcesError);
+      if (ticketsError) console.error('Error fetching tickets count:', ticketsError);
+
+      setStats({
+        articles: articlesCount || 0,
+        resources: resourcesCount || 0,
+        tickets: ticketsCount || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching product stats:', error);
+    }
+  };
 
   const loadSpecificArticle = async (articleId: string) => {
     try {
@@ -630,49 +685,30 @@ const ProductEditor = () => {
                     <CardTitle>Quick Stats</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
                         <div className="text-2xl font-bold text-primary">
-                          24
+                          {stats.articles}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Articles
                         </div>
                       </div>
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-accent">8</div>
-                        <div className="text-sm text-muted-foreground">
-                          Video Tours
-                        </div>
-                      </div>
-                      <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-success">
-                          156
+                        <div className="text-2xl font-bold text-accent">
+                          {stats.resources}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Views
+                          Resources
                         </div>
                       </div>
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
                         <div className="text-2xl font-bold text-warning">
-                          12
+                          {stats.tickets}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Tickets
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Documentation Coverage</span>
-                        <Badge variant="secondary">78%</Badge>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-primary to-accent h-2 rounded-full"
-                          style={{ width: "78%" }}
-                        ></div>
                       </div>
                     </div>
                   </CardContent>
