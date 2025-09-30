@@ -239,11 +239,6 @@ const ProductCategories = () => {
         return;
       }
 
-      // Only show published products for clients
-      if (!isAdmin) {
-        query = query.eq('status', 'published');
-      }
-
       const { data, error } = await query;
 
       console.log('Final products query result:', data, error);
