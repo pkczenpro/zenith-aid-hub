@@ -366,6 +366,15 @@ const ResourceManagement = () => {
 
             <div className="flex items-center space-x-3">
               <Button
+                variant="default"
+                onClick={() => navigate(`/product/${productId}/videos`)}
+                className="bg-primary text-primary-foreground"
+              >
+                <Video className="h-4 w-4 mr-2" />
+                Manage Videos
+              </Button>
+              
+              <Button
                 variant="outline"
                 onClick={() => navigate(`/product/${productId}/release-notes/new`)}
               >

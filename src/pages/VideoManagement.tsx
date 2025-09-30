@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Plus, Trash2, Video } from 'lucide-react';
 import VideoEmbed from '@/components/ui/video-embed';
+import VideoEmbedButton from '@/components/VideoEmbedButton';
 
 interface ProductVideo {
   id: string;
@@ -242,30 +243,18 @@ const VideoManagement = () => {
                   <label className="text-sm font-medium text-foreground mb-2 block">
                     Video URL <span className="text-destructive">*</span>
                   </label>
-                  <Input
-                    placeholder="Enter or embed video URL"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    className="mb-2"
-                  />
                   <div className="flex items-center gap-2">
-                    <p className="text-xs text-muted-foreground flex-1">
-                      Or use the embed button to add a video from YouTube, Vimeo, Loom, HeyGen, etc.
-                    </p>
-                    <div className="flex-shrink-0">
-                      <Video className="h-4 w-4 inline mr-1 text-muted-foreground" />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const url = prompt('Enter video URL:');
-                          if (url) handleVideoEmbed(url);
-                        }}
-                      >
-                        Embed Video
-                      </Button>
-                    </div>
+                    <Input
+                      placeholder="Paste video URL or use embed button"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <VideoEmbedButton onVideoEmbed={handleVideoEmbed} />
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Supports YouTube, Vimeo, Loom, HeyGen, and direct video files
+                  </p>
                 </div>
 
                 {videoUrl && (
