@@ -359,46 +359,52 @@ const VideoManagement = () => {
       {/* Content */}
       <main className="container mx-auto px-6 py-8">
         {videos.length === 0 ? (
-          <div className="text-center py-12">
-            <Video className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No Videos Yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Start by adding your first video to this product.
+          <div className="text-center py-16">
+            <Video className="h-20 w-20 mx-auto mb-4 text-muted-foreground/30" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">No Videos Yet</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Start building your video library by adding your first video.
             </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Video
+            <Button onClick={() => setIsDialogOpen(true)} size="lg">
+              <Plus className="h-5 w-5 mr-2" />
+              Add Your First Video
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Video Library</h2>
+                <p className="text-muted-foreground mt-1">{videos.length} video{videos.length !== 1 ? 's' : ''} uploaded</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {videos.map((video) => (
-              <Card key={video.id} className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg">{video.title}</CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(video.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
+              <Card key={video.id} className="overflow-hidden hover:shadow-xl transition-shadow">
+                <div className="relative">
                   <div 
                     dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
-                    className="prose prose-lg max-w-none [&_iframe]:w-full [&_iframe]:rounded-lg [&_video]:w-full [&_video]:rounded-lg [&_.video-player-wrapper]:my-4"
+                    className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-t-lg [&_video]:w-full [&_video]:rounded-t-lg [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-t-lg [&_p]:hidden"
                   />
-                  <p className="text-xs text-muted-foreground mt-4 pt-4 border-t">
-                    Added on {new Date(video.created_at).toLocaleDateString()}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(video.id)}
+                    className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-base line-clamp-2 mb-2">{video.title}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(video.created_at).toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </main>
     </div>
