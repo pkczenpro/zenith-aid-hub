@@ -398,16 +398,6 @@ const ProductCategories = () => {
                           Manage Articles
                         </Button>
 
-                        {/* Edit Documentation */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/product/${product.id}/editor`)}
-                          className="w-full justify-start"
-                        >
-                          <Edit3 className="h-4 w-4 mr-2" />
-                          Edit Documentation
-                        </Button>
 
                         {/* Upload Resources */}
                         <Button
