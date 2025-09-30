@@ -716,7 +716,7 @@ const ProductDocs = () => {
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeTab === 'resources' ? (
             <div className="container mx-auto px-8 py-8">
               {resources.length === 0 ? (
                 <div className="text-center py-12">
@@ -831,7 +831,7 @@ const ProductDocs = () => {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Release Notes Tab */}
           {activeTab === 'releases' && (
