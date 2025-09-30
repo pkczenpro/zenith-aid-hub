@@ -69,6 +69,7 @@ const ProductDocs = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'documentation' | 'resources' | 'releases'>('documentation');
   const [resources, setResources] = useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<any | null>(null);
   const highlightTerm = searchParams.get('search') || '';
@@ -92,6 +93,7 @@ const ProductDocs = () => {
 
       // Fetch resources and release notes
       await fetchResources();
+      await fetchVideos();
       await fetchReleaseNotes();
 
       // Get user profile
@@ -268,6 +270,23 @@ const ProductDocs = () => {
     }
   };
 
+  const fetchVideos = async () => {
+    if (!productId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_videos')
+        .select('*')
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setVideos(data || []);
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    }
+  };
+
   const fetchReleaseNotes = async () => {
     if (!productId) return;
     
@@ -390,6 +409,63 @@ const ProductDocs = () => {
     if (!bytes) return 'Unknown size';
     const mb = bytes / (1024 * 1024);
     return `${mb.toFixed(2)} MB`;
+  };
+
+  const processVideoContent = (content: string) => {
+    if (!content) return '';
+    
+    // Check for video embed containers and convert them to playable iframes
+    if (content.includes('video-embed-container')) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const videoContainers = doc.querySelectorAll('.video-embed-container');
+      
+      let finalContent = content;
+      
+      videoContainers.forEach((container) => {
+        const videoUrl = container.getAttribute('data-video-url');
+        const videoType = container.getAttribute('data-video-type');
+        const videoId = container.getAttribute('data-video-id');
+        
+        if (videoUrl && videoType) {
+          let playableEmbed = '';
+          
+          if (videoType === 'youtube' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+              <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" title="YouTube Video"></iframe>
+            </div>`;
+          } else if (videoType === 'vimeo' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+              <iframe src="https://player.vimeo.com/video/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" title="Vimeo Video"></iframe>
+            </div>`;
+          } else if (videoType === 'loom' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+              <iframe src="https://www.loom.com/embed/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" title="Loom Video"></iframe>
+            </div>`;
+          } else if (videoType === 'heygen' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+              <iframe src="https://share-prod.heygen.com/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" title="HeyGen Video"></iframe>
+            </div>`;
+          } else if (videoType === 'direct') {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; width: 100%;">
+              <video controls preload="metadata" style="width: 100%; height: auto; display: block;" crossorigin="anonymous">
+                <source src="${videoUrl}" type="video/mp4">
+                <source src="${videoUrl}" type="video/webm">
+                <source src="${videoUrl}" type="video/ogg">
+              </video>
+            </div>`;
+          }
+          
+          if (playableEmbed) {
+            finalContent = finalContent.replace(container.outerHTML, playableEmbed);
+          }
+        }
+      });
+      
+      return finalContent;
+    }
+    
+    return content;
   };
 
   const currentCategoryArticles = categories.find(cat => cat.name === selectedCategory)?.articles || [];
@@ -732,7 +808,7 @@ const ProductDocs = () => {
             </div>
           ) : activeTab === 'resources' ? (
             <div className="container mx-auto px-8 py-8">
-              {resources.length === 0 ? (
+              {resources.length === 0 && videos.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
                   <h2 className="text-2xl font-semibold text-foreground mb-2">
@@ -747,10 +823,49 @@ const ProductDocs = () => {
                   <div className="mb-6">
                     <h1 className="text-3xl font-bold text-foreground mb-2">Resources</h1>
                     <p className="text-muted-foreground">
-                      Download product factsheets, sales materials, and tutorials
+                      Download product factsheets, sales materials, tutorials, and watch video resources
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  
+                  {/* Video Resources Section */}
+                  {videos.length > 0 && (
+                    <div className="mb-12">
+                      <div className="flex items-center mb-6">
+                        <Video className="h-6 w-6 text-primary mr-2" />
+                        <h2 className="text-2xl font-semibold text-foreground">Video Resources</h2>
+                        <span className="ml-3 text-sm text-muted-foreground">({videos.length})</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {videos.map((video) => (
+                          <div
+                            key={video.id}
+                            className="border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-xl transition-all"
+                          >
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
+                              className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_video]:w-full [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
+                            />
+                            <div className="p-4">
+                              <h3 className="font-semibold text-base line-clamp-2 mb-2">{video.title}</h3>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(video.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Document Resources Section */}
+                  {resources.length > 0 && (
+                    <div>
+                      <div className="flex items-center mb-6">
+                        <FileText className="h-6 w-6 text-primary mr-2" />
+                        <h2 className="text-2xl font-semibold text-foreground">Document Resources</h2>
+                        <span className="ml-3 text-sm text-muted-foreground">({resources.length})</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {resources.map((resource) => {
                       const ResourceIcon = getResourceIcon(resource.resource_type);
                       return (
@@ -842,6 +957,8 @@ const ProductDocs = () => {
                       );
                     })}
                   </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
