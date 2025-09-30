@@ -12,6 +12,7 @@ import ProductEditor from "./pages/ProductEditor";
 import ProductDocs from "./pages/ProductDocs";
 import ProductManagement from "./pages/ProductManagement";
 import ResourceManagement from "./pages/ResourceManagement";
+import VideoManagement from "./pages/VideoManagement";
 import ReleaseNotesManager from "./pages/ReleaseNotesManager";
 import ArticleViewer from "./pages/ArticleViewer";
 import ArticleList from "./pages/ArticleList";
@@ -67,6 +68,11 @@ const App = () => (
             <Route path="/product/:productId/resources" element={
               <ProtectedRoute requireAdmin>
                 <ResourceManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/product/:productId/videos" element={
+              <ProtectedRoute requireAdmin>
+                <VideoManagement />
               </ProtectedRoute>
             } />
             <Route path="/product/:productId/release-notes/new" element={

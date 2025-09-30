@@ -713,6 +713,38 @@ const ProductEditor = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                <Card className="shadow-card border-0 bg-gradient-card">
+                  <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => navigate(`/product/${productId}/articles`)}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Manage Articles
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => navigate(`/product/${productId}/resources`)}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Resources
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => navigate(`/product/${productId}/videos`)}
+                    >
+                      <Video className="h-4 w-4 mr-2" />
+                      Manage Videos
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 

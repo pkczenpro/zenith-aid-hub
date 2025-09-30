@@ -249,6 +249,50 @@ export type Database = {
           },
         ]
       }
+      product_videos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          created_by: string
+          id: string
+          order_index: number | null
+          product_id: string
+          title: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          order_index?: number | null
+          product_id: string
+          title: string
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          order_index?: number | null
+          product_id?: string
+          title?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_videos_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
