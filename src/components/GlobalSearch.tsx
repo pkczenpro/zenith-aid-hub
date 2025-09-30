@@ -4,13 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Package, Megaphone, Loader2 } from "lucide-react";
+import { Search, FileText, Package, Megaphone, Loader2, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 interface SearchResult {
   id: string;
-  type: 'article' | 'resource' | 'release';
+  type: 'article' | 'resource' | 'release' | 'video';
   title: string;
   description?: string;
   productId: string;
@@ -80,6 +80,19 @@ export const GlobalSearch = () => {
           .or(`title.ilike.${searchTerm},version.ilike.${searchTerm}`)
           .limit(20);
 
+        // Search videos
+        const { data: videos } = await supabase
+          .from('product_videos')
+          .select(`
+            id,
+            title,
+            caption,
+            product_id,
+            products (name, category)
+          `)
+          .or(`title.ilike.${searchTerm},caption.ilike.${searchTerm}`)
+          .limit(10);
+
         const allResults: SearchResult[] = [];
 
         // Process articles - filter by content in JS
@@ -139,6 +152,21 @@ export const GlobalSearch = () => {
           });
         }
 
+        // Process videos
+        if (videos) {
+          videos.forEach((video: any) => {
+            allResults.push({
+              id: video.id,
+              type: 'video',
+              title: video.title,
+              description: video.caption,
+              productId: video.product_id,
+              productName: video.products?.name,
+              category: video.products?.category,
+            });
+          });
+        }
+
         setResults(allResults);
       } catch (error) {
         console.error('Search error:', error);
@@ -167,6 +195,9 @@ export const GlobalSearch = () => {
       case 'release':
         navigate(`/product/${result.productId}/docs?search=${encodeURIComponent(query)}&type=release&id=${result.id}`);
         break;
+      case 'video':
+        navigate(`/product/${result.productId}/docs?tab=videos&search=${encodeURIComponent(query)}&type=video&id=${result.id}`);
+        break;
     }
   };
 
@@ -178,6 +209,8 @@ export const GlobalSearch = () => {
         return <Package className="h-4 w-4" />;
       case 'release':
         return <Megaphone className="h-4 w-4" />;
+      case 'video':
+        return <Video className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -191,6 +224,8 @@ export const GlobalSearch = () => {
         return 'Resource';
       case 'release':
         return 'Release Note';
+      case 'video':
+        return 'Video';
       default:
         return type;
     }
@@ -202,7 +237,7 @@ export const GlobalSearch = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           type="text"
-          placeholder="Search documentation, resources, releases..."
+          placeholder="Search documentation, resources, videos, releases..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
