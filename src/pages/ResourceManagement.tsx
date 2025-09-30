@@ -589,52 +589,25 @@ const ResourceManagement = () => {
           </DialogHeader>
           <div className="flex-1 overflow-hidden h-full">
             {selectedResource?.file_type === 'pdf' ? (
-              <object
-                data={selectedResource.file_url}
-                type="application/pdf"
+              <iframe
+                src={selectedResource.file_url}
                 className="w-full h-full border-0 rounded"
                 style={{ minHeight: '600px' }}
-              >
-                <div className="flex flex-col items-center justify-center h-full space-y-4">
-                  <FileText className="h-16 w-16 text-primary" />
-                  <p className="text-lg font-medium">Unable to display PDF</p>
-                  <p className="text-sm text-muted-foreground text-center max-w-md">
-                    Your browser cannot display this PDF. Please download it to view.
-                  </p>
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const response = await fetch(selectedResource.file_url);
-                        const blob = await response.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = selectedResource.file_name;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        window.URL.revokeObjectURL(url);
-                      } catch (error) {
-                        console.error('Download error:', error);
-                        toast({
-                          title: "Download Failed",
-                          description: "Failed to download the file.",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </Button>
-                </div>
-              </object>
+                title="PDF Preview"
+              />
             ) : selectedResource?.file_type === 'pptx' ? (
+              <iframe
+                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedResource.file_url)}`}
+                className="w-full h-full border-0 rounded"
+                style={{ minHeight: '600px' }}
+                title="PowerPoint Preview"
+              />
+            ) : (
               <div className="flex flex-col items-center justify-center h-full space-y-4">
                 <FileText className="h-16 w-16 text-primary" />
-                <p className="text-lg font-medium">PowerPoint Preview</p>
+                <p className="text-lg font-medium">Preview Not Available</p>
                 <p className="text-sm text-muted-foreground text-center max-w-md">
-                  PowerPoint files cannot be previewed directly in the browser. Please download the file to view it.
+                  This file type cannot be previewed. Please download it to view.
                 </p>
                 <Button
                   onClick={async () => {
@@ -663,7 +636,7 @@ const ResourceManagement = () => {
                   Download File
                 </Button>
               </div>
-            ) : null}
+            )}
           </div>
         </DialogContent>
       </Dialog>
