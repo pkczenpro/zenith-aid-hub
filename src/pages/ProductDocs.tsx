@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from 'next-themes';
 import { highlightSearchTerms, scrollToFirstHighlight } from '@/utils/textHighlight';
 import { 
   Search, 
@@ -23,7 +24,9 @@ import {
   FileSpreadsheet,
   Briefcase,
   Plus,
-  Share2
+  Share2,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 interface Article {
@@ -54,6 +57,7 @@ const ProductDocs = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [product, setProduct] = useState<Product | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -534,6 +538,16 @@ const ProductDocs = () => {
                 <span>{userProfile.full_name || userProfile.email}</span>
               </div>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="h-9 w-9"
+            >
+              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
+            </Button>
             {userProfile?.role === 'admin' && (
               <Button
                 variant="outline"
