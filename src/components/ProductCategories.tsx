@@ -396,18 +396,27 @@ const ProductCategories = () => {
                   </CardHeader>
                   
                   <CardContent className="pt-0 space-y-2">
-                    {/* View Documentation - Always visible */}
+                    {/* View Documentation / Explore - Always visible */}
                     <Button
                       variant="default"
                       size="sm"
                       onClick={() => navigate(`/product/${product.id}/docs`)}
-                      className="w-full justify-start"
+                      className="w-full justify-center"
                     >
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      View Documentation
-                      <Badge variant="secondary" className="ml-auto text-xs">
-                        {product.articles_count}
-                      </Badge>
+                      {user ? (
+                        <>
+                          <BookOpen className="h-4 w-4 mr-2" />
+                          View Documentation
+                          <Badge variant="secondary" className="ml-auto text-xs">
+                            {product.articles_count}
+                          </Badge>
+                        </>
+                      ) : (
+                        <>
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Explore
+                        </>
+                      )}
                     </Button>
 
                     {isAdmin && (
