@@ -26,8 +26,10 @@ import {
   Plus,
   Share2,
   Moon,
-  Sun
+  Sun,
+  ChevronLeft
 } from 'lucide-react';
+import ArticleFeedback from '@/components/ArticleFeedback';
 
 interface Article {
   id: string;
@@ -340,6 +342,21 @@ const ProductDocs = () => {
     setSelectedArticle(article);
     generateTableOfContents(article);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Navigation helpers
+  const getCurrentArticleIndex = () => {
+    return articles.findIndex(a => a.id === selectedArticle?.id);
+  };
+
+  const getPreviousArticle = () => {
+    const currentIndex = getCurrentArticleIndex();
+    return currentIndex > 0 ? articles[currentIndex - 1] : null;
+  };
+
+  const getNextArticle = () => {
+    const currentIndex = getCurrentArticleIndex();
+    return currentIndex < articles.length - 1 ? articles[currentIndex + 1] : null;
   };
 
   const toggleCategoryExpanded = (categoryName: string) => {
@@ -710,6 +727,63 @@ const ProductDocs = () => {
                 <div className="prose prose-base max-w-none">
                   {renderArticleContent(selectedArticle.content)}
                 </div>
+
+                {/* Article Navigation */}
+                <div className="border-t border-border mt-12 pt-8">
+                  <div className="flex items-center justify-between gap-4">
+                    {getPreviousArticle() ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleArticleSelect(getPreviousArticle()!)}
+                        className="flex-1 justify-start h-auto py-4 px-6"
+                      >
+                        <div className="flex items-start gap-3 text-left">
+                          <ChevronLeft className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Previous</div>
+                            <div className="font-medium text-foreground">
+                              {getPreviousArticle()!.title.includes(' - ') 
+                                ? getPreviousArticle()!.title.split(' - ').slice(1).join(' - ')
+                                : getPreviousArticle()!.title}
+                            </div>
+                          </div>
+                        </div>
+                      </Button>
+                    ) : (
+                      <div className="flex-1" />
+                    )}
+                    
+                    {getNextArticle() ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleArticleSelect(getNextArticle()!)}
+                        className="flex-1 justify-end h-auto py-4 px-6"
+                      >
+                        <div className="flex items-start gap-3 text-right">
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Next</div>
+                            <div className="font-medium text-foreground">
+                              {getNextArticle()!.title.includes(' - ') 
+                                ? getNextArticle()!.title.split(' - ').slice(1).join(' - ')
+                                : getNextArticle()!.title}
+                            </div>
+                          </div>
+                          <ChevronRight className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                        </div>
+                      </Button>
+                    ) : (
+                      <div className="flex-1" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Article Feedback */}
+                {userProfile && (
+                  <ArticleFeedback 
+                    articleId={selectedArticle.id} 
+                    profileId={userProfile.id}
+                  />
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
