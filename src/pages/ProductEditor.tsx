@@ -843,25 +843,23 @@ const ProductEditor = () => {
                                   <Plus className="h-3 w-3 mr-1" />
                                   Add Subsection
                                 </Button>
+                                <VideoEmbedButton
+                                  onVideoEmbed={(videoHtml) =>
+                                    handleVideoEmbedInSection(
+                                      section.id,
+                                      videoHtml
+                                    )
+                                  }
+                                />
                                 {sections.length > 1 && (
-                                  <>
-                                    <VideoEmbedButton
-                                      onVideoEmbed={(videoHtml) =>
-                                        handleVideoEmbedInSection(
-                                          section.id,
-                                          videoHtml
-                                        )
-                                      }
-                                    />
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => deleteSection(section.id)}
-                                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteSection(section.id)}
+                                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 )}
                               </div>
                             </div>
