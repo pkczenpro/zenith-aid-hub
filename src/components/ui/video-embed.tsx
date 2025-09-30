@@ -17,6 +17,7 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({ url, className = '' }) => {
               src={`https://www.youtube.com/embed/${videoId}`}
               className="absolute inset-0 w-full h-full"
               frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               title="YouTube Video"
             />
@@ -35,6 +36,7 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({ url, className = '' }) => {
               src={`https://player.vimeo.com/video/${videoId}`}
               className="absolute inset-0 w-full h-full"
               frameBorder="0"
+              allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               title="Vimeo Video"
             />
@@ -53,6 +55,7 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({ url, className = '' }) => {
               src={`https://www.loom.com/embed/${videoId}`}
               className="absolute inset-0 w-full h-full"
               frameBorder="0"
+              allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               title="Loom Video"
             />
@@ -77,6 +80,7 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({ url, className = '' }) => {
               src={`https://share-prod.heygen.com/${videoId}`}
               className="absolute inset-0 w-full h-full"
               frameBorder="0"
+              allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               title="HeyGen Video"
             />
@@ -109,6 +113,7 @@ const VideoEmbed: React.FC<VideoEmbedProps> = ({ url, className = '' }) => {
           src={url}
           className="absolute inset-0 w-full h-full"
           frameBorder="0"
+          allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
           title="Embedded Video"
         />

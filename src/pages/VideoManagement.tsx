@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -214,6 +214,9 @@ const VideoManagement = () => {
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Add New Video</DialogTitle>
+                <DialogDescription>
+                  Add a video to this product by providing a title, caption, and video URL.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div>
