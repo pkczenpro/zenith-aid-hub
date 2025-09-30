@@ -217,8 +217,24 @@ const ProductCategories = () => {
           return;
         }
       } else if (!user) {
-        // No user, no products
-        setProducts([]);
+        // No user - fetch published products to display names only
+        const { data: publicProducts, error: publicError } = await supabase
+          .from('products')
+          .select('id, name, description, category, icon_url')
+          .eq('status', 'published');
+
+        if (publicError) {
+          console.error('Error fetching public products:', publicError);
+          setProducts([]);
+        } else {
+          setProducts((publicProducts || []).map(item => ({
+            ...item,
+            status: 'published',
+            created_at: '',
+            updated_at: '',
+            articles_count: 0
+          })));
+        }
         setLoading(false);
         return;
       }
@@ -294,7 +310,7 @@ const ProductCategories = () => {
           </p>
         </div>
 
-        {products.length === 0 ? (
+        {products.length === 0 && user ? (
           <div className="text-center py-12">
             <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
             <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
@@ -313,6 +329,20 @@ const ProductCategories = () => {
                 Manage Products
               </Button>
             )}
+          </div>
+        ) : products.length === 0 && !user ? (
+          <div className="text-center py-12">
+            <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+            <h3 className="text-xl font-semibold mb-2">Sign In to Access Products</h3>
+            <p className="text-muted-foreground mb-6">
+              Please sign in to view and access product documentation.
+            </p>
+            <Button 
+              onClick={() => navigate('/auth')}
+              className="inline-flex items-center"
+            >
+              Sign In
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
