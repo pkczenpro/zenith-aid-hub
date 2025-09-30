@@ -71,7 +71,17 @@ const VideoManagement = () => {
         .order('order_index', { ascending: true });
 
       if (videosError) throw videosError;
-      setVideos(videosData || []);
+      
+      // Cast to our interface type
+      setVideos((videosData as any[] || []).map((v: any) => ({
+        id: v.id,
+        product_id: v.product_id,
+        title: v.title,
+        video_content: v.video_content || '',
+        order_index: v.order_index,
+        created_at: v.created_at,
+        updated_at: v.updated_at,
+      })));
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -118,13 +128,13 @@ const VideoManagement = () => {
     try {
       const { error } = await supabase
         .from('product_videos')
-        .insert({
+        .insert([{
           product_id: productId,
           title: title.trim(),
           video_content: videoContent,
           created_by: profile.id,
           order_index: videos.length,
-        });
+        }] as any);
 
       if (error) throw error;
 

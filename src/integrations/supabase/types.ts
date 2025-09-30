@@ -259,7 +259,8 @@ export type Database = {
           product_id: string
           title: string
           updated_at: string
-          video_url: string
+          video_content: string
+          video_url: string | null
         }
         Insert: {
           caption?: string | null
@@ -270,7 +271,8 @@ export type Database = {
           product_id: string
           title: string
           updated_at?: string
-          video_url: string
+          video_content: string
+          video_url?: string | null
         }
         Update: {
           caption?: string | null
@@ -281,7 +283,8 @@ export type Database = {
           product_id?: string
           title?: string
           updated_at?: string
-          video_url?: string
+          video_content?: string
+          video_url?: string | null
         }
         Relationships: [
           {
