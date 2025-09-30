@@ -369,12 +369,6 @@ const ProductCategories = () => {
                                 {product.category}
                               </Badge>
                             )}
-                            <Badge 
-                              variant={product.status === 'published' ? 'default' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {product.status}
-                            </Badge>
                           </div>
                         </div>
                       </div>
