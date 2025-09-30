@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { soundService } from "@/utils/soundNotifications";
 
 const TicketForm = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [formData, setFormData] = useState({
     subject: "",
     product: "",
@@ -208,6 +208,11 @@ const TicketForm = () => {
     { value: "high", label: "High", color: "bg-orange-100 text-orange-800" },
     { value: "urgent", label: "Urgent", color: "bg-red-100 text-red-800" }
   ];
+
+  // Don't show support ticket form for admin users
+  if (isAdmin) {
+    return null;
+  }
 
   return (
     <section className="py-20 px-4 bg-muted/30">
