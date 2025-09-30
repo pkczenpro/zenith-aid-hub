@@ -364,13 +364,22 @@ const ResourceManagement = () => {
               </h1>
             </div>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Resource
-                </Button>
-              </DialogTrigger>
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/product/${productId}/release-notes/new`)}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Create Release Note
+              </Button>
+              
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Resource
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Upload New Resource</DialogTitle>
@@ -452,6 +461,7 @@ const ResourceManagement = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </div>
       </header>
