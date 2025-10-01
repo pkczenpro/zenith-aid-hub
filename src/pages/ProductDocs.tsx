@@ -647,16 +647,6 @@ const ProductDocs = () => {
         <div className="px-6 border-t border-border">
           <div className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('documentation')}
-              className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === 'documentation'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-              }`}
-            >
-              Documentation
-            </button>
-            <button
               onClick={() => setActiveTab('resources')}
               className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === 'resources'
@@ -675,6 +665,16 @@ const ProductDocs = () => {
               }`}
             >
               Videos
+            </button>
+            <button
+              onClick={() => setActiveTab('documentation')}
+              className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === 'documentation'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+            >
+              Documentation
             </button>
             <button
               onClick={() => setActiveTab('releases')}
