@@ -57,17 +57,18 @@ const ChatWidget = () => {
   const parseLinksFromResponse = (text: string) => {
     const links: Array<{ type: string; id: string; url: string }> = [];
     const patterns = [
-      { regex: /\[article:([^\]]+)\]/g, type: "article", urlType: "article" },
-      { regex: /\[resource:([^\]]+)\]/g, type: "resource", urlType: "resource" },
-      { regex: /\[video:([^\]]+)\]/g, type: "video", urlType: "video" },
+      { regex: /\[article:([^:]+):([^\]]+)\]/g, type: "article", urlType: "article" },
+      { regex: /\[resource:([^:]+):([^\]]+)\]/g, type: "resource", urlType: "resource" },
+      { regex: /\[video:([^:]+):([^\]]+)\]/g, type: "video", urlType: "video" },
     ];
 
     patterns.forEach(({ regex, type, urlType }) => {
       let match;
       while ((match = regex.exec(text)) !== null) {
-        const id = match[1];
-        const url = `/product/${selectedProduct}/docs?type=${urlType}&id=${id}`;
-        links.push({ type, id, url });
+        const productId = match[1];
+        const contentId = match[2];
+        const url = `/product/${productId}/docs?type=${urlType}&id=${contentId}`;
+        links.push({ type, id: contentId, url });
       }
     });
 
@@ -213,7 +214,7 @@ const ChatWidget = () => {
                         ? 'bg-muted text-foreground' 
                         : 'bg-primary text-primary-foreground'
                     }`}>
-                      {message.text.replace(/\[(article|resource|video):([^\]]+)\]/g, '')}
+                      {message.text.replace(/\[(article|resource|video):([^:]+):([^\]]+)\]/g, '')}
                     </div>
                     
                     {/* Render clickable links for articles/resources/videos */}

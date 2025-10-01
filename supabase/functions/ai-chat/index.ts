@@ -62,16 +62,16 @@ serve(async (req) => {
       contextData = `Product: ${product?.name || "Unknown"}
 Description: ${product?.description || ""}
 
-Available Articles (use [article:ID] to link):
+Available Articles (use [article:${productId}:ID] to link):
 ${articlesData.map(a => {
   const contentText = typeof a.content === 'string' ? a.content : JSON.stringify(a.content);
   return `- TITLE: "${a.title}" | ID: ${a.id} | PREVIEW: ${contentText.substring(0, 150)}...`;
 }).join("\n") || "No articles available"}
 
-Available Resources (use [resource:ID] to link):
+Available Resources (use [resource:${productId}:ID] to link):
 ${resourcesData.map(r => `- TITLE: "${r.title}" | ID: ${r.id} | TYPE: ${r.resource_type} | DESC: ${r.description || "No description"}`).join("\n") || "No resources available"}
 
-Available Videos (use [video:ID] to link):
+Available Videos (use [video:${productId}:ID] to link):
 ${videosData.map(v => `- TITLE: "${v.title}" | ID: ${v.id} | CAPTION: ${v.caption || "No caption"}`).join("\n") || "No videos available"}`;
     }
 
@@ -87,24 +87,24 @@ CRITICAL INSTRUCTIONS FOR MATCHING USER QUERIES TO CONTENT:
    - "Setup" or "account" matches "Account Setup"
    - Be flexible with plurals, abbreviations, and variations
 
-2. **Direct Linking**: When you find a matching resource, ALWAYS include the link tag in your response:
-   - For articles: [article:ID]
-   - For resources: [resource:ID]
-   - For videos: [video:ID]
+2. **Direct Linking**: When you find a matching resource, ALWAYS include the link tag in your response with BOTH product ID and content ID:
+   - For articles: [article:PRODUCT_ID:ARTICLE_ID]
+   - For resources: [resource:PRODUCT_ID:RESOURCE_ID]
+   - For videos: [video:PRODUCT_ID:VIDEO_ID]
    
 3. **Response Format**: When linking to content, use this exact format:
-   - "Here's the [Resource Title] [video:ID] that covers what you're looking for."
-   - "You can find information about this in our [Article Title] [article:ID]."
-   - "Download this helpful [Resource Name] [resource:ID]."
+   - "Here's the [Resource Title] [video:PRODUCT_ID:VIDEO_ID] that covers what you're looking for."
+   - "You can find information about this in our [Article Title] [article:PRODUCT_ID:ARTICLE_ID]."
+   - "Download this helpful [Resource Name] [resource:PRODUCT_ID:RESOURCE_ID]."
 
 4. **Multiple Matches**: If multiple resources match, suggest the most relevant one first, then mention others as alternatives.
 
 5. **No Match Found**: If you can't find a specific match, list the closest available resources and ask the user to clarify.
 
 Examples of good responses:
-- User: "Show me dashboard video" → "Here's the PPA Dashboard [video:xxx] tutorial that shows you how to use the dashboard."
-- User: "How do I set up my account?" → "Check out the Account Setup [video:xxx] guide that walks you through the setup process."
-- User: "Download user guide" → "Here's the User Guide [resource:xxx] you can download."
+- User: "Show me dashboard video" → "Here's the PPA Dashboard [video:PRODUCT_ID:VIDEO_ID] tutorial that shows you how to use the dashboard."
+- User: "How do I set up my account?" → "Check out the Account Setup [video:PRODUCT_ID:VIDEO_ID] guide that walks you through the setup process."
+- User: "Download user guide" → "Here's the User Guide [resource:PRODUCT_ID:RESOURCE_ID] you can download."
 
 If no product is selected yet, ask the user which product they need help with.
 Keep responses concise, friendly, and always include the link tags when referencing content.`;
