@@ -501,25 +501,185 @@ const ProductManagement = () => {
               ))}
             </div>
 
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-12">
-                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No products found</h3>
-                <p className="text-muted-foreground mb-6">
-                  {searchQuery ? 'No products match your search.' : 'Get started by creating your first product.'}
-                </p>
-                {!searchQuery && (
+            {filteredProducts.length === 0 && !searchQuery && (
+              <div className="space-y-8">
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 mb-4">
+                    <Package className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Welcome to Product Management</h3>
+                  <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                    Create and organize your products here. Each product can have documentation, videos, and resources. 
+                    Here's what your products will look like once you add them.
+                  </p>
                   <Button
                     onClick={() => {
                       resetForm();
                       setIsCreateDialogOpen(true);
                     }}
+                    size="lg"
                     className="bg-gradient-button hover:shadow-button transition-all duration-300"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Product
+                    <Plus className="mr-2 h-5 w-5" />
+                    Create Your First Product
                   </Button>
-                )}
+                </div>
+
+                {/* Sample Product Cards */}
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-4 text-center">
+                    Preview: What your products will look like
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60">
+                    {/* Sample Card 1 */}
+                    <Card className="card-hover">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                              <Package className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-lg">Sample Product 1</CardTitle>
+                              <Badge variant="secondary" className="mt-1 text-xs">
+                                Software
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="default" className="capitalize">
+                            Published
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                          Your product description will appear here, giving clients an overview of what you offer.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Edit Docs
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            Articles
+                          </Button>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <Edit3 className="mr-2 h-4 w-4" />
+                            Edit Product
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-destructive" disabled>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Sample Card 2 */}
+                    <Card className="card-hover">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                              <Package className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-lg">Sample Product 2</CardTitle>
+                              <Badge variant="secondary" className="mt-1 text-xs">
+                                API
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="default" className="capitalize">
+                            Published
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                          Add multiple products to organize different services, APIs, or documentation portals.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Edit Docs
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            Articles
+                          </Button>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <Edit3 className="mr-2 h-4 w-4" />
+                            Edit Product
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-destructive" disabled>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Sample Card 3 */}
+                    <Card className="card-hover">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                              <Package className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-lg">Sample Product 3</CardTitle>
+                              <Badge variant="secondary" className="mt-1 text-xs">
+                                Service
+                              </Badge>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="capitalize">
+                            Draft
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                          Manage product status, add documentation, videos, and resources for your clients.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Edit Docs
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            Articles
+                          </Button>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button variant="outline" size="sm" className="flex-1" disabled>
+                            <Edit3 className="mr-2 h-4 w-4" />
+                            Edit Product
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-destructive" disabled>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {filteredProducts.length === 0 && searchQuery && (
+              <div className="text-center py-12">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No products found</h3>
+                <p className="text-muted-foreground mb-6">
+                  No products match your search.
+                </p>
               </div>
             )}
           </>
