@@ -171,11 +171,15 @@ const ProductDocs = () => {
 
       // For clients, verify they have access to this product
       if (profile?.role === 'client') {
-        const { data: clientData } = await supabase
+        const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select('id')
           .eq('profile_id', profile.id)
-          .single();
+          .maybeSingle();
+
+        if (clientError) {
+          console.error('Client lookup error:', clientError);
+        }
 
         if (!clientData) {
           toast({
@@ -188,14 +192,19 @@ const ProductDocs = () => {
         }
 
         // Check if client has access to this product
-        const { data: accessData } = await supabase
+        const { data: accessData, error: accessError } = await supabase
           .from('client_product_access')
           .select('id')
           .eq('client_id', clientData.id)
           .eq('product_id', productId)
-          .single();
+          .maybeSingle();
+
+        if (accessError) {
+          console.error('Access check error:', accessError);
+        }
 
         if (!accessData) {
+          console.log('No access found for client:', clientData.id, 'product:', productId);
           toast({
             title: "Access Denied",
             description: "You don't have access to this product documentation.",
@@ -204,6 +213,8 @@ const ProductDocs = () => {
           navigate('/dashboard');
           return;
         }
+
+        console.log('Client has access to product');
       }
 
       // Get product details
