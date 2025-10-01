@@ -29,7 +29,7 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   const stats = [
-    { icon: BookOpen, label: "Articles", value: "500+" },
+    { icon: BookOpen, label: "Training Videos", value: "11+" },
     { icon: Users, label: "Happy Users", value: "10K+" },
     { icon: MessageCircle, label: "Tickets Resolved", value: "25K+" },
   ];
@@ -320,23 +320,7 @@ const HeroSection = () => {
               )}
             </div>
           ) : (
-            <div className="flex justify-center gap-4 mt-8 animate-slide-up">
-              <Link to="/auth">
-                <Button 
-                  variant="outline" 
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur"
-                >
-                  Sign In
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button 
-                  className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
-                >
-                  Get Started
-                </Button>
-              </Link>
-            </div>
+            <></>
           )}
 
           {/* Stats */}
