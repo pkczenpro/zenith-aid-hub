@@ -92,12 +92,18 @@ const ProductDocs = () => {
   // Handle navigation from chat links after data is loaded
   useEffect(() => {
     if (searchType && searchId && !loading) {
+      console.log('Navigation effect triggered:', { searchType, searchId, videosCount: videos.length });
+      
       if (searchType === 'video' && videos.length > 0) {
+        console.log('Setting video player view');
         setActiveTab('videos');
         const videoIndex = videos.findIndex(v => v.id === searchId);
+        console.log('Found video index:', videoIndex);
+        
         if (videoIndex !== -1) {
           setCurrentVideoIndex(videoIndex);
           setVideoViewMode('player');
+          console.log('Video player mode set to: player');
           setTimeout(() => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }, 100);
@@ -954,7 +960,10 @@ const ProductDocs = () => {
                         <Button
                           variant={videoViewMode === 'library' ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => setVideoViewMode('library')}
+                          onClick={() => {
+                            console.log('Switching to library view');
+                            setVideoViewMode('library');
+                          }}
                         >
                           <Grid3x3 className="h-4 w-4 mr-2" />
                           Library View
@@ -962,7 +971,10 @@ const ProductDocs = () => {
                         <Button
                           variant={videoViewMode === 'player' ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => setVideoViewMode('player')}
+                          onClick={() => {
+                            console.log('Switching to player view');
+                            setVideoViewMode('player');
+                          }}
                         >
                           <Play className="h-4 w-4 mr-2" />
                           Player View
