@@ -89,6 +89,42 @@ const ProductDocs = () => {
     }
   }, [user, productId]);
 
+  // Handle navigation from chat links after data is loaded
+  useEffect(() => {
+    if (searchType && searchId && !loading) {
+      if (searchType === 'video' && videos.length > 0) {
+        setActiveTab('videos');
+        const videoIndex = videos.findIndex(v => v.id === searchId);
+        if (videoIndex !== -1) {
+          setCurrentVideoIndex(videoIndex);
+          setVideoViewMode('player');
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 100);
+        }
+      } else if (searchType === 'resource' && resources.length > 0) {
+        setActiveTab('resources');
+        setTimeout(() => {
+          const resourceElement = document.getElementById(`resource-${searchId}`);
+          if (resourceElement) {
+            resourceElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            resourceElement.classList.add('ring-2', 'ring-primary');
+            setTimeout(() => {
+              resourceElement.classList.remove('ring-2', 'ring-primary');
+            }, 3000);
+          }
+        }, 100);
+      } else if (searchType === 'article' && articles.length > 0) {
+        setActiveTab('documentation');
+        const article = articles.find(a => a.id === searchId);
+        if (article) {
+          handleArticleSelect(article);
+          setTimeout(() => scrollToFirstHighlight(), 100);
+        }
+      }
+    }
+  }, [searchType, searchId, loading, videos, resources, articles]);
+
   const fetchProductAndArticles = async () => {
     try {
       setLoading(true);
@@ -220,50 +256,9 @@ const ProductDocs = () => {
         }
       }
 
-      // Handle search navigation
-      if (searchType && searchId) {
-        if (searchType === 'resource') {
-          setActiveTab('resources');
-          const resource = resources.find(r => r.id === searchId);
-          if (resource) {
-            setTimeout(() => {
-              const resourceElement = document.getElementById(`resource-${searchId}`);
-              if (resourceElement) {
-                resourceElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                resourceElement.classList.add('ring-2', 'ring-primary');
-                setTimeout(() => {
-                  resourceElement.classList.remove('ring-2', 'ring-primary');
-                }, 3000);
-              }
-            }, 300);
-          }
-        } else if (searchType === 'video') {
-          setActiveTab('videos');
-          const videoIndex = videos.findIndex(v => v.id === searchId);
-          if (videoIndex !== -1) {
-            setCurrentVideoIndex(videoIndex);
-            setVideoViewMode('player');
-            setTimeout(() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 300);
-          }
-        } else if (searchType === 'article') {
-          setActiveTab('documentation');
-          const article = articles.find(a => a.id === searchId);
-          if (article) {
-            handleArticleSelect(article);
-            setTimeout(() => scrollToFirstHighlight(), 300);
-          }
-        } else if (searchType === 'release') {
-          setActiveTab('releases');
-          const release = releaseNotes.find(r => r.id === searchId);
-          if (release) {
-            setSelectedRelease(release);
-            setTimeout(() => scrollToFirstHighlight(), 300);
-          }
-        }
-      } else if (highlightTerm) {
-        scrollToFirstHighlight();
+      // Highlight search terms if present
+      if (highlightTerm) {
+        setTimeout(() => scrollToFirstHighlight(), 300);
       }
     } catch (error) {
       console.error('Error fetching product data:', error);
