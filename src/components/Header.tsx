@@ -27,10 +27,10 @@ const Header = () => {
             </Link>
           </div>
 
-          {/* Search Bar */}
+          /* {/* Search Bar */}
           <div className="hidden md:flex flex-1 max-w-md mx-8">
             <GlobalSearch />
-          </div>
+          </div> */
 
           {/* Right Navigation */}
           <div className="flex items-center space-x-2">
