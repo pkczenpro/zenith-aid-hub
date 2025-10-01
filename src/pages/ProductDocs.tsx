@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { highlightSearchTerms, scrollToFirstHighlight } from '@/utils/textHighlight';
+import VideoLibrary from '@/components/VideoLibrary';
 import { 
   Search, 
   BookOpen, 
@@ -27,7 +28,9 @@ import {
   Plus,
   Share2,
   Moon,
-  Sun
+  Sun,
+  Grid3x3,
+  Play
 } from 'lucide-react';
 
 interface Article {
@@ -75,6 +78,7 @@ const ProductDocs = () => {
   const [selectedRelease, setSelectedRelease] = useState<any | null>(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
+  const [videoViewMode, setVideoViewMode] = useState<'library' | 'player'>('library');
   const highlightTerm = searchParams.get('search') || '';
   const searchType = searchParams.get('type') || '';
   const searchId = searchParams.get('id') || '';
@@ -918,7 +922,7 @@ const ProductDocs = () => {
               )}
             </div>
           ) : activeTab === 'videos' ? (
-            <div className="w-full py-8">
+            <div className="w-full">
               {videos.length === 0 ? (
                 <div className="text-center py-12">
                   <Video className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
@@ -931,103 +935,145 @@ const ProductDocs = () => {
                 </div>
               ) : (
                 <div className="w-full">
-                  {/* Progress Bar */}
-                  <div className="mb-6 px-8">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-foreground">
-                        Video {currentVideoIndex + 1} of {videos.length}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {Math.round(((currentVideoIndex + 1) / videos.length) * 100)}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-primary h-full transition-all duration-300 ease-in-out"
-                        style={{ width: `${((currentVideoIndex + 1) / videos.length) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Current Video */}
-                  <div className="w-full mb-6">
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: processVideoContent(videos[currentVideoIndex].video_content) }}
-                      className="w-full [&_iframe]:w-full [&_iframe]:h-[80vh] [&_iframe]:border-0 [&_video]:w-full [&_video]:h-auto [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
-                    />
-                    <div className="p-6 bg-card px-8">
-                      <h2 className="text-2xl font-bold text-foreground mb-2">{videos[currentVideoIndex].title}</h2>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(videos[currentVideoIndex].created_at).toLocaleDateString()}
-                      </p>
+                  {/* View Toggle Bar */}
+                  <div className="border-b border-border bg-background sticky top-[112px] z-40 px-8 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={videoViewMode === 'library' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setVideoViewMode('library')}
+                        >
+                          <Grid3x3 className="h-4 w-4 mr-2" />
+                          Library View
+                        </Button>
+                        <Button
+                          variant={videoViewMode === 'player' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setVideoViewMode('player')}
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Player View
+                        </Button>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {videos.length} video{videos.length !== 1 ? 's' : ''} available
+                      </div>
                     </div>
                   </div>
 
-                  {/* Navigation Buttons */}
-                  <div className="flex items-center justify-between gap-4 px-8">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => {
-                        setCurrentVideoIndex(Math.max(0, currentVideoIndex - 1));
+                  {/* Video Library View */}
+                  {videoViewMode === 'library' ? (
+                    <VideoLibrary 
+                      videos={videos} 
+                      onVideoSelect={(index) => {
+                        setCurrentVideoIndex(index);
+                        setVideoViewMode('player');
                         setShowCompletion(false);
                       }}
-                      disabled={currentVideoIndex === 0}
-                      className="flex-1"
-                    >
-                      <ChevronLeft className="h-5 w-5 mr-2" />
-                      Previous Video
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => {
-                        const nextIndex = Math.min(videos.length - 1, currentVideoIndex + 1);
-                        setCurrentVideoIndex(nextIndex);
-                        if (nextIndex === videos.length - 1) {
-                          setTimeout(() => setShowCompletion(true), 1000);
-                        }
-                      }}
-                      disabled={currentVideoIndex === videos.length - 1}
-                      className="flex-1"
-                    >
-                      Next Video
-                      <ChevronRight className="h-5 w-5 ml-2" />
-                    </Button>
-                  </div>
-
-                  {/* Completion Animation */}
-                  {showCompletion && currentVideoIndex === videos.length - 1 && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
-                      <div className="bg-card border-2 border-primary rounded-2xl p-12 text-center max-w-2xl mx-4 animate-scale-in shadow-2xl">
-                        <div className="mb-6 text-6xl animate-pulse">🎉</div>
-                        <h2 className="text-4xl font-bold text-foreground mb-4">
-                          Thank You!
-                        </h2>
-                        <p className="text-xl text-muted-foreground mb-8">
-                          You've completed the video tour for the platform
-                        </p>
-                        <div className="flex gap-4 justify-center">
-                          <Button 
-                            size="lg"
-                            onClick={() => setShowCompletion(false)}
-                            className="hover-scale"
-                          >
-                            Continue Exploring
-                          </Button>
-                          <Button 
-                            size="lg"
-                            variant="outline"
-                            onClick={() => {
-                              setCurrentVideoIndex(0);
-                              setShowCompletion(false);
-                            }}
-                            className="hover-scale"
-                          >
-                            Watch Again
-                          </Button>
+                    />
+                  ) : (
+                    /* Video Player View */
+                    <div className="w-full py-8">
+                      {/* Progress Bar */}
+                      <div className="mb-6 px-8">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-foreground">
+                            Video {currentVideoIndex + 1} of {videos.length}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {Math.round(((currentVideoIndex + 1) / videos.length) * 100)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-primary h-full transition-all duration-300 ease-in-out"
+                            style={{ width: `${((currentVideoIndex + 1) / videos.length) * 100}%` }}
+                          />
                         </div>
                       </div>
+
+                      {/* Current Video */}
+                      <div className="w-full mb-6">
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: processVideoContent(videos[currentVideoIndex].video_content) }}
+                          className="w-full [&_iframe]:w-full [&_iframe]:h-[80vh] [&_iframe]:border-0 [&_video]:w-full [&_video]:h-auto [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
+                        />
+                        <div className="p-6 bg-card px-8">
+                          <h2 className="text-2xl font-bold text-foreground mb-2">{videos[currentVideoIndex].title}</h2>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(videos[currentVideoIndex].created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Navigation Buttons */}
+                      <div className="flex items-center justify-between gap-4 px-8">
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => {
+                            setCurrentVideoIndex(Math.max(0, currentVideoIndex - 1));
+                            setShowCompletion(false);
+                          }}
+                          disabled={currentVideoIndex === 0}
+                          className="flex-1"
+                        >
+                          <ChevronLeft className="h-5 w-5 mr-2" />
+                          Previous Video
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => {
+                            const nextIndex = Math.min(videos.length - 1, currentVideoIndex + 1);
+                            setCurrentVideoIndex(nextIndex);
+                            if (nextIndex === videos.length - 1) {
+                              setTimeout(() => setShowCompletion(true), 1000);
+                            }
+                          }}
+                          disabled={currentVideoIndex === videos.length - 1}
+                          className="flex-1"
+                        >
+                          Next Video
+                          <ChevronRight className="h-5 w-5 ml-2" />
+                        </Button>
+                      </div>
+
+                      {/* Completion Animation */}
+                      {showCompletion && currentVideoIndex === videos.length - 1 && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+                          <div className="bg-card border-2 border-primary rounded-2xl p-12 text-center max-w-2xl mx-4 animate-scale-in shadow-2xl">
+                            <div className="mb-6 text-6xl animate-pulse">🎉</div>
+                            <h2 className="text-4xl font-bold text-foreground mb-4">
+                              Thank You!
+                            </h2>
+                            <p className="text-xl text-muted-foreground mb-8">
+                              You've completed the video tour for the platform
+                            </p>
+                            <div className="flex gap-4 justify-center">
+                              <Button 
+                                size="lg"
+                                onClick={() => setShowCompletion(false)}
+                                className="hover-scale"
+                              >
+                                Continue Exploring
+                              </Button>
+                              <Button 
+                                size="lg"
+                                variant="outline"
+                                onClick={() => {
+                                  setCurrentVideoIndex(0);
+                                  setShowCompletion(false);
+                                }}
+                                className="hover-scale"
+                              >
+                                Watch Again
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
