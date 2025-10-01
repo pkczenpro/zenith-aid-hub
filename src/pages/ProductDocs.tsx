@@ -16,6 +16,7 @@ import {
   LogOut,
   ChevronRight,
   ChevronDown,
+  ChevronLeft,
   Menu,
   ArrowLeft,
   Download,
@@ -72,6 +73,7 @@ const ProductDocs = () => {
   const [videos, setVideos] = useState<any[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<any | null>(null);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const highlightTerm = searchParams.get('search') || '';
   const searchType = searchParams.get('type') || '';
   const searchId = searchParams.get('id') || '';
@@ -945,32 +947,61 @@ const ProductDocs = () => {
                   </p>
                 </div>
               ) : (
-                <div>
+                <div className="max-w-6xl mx-auto">
+                  {/* Progress Bar */}
                   <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-foreground mb-2">Video Resources</h1>
-                    <p className="text-muted-foreground">
-                      Watch product videos, tutorials, and demonstrations
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-foreground">
+                        Video {currentVideoIndex + 1} of {videos.length}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {Math.round(((currentVideoIndex + 1) / videos.length) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-primary h-full transition-all duration-300 ease-in-out"
+                        style={{ width: `${((currentVideoIndex + 1) / videos.length) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {videos.map((video) => (
-                      <div
-                        key={video.id}
-                        className="border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-xl transition-all"
-                      >
-                        <div 
-                          dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
-                          className="w-full [&_iframe]:w-full [&_iframe]:h-[500px] [&_video]:w-full [&_video]:h-auto [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
-                        />
-                        <div className="p-4">
-                          <h3 className="font-semibold text-base line-clamp-2 mb-2">{video.title}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(video.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+
+                  {/* Current Video */}
+                  <div className="border border-border rounded-lg overflow-hidden shadow-lg mb-6">
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: processVideoContent(videos[currentVideoIndex].video_content) }}
+                      className="w-full [&_iframe]:w-full [&_iframe]:h-[600px] [&_video]:w-full [&_video]:h-auto [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
+                    />
+                    <div className="p-6 bg-card">
+                      <h2 className="text-2xl font-bold text-foreground mb-2">{videos[currentVideoIndex].title}</h2>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(videos[currentVideoIndex].created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div className="flex items-center justify-between gap-4">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setCurrentVideoIndex(Math.max(0, currentVideoIndex - 1))}
+                      disabled={currentVideoIndex === 0}
+                      className="flex-1"
+                    >
+                      <ChevronLeft className="h-5 w-5 mr-2" />
+                      Previous Video
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setCurrentVideoIndex(Math.min(videos.length - 1, currentVideoIndex + 1))}
+                      disabled={currentVideoIndex === videos.length - 1}
+                      className="flex-1"
+                    >
+                      Next Video
+                      <ChevronRight className="h-5 w-5 ml-2" />
+                    </Button>
                   </div>
                 </div>
               )}
