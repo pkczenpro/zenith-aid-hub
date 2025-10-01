@@ -62,10 +62,9 @@ const Auth = () => {
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Home</span>
             </Link>
-            <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-gradient">ZenithrHelp</span>
-            </div>
+            <div className="h-8 w-64 rounded-lg flex items-center justify-center">
+                <img class="" src="https://procapita.training/wp-content/uploads/2025/10/Group-2.png" />
+              </div>
           </div>
         </div>
       </header>
