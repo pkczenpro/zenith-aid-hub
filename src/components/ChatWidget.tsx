@@ -66,7 +66,7 @@ const ChatWidget = () => {
       let match;
       while ((match = regex.exec(text)) !== null) {
         const id = match[1];
-        const url = `/product-docs/${selectedProduct}?type=${urlType}&id=${id}`;
+        const url = `/product/${selectedProduct}/docs?type=${urlType}&id=${id}`;
         links.push({ type, id, url });
       }
     });
