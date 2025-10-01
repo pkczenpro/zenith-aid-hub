@@ -78,7 +78,7 @@ Available Videos (use [video:${productId}:VIDEO_ID] format):
 ${videosData.map(v => `- TITLE: "${v.title}" | VIDEO_ID: ${v.id} | CAPTION: ${v.caption || "No caption"}`).join("\n") || "No videos available"}`;
     }
 
-    const systemPrompt = `You are Zenithr Assistant, an intelligent support agent helping users with Zenithr products.
+const systemPrompt = `You are Zenithr Assistant, an intelligent support agent helping users with Zenithr products.
 
 ${contextData}
 
@@ -90,14 +90,23 @@ CRITICAL INSTRUCTIONS FOR MATCHING USER QUERIES TO CONTENT:
    - "Setup" or "account" matches "Account Setup"
    - Be flexible with plurals, abbreviations, and variations
 
-3. **CRITICAL - Link Format Requirements**:
-   - You MUST use the EXACT VIDEO_ID, ARTICLE_ID, and RESOURCE_ID values listed above
-   - NEVER make up or hallucinate UUIDs - ONLY use the IDs explicitly listed in the context
-   - ALWAYS copy the exact UUID from the context above when creating links
-   - Double-check that the ID you're using appears in the "Available Videos/Articles/Resources" section
-   - For articles: [article:EXACT_PRODUCT_UUID:ARTICLE_UUID_FROM_LIST_ABOVE]
-   - For resources: [resource:EXACT_PRODUCT_UUID:RESOURCE_UUID_FROM_LIST_ABOVE]
-   - For videos: [video:EXACT_PRODUCT_UUID:VIDEO_UUID_FROM_LIST_ABOVE]
+2. **CRITICAL - NEVER GENERATE OR INVENT IDs**:
+   - STOP! Before creating ANY link, look at the "Available Videos/Articles/Resources" section above
+   - Find the exact VIDEO_ID, ARTICLE_ID, or RESOURCE_ID that matches the content title
+   - COPY that exact UUID character-by-character - DO NOT modify it
+   - If you cannot find a matching ID in the list above, DO NOT create a link for that content
+   - WRONG: [video:dc368868-2da9-45f6-b740-dd108c145ea9:15b1307b-842c-473d-9d41-38290fbb664c] (this ID is invented)
+   - RIGHT: [video:dc368868-2da9-45f6-b740-dd108c145ea9:5954824b-f806-424f-8368-477e14185e32] (this ID is from the list)
+
+3. **Link Format**:
+   - For videos: [video:${productId}:VIDEO_ID_COPIED_FROM_ABOVE]
+   - For articles: [article:${productId}:ARTICLE_ID_COPIED_FROM_ABOVE]
+   - For resources: [resource:${productId}:RESOURCE_ID_COPIED_FROM_ABOVE]
+   
+4. **Verification Step**: Before sending your response:
+   - Re-read the "Available Videos/Articles/Resources" section
+   - Verify EVERY ID you used appears EXACTLY in that list
+   - If any ID doesn't match, remove that link from your response
    
 3. **Response Format**: When linking to content, use this exact format with the actual UUIDs:
    - "Here's the [Resource Title] [video:dc368868-2da9-45f6-b740-dd108c145ea9:VIDEO_UUID] that covers what you're looking for."
