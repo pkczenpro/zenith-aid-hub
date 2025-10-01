@@ -74,6 +74,7 @@ const ProductDocs = () => {
   const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<any | null>(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [showCompletion, setShowCompletion] = useState(false);
   const highlightTerm = searchParams.get('search') || '';
   const searchType = searchParams.get('type') || '';
   const searchId = searchParams.get('id') || '';
@@ -985,7 +986,10 @@ const ProductDocs = () => {
                     <Button
                       variant="outline"
                       size="lg"
-                      onClick={() => setCurrentVideoIndex(Math.max(0, currentVideoIndex - 1))}
+                      onClick={() => {
+                        setCurrentVideoIndex(Math.max(0, currentVideoIndex - 1));
+                        setShowCompletion(false);
+                      }}
                       disabled={currentVideoIndex === 0}
                       className="flex-1"
                     >
@@ -995,7 +999,13 @@ const ProductDocs = () => {
                     <Button
                       variant="outline"
                       size="lg"
-                      onClick={() => setCurrentVideoIndex(Math.min(videos.length - 1, currentVideoIndex + 1))}
+                      onClick={() => {
+                        const nextIndex = Math.min(videos.length - 1, currentVideoIndex + 1);
+                        setCurrentVideoIndex(nextIndex);
+                        if (nextIndex === videos.length - 1) {
+                          setTimeout(() => setShowCompletion(true), 1000);
+                        }
+                      }}
                       disabled={currentVideoIndex === videos.length - 1}
                       className="flex-1"
                     >
@@ -1003,6 +1013,41 @@ const ProductDocs = () => {
                       <ChevronRight className="h-5 w-5 ml-2" />
                     </Button>
                   </div>
+
+                  {/* Completion Animation */}
+                  {showCompletion && currentVideoIndex === videos.length - 1 && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+                      <div className="bg-card border-2 border-primary rounded-2xl p-12 text-center max-w-2xl mx-4 animate-scale-in shadow-2xl">
+                        <div className="mb-6 text-6xl animate-pulse">🎉</div>
+                        <h2 className="text-4xl font-bold text-foreground mb-4">
+                          Thank You!
+                        </h2>
+                        <p className="text-xl text-muted-foreground mb-8">
+                          You've completed the video tour for the platform
+                        </p>
+                        <div className="flex gap-4 justify-center">
+                          <Button 
+                            size="lg"
+                            onClick={() => setShowCompletion(false)}
+                            className="hover-scale"
+                          >
+                            Continue Exploring
+                          </Button>
+                          <Button 
+                            size="lg"
+                            variant="outline"
+                            onClick={() => {
+                              setCurrentVideoIndex(0);
+                              setShowCompletion(false);
+                            }}
+                            className="hover-scale"
+                          >
+                            Watch Again
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
