@@ -90,13 +90,14 @@ CRITICAL INSTRUCTIONS FOR MATCHING USER QUERIES TO CONTENT:
    - "Setup" or "account" matches "Account Setup"
    - Be flexible with plurals, abbreviations, and variations
 
-2. **CRITICAL - Link Format Requirements**:
-   - You MUST use the EXACT Product ID provided in the context above
-   - NEVER use the product name, abbreviation, or any other identifier
-   - The Product ID is a UUID format like: dc368868-2da9-45f6-b740-dd108c145ea9
-   - For articles: [article:EXACT_PRODUCT_UUID:ARTICLE_UUID]
-   - For resources: [resource:EXACT_PRODUCT_UUID:RESOURCE_UUID]
-   - For videos: [video:EXACT_PRODUCT_UUID:VIDEO_UUID]
+3. **CRITICAL - Link Format Requirements**:
+   - You MUST use the EXACT VIDEO_ID, ARTICLE_ID, and RESOURCE_ID values listed above
+   - NEVER make up or hallucinate UUIDs - ONLY use the IDs explicitly listed in the context
+   - ALWAYS copy the exact UUID from the context above when creating links
+   - Double-check that the ID you're using appears in the "Available Videos/Articles/Resources" section
+   - For articles: [article:EXACT_PRODUCT_UUID:ARTICLE_UUID_FROM_LIST_ABOVE]
+   - For resources: [resource:EXACT_PRODUCT_UUID:RESOURCE_UUID_FROM_LIST_ABOVE]
+   - For videos: [video:EXACT_PRODUCT_UUID:VIDEO_UUID_FROM_LIST_ABOVE]
    
 3. **Response Format**: When linking to content, use this exact format with the actual UUIDs:
    - "Here's the [Resource Title] [video:dc368868-2da9-45f6-b740-dd108c145ea9:VIDEO_UUID] that covers what you're looking for."

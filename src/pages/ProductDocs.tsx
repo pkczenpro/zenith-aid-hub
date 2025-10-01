@@ -99,11 +99,25 @@ const ProductDocs = () => {
         setActiveTab('videos');
         const videoIndex = videos.findIndex(v => v.id === searchId);
         console.log('Found video index:', videoIndex);
+        console.log('Available video IDs:', videos.map(v => v.id));
         
         if (videoIndex !== -1) {
           setCurrentVideoIndex(videoIndex);
           setVideoViewMode('player');
           console.log('Video player mode set to: player');
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 100);
+        } else {
+          // Video not found - show first video as fallback
+          console.warn('Video ID not found, showing first video');
+          setCurrentVideoIndex(0);
+          setVideoViewMode('player');
+          toast({
+            title: "Video Not Found",
+            description: "The requested video could not be found. Showing first video instead.",
+            variant: "destructive",
+          });
           setTimeout(() => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }, 100);
