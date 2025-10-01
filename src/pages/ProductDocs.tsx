@@ -71,7 +71,7 @@ const ProductDocs = () => {
   const [tableOfContents, setTableOfContents] = useState<{ title: string; id: string; level: number }[]>([]);
   const [categories, setCategories] = useState<CategoryGroup[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'documentation' | 'resources' | 'videos' | 'releases'>('documentation');
+  const [activeTab, setActiveTab] = useState<'documentation' | 'resources' | 'videos' | 'releases'>('resources');
   const [resources, setResources] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
