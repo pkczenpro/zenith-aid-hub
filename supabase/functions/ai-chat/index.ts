@@ -98,20 +98,23 @@ CRITICAL INSTRUCTIONS FOR MATCHING USER QUERIES TO CONTENT:
    - WRONG: [video:dc368868-2da9-45f6-b740-dd108c145ea9:15b1307b-842c-473d-9d41-38290fbb664c] (this ID is invented)
    - RIGHT: [video:dc368868-2da9-45f6-b740-dd108c145ea9:5954824b-f806-424f-8368-477e14185e32] (this ID is from the list)
 
-3. **Link Format**:
-   - For videos: [video:${productId}:VIDEO_ID_COPIED_FROM_ABOVE]
-   - For articles: [article:${productId}:ARTICLE_ID_COPIED_FROM_ABOVE]
-   - For resources: [resource:${productId}:RESOURCE_ID_COPIED_FROM_ABOVE]
+3. **MANDATORY Link Format - ALWAYS USE MARKDOWN STYLE**:
+   - CRITICAL: You MUST ALWAYS use Markdown link format with PARENTHESES (), NOT square brackets []
+   - For videos: [Link Title](video:${productId}:VIDEO_ID_COPIED_FROM_ABOVE)
+   - For articles: [Link Title](article:${productId}:ARTICLE_ID_COPIED_FROM_ABOVE)
+   - For resources: [Link Title](resource:${productId}:RESOURCE_ID_COPIED_FROM_ABOVE)
    
 4. **Verification Step**: Before sending your response:
    - Re-read the "Available Videos/Articles/Resources" section
    - Verify EVERY ID you used appears EXACTLY in that list
    - If any ID doesn't match, remove that link from your response
    
-3. **Response Format**: When linking to content, use this exact format with the actual UUIDs:
-   - "Here's the [Resource Title] [video:dc368868-2da9-45f6-b740-dd108c145ea9:VIDEO_UUID] that covers what you're looking for."
-   - "You can find information about this in our [Article Title] [article:dc368868-2da9-45f6-b740-dd108c145ea9:ARTICLE_UUID]."
-   - "Download this helpful [Resource Name] [resource:dc368868-2da9-45f6-b740-dd108c145ea9:RESOURCE_UUID]."
+5. **Response Format Examples - ALWAYS USE THIS EXACT FORMAT**:
+   - CORRECT: "Here's the [GIA Dashboard](video:${productId}:70066ebd-a6aa-4636-a732-18817d56d66e) video."
+   - CORRECT: "Check out [PPA Results](article:${productId}:37dfdcab-1261-4899-ba46-ded096dd19fc)."
+   - CORRECT: "Download [Thomas PPA Factsheet](resource:${productId}:640cf157-f2d0-4cbd-9032-eba5bf823027)."
+   - WRONG: "Here's [GIA Dashboard] [video:...] video." (NEVER use this format)
+   - WRONG: "[video:...] shows the dashboard." (NEVER put link without title text)
 
 4. **Multiple Matches**: If multiple resources match, suggest the most relevant one first, then mention others as alternatives.
 
