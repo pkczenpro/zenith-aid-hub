@@ -63,6 +63,8 @@ const ChatWidget = () => {
     ];
 
     patterns.forEach(({ regex, type, urlType }) => {
+      // Reset lastIndex for global regex
+      regex.lastIndex = 0;
       let match;
       while ((match = regex.exec(text)) !== null) {
         const productId = match[1];
@@ -72,6 +74,7 @@ const ChatWidget = () => {
       }
     });
 
+    console.log('Parsed links from response:', links);
     return links;
   };
 
@@ -105,11 +108,16 @@ const ChatWidget = () => {
       if (error) throw error;
 
       const aiResponse = data.choices[0].message.content;
+      console.log('AI Response:', aiResponse);
       const links = parseLinksFromResponse(aiResponse);
+      console.log('Extracted links:', links);
+
+      // Remove link tags from display text
+      const cleanText = aiResponse.replace(/\[(article|resource|video):([^:]+):([^\]]+)\]/g, '');
 
       const botMessage: Message = {
         id: messages.length + 2,
-        text: aiResponse,
+        text: cleanText,
         isBot: true,
         timestamp: new Date(),
         links: links.length > 0 ? links : undefined
@@ -214,7 +222,7 @@ const ChatWidget = () => {
                         ? 'bg-muted text-foreground' 
                         : 'bg-primary text-primary-foreground'
                     }`}>
-                      {message.text.replace(/\[(article|resource|video):([^:]+):([^\]]+)\]/g, '')}
+                      {message.text}
                     </div>
                     
                     {/* Render clickable links for articles/resources/videos */}
