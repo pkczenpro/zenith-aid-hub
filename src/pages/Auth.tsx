@@ -78,7 +78,7 @@ const Auth = () => {
                 <Shield className="h-8 w-8 text-primary" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gradient mb-2">Welcome</h1>
+            <h1 className="text-3xl font-bold text-gradient mb-2">Welcome Aboard</h1>
             <p className="text-muted-foreground">
               Access your documentation and support resources
             </p>
