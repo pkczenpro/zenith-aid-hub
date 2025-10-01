@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface Message {
   id: number;
@@ -23,6 +24,7 @@ interface Product {
 
 const ChatWidget = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -223,7 +225,10 @@ const ChatWidget = () => {
                             variant="outline"
                             size="sm"
                             className="text-xs justify-start h-auto py-2"
-                            onClick={() => window.open(link.url, '_blank')}
+                            onClick={() => {
+                              setIsOpen(false);
+                              navigate(link.url);
+                            }}
                           >
                             {link.type === 'video' && '🎥'}
                             {link.type === 'article' && '📄'}
