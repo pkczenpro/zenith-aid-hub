@@ -935,7 +935,7 @@ const ProductDocs = () => {
               )}
             </div>
           ) : activeTab === 'videos' ? (
-            <div className="container mx-auto px-8 py-8">
+            <div className="w-full py-8">
               {videos.length === 0 ? (
                 <div className="text-center py-12">
                   <Video className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
@@ -947,9 +947,9 @@ const ProductDocs = () => {
                   </p>
                 </div>
               ) : (
-                <div className="max-w-6xl mx-auto">
+                <div className="w-full">
                   {/* Progress Bar */}
-                  <div className="mb-6">
+                  <div className="mb-6 px-8">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-foreground">
                         Video {currentVideoIndex + 1} of {videos.length}
@@ -967,12 +967,12 @@ const ProductDocs = () => {
                   </div>
 
                   {/* Current Video */}
-                  <div className="border border-border rounded-lg overflow-hidden shadow-lg mb-6">
+                  <div className="w-full mb-6">
                     <div 
                       dangerouslySetInnerHTML={{ __html: processVideoContent(videos[currentVideoIndex].video_content) }}
-                      className="w-full [&_iframe]:w-full [&_iframe]:h-[600px] [&_video]:w-full [&_video]:h-auto [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
+                      className="w-full [&_iframe]:w-full [&_iframe]:h-[80vh] [&_iframe]:border-0 [&_video]:w-full [&_video]:h-auto [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
                     />
-                    <div className="p-6 bg-card">
+                    <div className="p-6 bg-card px-8">
                       <h2 className="text-2xl font-bold text-foreground mb-2">{videos[currentVideoIndex].title}</h2>
                       <p className="text-sm text-muted-foreground">
                         {new Date(videos[currentVideoIndex].created_at).toLocaleDateString()}
@@ -981,7 +981,7 @@ const ProductDocs = () => {
                   </div>
 
                   {/* Navigation Buttons */}
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center justify-between gap-4 px-8">
                     <Button
                       variant="outline"
                       size="lg"
