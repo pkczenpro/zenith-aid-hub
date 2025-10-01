@@ -14,7 +14,7 @@ interface Message {
   text: string;
   isBot: boolean;
   timestamp: Date;
-  links?: Array<{ type: string; id: string; url: string }>;
+  links?: Array<{ type: string; id: string; url: string; title: string }>;
 }
 
 interface Product {
@@ -55,22 +55,24 @@ const ChatWidget = () => {
   };
 
   const parseLinksFromResponse = (text: string) => {
-    const links: Array<{ type: string; id: string; url: string }> = [];
+    const links: Array<{ type: string; id: string; url: string; title: string }> = [];
+    
+    // Match Markdown format: [Link Text](article:productId:contentId)
     const patterns = [
-      { regex: /\[article:([^:]+):([^\]]+)\]/g, type: "article", urlType: "article" },
-      { regex: /\[resource:([^:]+):([^\]]+)\]/g, type: "resource", urlType: "resource" },
-      { regex: /\[video:([^:]+):([^\]]+)\]/g, type: "video", urlType: "video" },
+      { regex: /\[([^\]]+)\]\(article:([^:]+):([^\)]+)\)/g, type: "article", urlType: "article" },
+      { regex: /\[([^\]]+)\]\(resource:([^:]+):([^\)]+)\)/g, type: "resource", urlType: "resource" },
+      { regex: /\[([^\]]+)\]\(video:([^:]+):([^\)]+)\)/g, type: "video", urlType: "video" },
     ];
 
     patterns.forEach(({ regex, type, urlType }) => {
-      // Reset lastIndex for global regex
       regex.lastIndex = 0;
       let match;
       while ((match = regex.exec(text)) !== null) {
-        const productId = match[1];
-        const contentId = match[2];
+        const linkTitle = match[1];
+        const productId = match[2];
+        const contentId = match[3];
         const url = `/product/${productId}/docs?type=${urlType}&id=${contentId}`;
-        links.push({ type, id: contentId, url });
+        links.push({ type, id: contentId, url, title: linkTitle });
       }
     });
 
@@ -112,8 +114,8 @@ const ChatWidget = () => {
       const links = parseLinksFromResponse(aiResponse);
       console.log('Extracted links:', links);
 
-      // Remove link tags from display text
-      const cleanText = aiResponse.replace(/\[(article|resource|video):([^:]+):([^\]]+)\]/g, '');
+      // Remove Markdown link tags from display text
+      const cleanText = aiResponse.replace(/\[([^\]]+)\]\((article|resource|video):([^:]+):([^\)]+)\)/g, '$1');
 
       const botMessage: Message = {
         id: messages.length + 2,
@@ -242,7 +244,7 @@ const ChatWidget = () => {
                             {link.type === 'video' && '🎥'}
                             {link.type === 'article' && '📄'}
                             {link.type === 'resource' && '📎'}
-                            <span className="ml-2">View {link.type}</span>
+                            <span className="ml-2">{link.title}</span>
                           </Button>
                         ))}
                       </div>
