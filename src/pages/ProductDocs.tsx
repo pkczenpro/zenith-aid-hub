@@ -9,7 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 import { highlightSearchTerms, scrollToFirstHighlight } from '@/utils/textHighlight';
 import VideoLibrary from '@/components/VideoLibrary';
-import { 
+import ChatWidget from '@/components/ChatWidget';
+import {
   Search, 
   BookOpen, 
   FileText,
@@ -1270,6 +1271,9 @@ const ProductDocs = () => {
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* Chat Widget */}
+      <ChatWidget />
     </div>
   );
 };
