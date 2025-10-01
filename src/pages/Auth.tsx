@@ -63,7 +63,7 @@ const Auth = () => {
               <span>Back to Home</span>
             </Link>
             <div className="h-8 w-64 rounded-lg flex items-center justify-center">
-                <img class="" src="https://procapita.training/wp-content/uploads/2025/10/Group-2.png" />
+                <img className="h-8 w-auto" src="https://procapita.training/wp-content/uploads/2025/10/Group-2.png" />
               </div>
             <div></div>
           </div>
