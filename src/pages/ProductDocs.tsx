@@ -285,7 +285,7 @@ const ProductDocs = () => {
         .from('product_videos')
         .select('*')
         .eq('product_id', productId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       setVideos(data || []);
