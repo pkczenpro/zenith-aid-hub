@@ -690,25 +690,7 @@ const ProductDocs = () => {
         </div>
         
         {/* Category Tabs - Only show when Documentation tab is active */}
-        /* {activeTab === 'documentation' && categories.length > 0 && (
-          <div className="px-6 border-t border-border">
-            <div className="flex space-x-8 overflow-x-auto">
-              {categories.map((category) => (
-                <button
-                  key={category.name}
-                  onClick={() => setSelectedCategory(category.name)}
-                  className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                    selectedCategory === category.name
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )} */
+        
       </header>
 
       <div className="flex flex-1 overflow-hidden">
