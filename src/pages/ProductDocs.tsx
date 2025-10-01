@@ -953,7 +953,7 @@ const ProductDocs = () => {
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {videos.map((video) => (
                       <div
                         key={video.id}
@@ -961,7 +961,7 @@ const ProductDocs = () => {
                       >
                         <div 
                           dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
-                          className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_video]:w-full [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
+                          className="w-full [&_iframe]:w-full [&_iframe]:h-[500px] [&_video]:w-full [&_video]:h-auto [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
                         />
                         <div className="p-4">
                           <h3 className="font-semibold text-base line-clamp-2 mb-2">{video.title}</h3>
