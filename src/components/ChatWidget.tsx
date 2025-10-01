@@ -55,16 +55,16 @@ const ChatWidget = () => {
   const parseLinksFromResponse = (text: string) => {
     const links: Array<{ type: string; id: string; url: string }> = [];
     const patterns = [
-      { regex: /\[article:([^\]]+)\]/g, type: "article", urlPrefix: "article" },
-      { regex: /\[resource:([^\]]+)\]/g, type: "resource", urlPrefix: "resource" },
-      { regex: /\[video:([^\]]+)\]/g, type: "video", urlPrefix: "video" },
+      { regex: /\[article:([^\]]+)\]/g, type: "article", urlType: "article" },
+      { regex: /\[resource:([^\]]+)\]/g, type: "resource", urlType: "resource" },
+      { regex: /\[video:([^\]]+)\]/g, type: "video", urlType: "video" },
     ];
 
-    patterns.forEach(({ regex, type, urlPrefix }) => {
+    patterns.forEach(({ regex, type, urlType }) => {
       let match;
       while ((match = regex.exec(text)) !== null) {
         const id = match[1];
-        const url = `/product-docs/${selectedProduct}?tab=${urlPrefix === "video" ? "videos" : urlPrefix === "resource" ? "resources" : "documentation"}&${urlPrefix}Id=${id}`;
+        const url = `/product-docs/${selectedProduct}?type=${urlType}&id=${id}`;
         links.push({ type, id, url });
       }
     });

@@ -237,6 +237,23 @@ const ProductDocs = () => {
               }
             }, 300);
           }
+        } else if (searchType === 'video') {
+          setActiveTab('videos');
+          const videoIndex = videos.findIndex(v => v.id === searchId);
+          if (videoIndex !== -1) {
+            setCurrentVideoIndex(videoIndex);
+            setVideoViewMode('player');
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 300);
+          }
+        } else if (searchType === 'article') {
+          setActiveTab('documentation');
+          const article = articles.find(a => a.id === searchId);
+          if (article) {
+            handleArticleSelect(article);
+            setTimeout(() => scrollToFirstHighlight(), 300);
+          }
         } else if (searchType === 'release') {
           setActiveTab('releases');
           const release = releaseNotes.find(r => r.id === searchId);
