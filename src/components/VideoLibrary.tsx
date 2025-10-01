@@ -35,8 +35,8 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
   };
 
   return (
-    <div className="container mx-auto px-8 py-8">
-      <div className="mb-8">
+    <div className="px-8 py-4">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-foreground mb-2">Video Library</h1>
         <p className="text-muted-foreground">
           Browse all training videos and tutorials
