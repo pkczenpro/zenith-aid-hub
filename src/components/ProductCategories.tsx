@@ -305,25 +305,128 @@ const ProductCategories = () => {
           </p>
         </div>
 
-        {products.length === 0 && user ? (
+        {products.length === 0 && user && isAdmin ? (
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold mb-3">Welcome to Your Product Dashboard</h3>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Create your first product to start managing documentation, articles, and resources. Here's what you can do:
+              </p>
+              <Button 
+                onClick={() => navigate('/products')}
+                size="lg"
+                className="inline-flex items-center"
+              >
+                <Package className="h-5 w-5 mr-2" />
+                Create Your First Product
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-50 pointer-events-none">
+              {/* Sample Card 1 */}
+              <Card className="card-hover overflow-hidden">
+                <CardHeader className="pb-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                        <Smartphone className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg">Mobile App</CardTitle>
+                        <Badge variant="secondary" className="text-xs mt-1">mobile</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm">Your mobile product documentation</p>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-2">
+                  <Button variant="default" size="sm" className="w-full justify-center">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    View Documentation
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Manage Articles
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Resources
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Sample Card 2 */}
+              <Card className="card-hover overflow-hidden">
+                <CardHeader className="pb-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                        <Monitor className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg">Web Platform</CardTitle>
+                        <Badge variant="secondary" className="text-xs mt-1">web</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm">Your web platform documentation</p>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-2">
+                  <Button variant="default" size="sm" className="w-full justify-center">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    View Documentation
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Manage Articles
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Resources
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Sample Card 3 */}
+              <Card className="card-hover overflow-hidden">
+                <CardHeader className="pb-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center">
+                        <Cloud className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg">Cloud Services</CardTitle>
+                        <Badge variant="secondary" className="text-xs mt-1">cloud</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm">Your cloud services documentation</p>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-2">
+                  <Button variant="default" size="sm" className="w-full justify-center">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    View Documentation
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Manage Articles
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Resources
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : products.length === 0 && user && !isAdmin ? (
           <div className="text-center py-12">
             <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
             <h3 className="text-xl font-semibold mb-2">No Products Available</h3>
             <p className="text-muted-foreground mb-6">
-              {isAdmin 
-                ? "Create your first product to get started with documentation."
-                : "No products have been assigned to you yet. Contact your administrator for access."
-              }
+              No products have been assigned to you yet. Contact your administrator for access.
             </p>
-            {isAdmin && (
-              <Button 
-                onClick={() => navigate('/products')}
-                className="inline-flex items-center"
-              >
-                <Package className="h-4 w-4 mr-2" />
-                Manage Products
-              </Button>
-            )}
           </div>
         ) : products.length === 0 && !user ? (
           <div className="text-center py-12">
