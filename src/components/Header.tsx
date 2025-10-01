@@ -20,7 +20,7 @@ const Header = () => {
               <Menu className="h-5 w-5" />
             </Button>
             <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-              <div className="h-8 w-full rounded-lg flex items-center justify-center">
+              <div className="h-8 w-64 rounded-lg flex items-center justify-center">
                 <img class="" src="https://procapita.training/wp-content/uploads/2025/10/Group-2.png" />
               </div>
             </Link>
