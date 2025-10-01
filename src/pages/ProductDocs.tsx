@@ -690,7 +690,7 @@ const ProductDocs = () => {
         </div>
         
         {/* Category Tabs - Only show when Documentation tab is active */}
-        {activeTab === 'documentation' && categories.length > 0 && (
+        /* {activeTab === 'documentation' && categories.length > 0 && (
           <div className="px-6 border-t border-border">
             <div className="flex space-x-8 overflow-x-auto">
               {categories.map((category) => (
@@ -708,7 +708,7 @@ const ProductDocs = () => {
               ))}
             </div>
           </div>
-        )}
+        )} */
       </header>
 
       <div className="flex flex-1 overflow-hidden">
