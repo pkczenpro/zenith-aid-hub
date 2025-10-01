@@ -23,6 +23,9 @@ serve(async (req) => {
 
     // Fetch relevant articles and resources for context
     let contextData = "";
+    let articlesData = [];
+    let resourcesData = [];
+    let videosData = [];
     
     if (productId) {
       // Fetch articles
@@ -31,18 +34,22 @@ serve(async (req) => {
         .select("id, title, content")
         .eq("product_id", productId)
         .eq("status", "published");
+      articlesData = articles || [];
 
       // Fetch resources
       const { data: resources } = await supabase
         .from("product_resources")
-        .select("id, title, description, file_url")
+        .select("id, title, description, file_url, resource_type")
         .eq("product_id", productId);
+      resourcesData = resources || [];
 
       // Fetch videos
       const { data: videos } = await supabase
         .from("product_videos")
-        .select("id, title, caption")
-        .eq("product_id", productId);
+        .select("id, title, caption, video_content")
+        .eq("product_id", productId)
+        .order("order_index", { ascending: true });
+      videosData = videos || [];
 
       // Fetch product info
       const { data: product } = await supabase
@@ -51,38 +58,56 @@ serve(async (req) => {
         .eq("id", productId)
         .single();
 
-      // Build context string
+      // Build detailed context string with searchable content
       contextData = `Product: ${product?.name || "Unknown"}
 Description: ${product?.description || ""}
 
-Available Articles:
-${articles?.map(a => `- ${a.title} (ID: ${a.id}): ${a.content.substring(0, 200)}...`).join("\n") || "No articles available"}
+Available Articles (use [article:ID] to link):
+${articlesData.map(a => {
+  const contentText = typeof a.content === 'string' ? a.content : JSON.stringify(a.content);
+  return `- TITLE: "${a.title}" | ID: ${a.id} | PREVIEW: ${contentText.substring(0, 150)}...`;
+}).join("\n") || "No articles available"}
 
-Available Resources:
-${resources?.map(r => `- ${r.title} (ID: ${r.id}): ${r.description || ""}`).join("\n") || "No resources available"}
+Available Resources (use [resource:ID] to link):
+${resourcesData.map(r => `- TITLE: "${r.title}" | ID: ${r.id} | TYPE: ${r.resource_type} | DESC: ${r.description || "No description"}`).join("\n") || "No resources available"}
 
-Available Videos:
-${videos?.map(v => `- ${v.title} (ID: ${v.id}): ${v.caption || ""}`).join("\n") || "No videos available"}`;
+Available Videos (use [video:ID] to link):
+${videosData.map(v => `- TITLE: "${v.title}" | ID: ${v.id} | CAPTION: ${v.caption || "No caption"}`).join("\n") || "No videos available"}`;
     }
 
     const systemPrompt = `You are Zenithr Assistant, an intelligent support agent helping users with Zenithr products.
 
 ${contextData}
 
-Your responsibilities:
-1. Help users troubleshoot issues with their selected product
-2. Recommend relevant articles, resources, and videos from the available content
-3. Provide clear, concise answers to FAQs
-4. When citing articles or resources, ALWAYS include the ID in this format: [article:ID] or [resource:ID] or [video:ID]
-5. Be friendly, professional, and solution-oriented
+CRITICAL INSTRUCTIONS FOR MATCHING USER QUERIES TO CONTENT:
 
-When recommending content:
-- Use [article:ID] format for articles (e.g., "Check out our guide [article:abc123]")
-- Use [resource:ID] format for downloadable resources (e.g., "Download this resource [resource:xyz456]")
-- Use [video:ID] format for videos (e.g., "Watch this tutorial [video:vid789]")
+1. **Intelligent Content Matching**: When a user asks about a topic, carefully analyze the TITLES of available articles, resources, and videos to find the BEST MATCH.
+   - Look for keywords in the user's query that match resource titles
+   - Use semantic understanding - "dashboard" matches "PPA Dashboard", "GIA Dashboard", etc.
+   - "Setup" or "account" matches "Account Setup"
+   - Be flexible with plurals, abbreviations, and variations
+
+2. **Direct Linking**: When you find a matching resource, ALWAYS include the link tag in your response:
+   - For articles: [article:ID]
+   - For resources: [resource:ID]
+   - For videos: [video:ID]
+   
+3. **Response Format**: When linking to content, use this exact format:
+   - "Here's the [Resource Title] [video:ID] that covers what you're looking for."
+   - "You can find information about this in our [Article Title] [article:ID]."
+   - "Download this helpful [Resource Name] [resource:ID]."
+
+4. **Multiple Matches**: If multiple resources match, suggest the most relevant one first, then mention others as alternatives.
+
+5. **No Match Found**: If you can't find a specific match, list the closest available resources and ask the user to clarify.
+
+Examples of good responses:
+- User: "Show me dashboard video" → "Here's the PPA Dashboard [video:xxx] tutorial that shows you how to use the dashboard."
+- User: "How do I set up my account?" → "Check out the Account Setup [video:xxx] guide that walks you through the setup process."
+- User: "Download user guide" → "Here's the User Guide [resource:xxx] you can download."
 
 If no product is selected yet, ask the user which product they need help with.
-Keep responses concise and actionable.`;
+Keep responses concise, friendly, and always include the link tags when referencing content.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

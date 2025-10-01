@@ -13,7 +13,7 @@ interface Message {
   text: string;
   isBot: boolean;
   timestamp: Date;
-  links?: Array<{ type: string; id: string; title?: string }>;
+  links?: Array<{ type: string; id: string; url: string }>;
 }
 
 interface Product {
@@ -53,17 +53,19 @@ const ChatWidget = () => {
   };
 
   const parseLinksFromResponse = (text: string) => {
-    const links: Array<{ type: string; id: string; title?: string }> = [];
+    const links: Array<{ type: string; id: string; url: string }> = [];
     const patterns = [
-      { regex: /\[article:([^\]]+)\]/g, type: "article" },
-      { regex: /\[resource:([^\]]+)\]/g, type: "resource" },
-      { regex: /\[video:([^\]]+)\]/g, type: "video" },
+      { regex: /\[article:([^\]]+)\]/g, type: "article", urlPrefix: "article" },
+      { regex: /\[resource:([^\]]+)\]/g, type: "resource", urlPrefix: "resource" },
+      { regex: /\[video:([^\]]+)\]/g, type: "video", urlPrefix: "video" },
     ];
 
-    patterns.forEach(({ regex, type }) => {
+    patterns.forEach(({ regex, type, urlPrefix }) => {
       let match;
       while ((match = regex.exec(text)) !== null) {
-        links.push({ type, id: match[1] });
+        const id = match[1];
+        const url = `/product-docs/${selectedProduct}?tab=${urlPrefix === "video" ? "videos" : urlPrefix === "resource" ? "resources" : "documentation"}&${urlPrefix}Id=${id}`;
+        links.push({ type, id, url });
       }
     });
 
@@ -212,19 +214,22 @@ const ChatWidget = () => {
                       {message.text.replace(/\[(article|resource|video):([^\]]+)\]/g, '')}
                     </div>
                     
-                    {/* Render clickable links for articles/resources */}
+                    {/* Render clickable links for articles/resources/videos */}
                     {message.links && message.links.length > 0 && (
                       <div className="flex flex-col gap-1 pl-2">
                         {message.links.map((link, idx) => (
-                          <a
+                          <Button
                             key={idx}
-                            href={`/product-docs?productId=${selectedProduct}&${link.type}Id=${link.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                            variant="outline"
+                            size="sm"
+                            className="text-xs justify-start h-auto py-2"
+                            onClick={() => window.open(link.url, '_blank')}
                           >
-                            📎 View {link.type}
-                          </a>
+                            {link.type === 'video' && '🎥'}
+                            {link.type === 'article' && '📄'}
+                            {link.type === 'resource' && '📎'}
+                            <span className="ml-2">View {link.type}</span>
+                          </Button>
                         ))}
                       </div>
                     )}
