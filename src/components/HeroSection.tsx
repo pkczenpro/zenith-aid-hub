@@ -227,7 +227,7 @@ const HeroSection = () => {
               ) : (
                 <>
                   Welcome to{" "}
-                  <span className="text-primary-glow">Thomas Accredited Help Center</span>
+                  <span className="text-primary-glow">Thomas Assess Accredited Help Center</span>
                 </>
               )}
             </h1>
