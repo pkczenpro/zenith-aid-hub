@@ -28,11 +28,6 @@ const HeroSection = () => {
   const { user, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const stats = [
-    { icon: BookOpen, label: "Training Videos", value: "11+" },
-    { icon: Users, label: "Happy Users", value: "10K+" },
-    { icon: MessageCircle, label: "Tickets Resolved", value: "25K+" },
-  ];
 
   useEffect(() => {
     const performSearch = async () => {
@@ -323,18 +318,6 @@ const HeroSection = () => {
             <></>
           )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 animate-slide-up">
-            {stats.map((stat, index) => (
-              <Card key={index} className="bg-white/10 backdrop-blur border-white/20 card-hover">
-                <CardContent className="p-6 text-center">
-                  <stat.icon className="h-8 w-8 text-white mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-white/80">{stat.label}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
       </div>
 
