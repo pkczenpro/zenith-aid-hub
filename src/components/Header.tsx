@@ -21,9 +21,8 @@ const Header = () => {
             </Button>
             <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
               <div className="h-8 w-8 rounded-lg bg-gradient-hero flex items-center justify-center">
-                <Shield className="h-5 w-5 text-white" />
+                <img class="" src="https://procapita.training/wp-content/uploads/2025/10/Group-2.png" />
               </div>
-              <span className="text-xl font-bold text-gradient">ZenithrHelp</span>
             </Link>
           </div>
 
