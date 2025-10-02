@@ -32,8 +32,7 @@ const ChatWidget = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [sessionId, setSessionId] = useState(() => {
-    const stored = localStorage.getItem('chatSessionId');
-    return stored || `session-${Date.now()}`;
+    return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   });
   const [dbSessionId, setDbSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -41,7 +40,6 @@ const ChatWidget = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
-  const [feedbackComment, setFeedbackComment] = useState("");
 
   useEffect(() => {
     fetchProducts();
@@ -49,10 +47,10 @@ const ChatWidget = () => {
   }, []);
 
   useEffect(() => {
-    if (profile?.id && !dbSessionId) {
+    if (profile?.id && !dbSessionId && sessionId) {
       initializeDbSession();
     }
-  }, [profile?.id, sessionId]);
+  }, [profile?.id, dbSessionId, sessionId]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -62,33 +60,21 @@ const ChatWidget = () => {
   }, [messages]);
 
   const loadPersistedChat = () => {
-    const stored = localStorage.getItem(`chat-${sessionId}`);
-    if (stored) {
-      const data = JSON.parse(stored);
-      setMessages(data.messages.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
-      setSelectedProduct(data.selectedProduct || "");
-    } else {
-      // Initialize with welcome message
-      setMessages([{
-        id: 1,
-        text: "Hi! I'm Zenithr Assistant, powered by AI. I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. Which product do you need help with?",
-        isBot: true,
-        timestamp: new Date()
-      }]);
-    }
+    // Always start with welcome message for new sessions
+    setMessages([{
+      id: 1,
+      text: "Hi! I'm Zenithr Assistant, powered by AI. I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. Which product do you need help with?",
+      isBot: true,
+      timestamp: new Date()
+    }]);
   };
 
   const persistChat = () => {
-    localStorage.setItem(`chat-${sessionId}`, JSON.stringify({
-      messages,
-      selectedProduct,
-      timestamp: new Date().toISOString()
-    }));
-    localStorage.setItem('chatSessionId', sessionId);
+    // Session management handled by state, no localStorage needed
   };
 
   const initializeDbSession = async () => {
-    if (!profile?.id) return;
+    if (!profile?.id || dbSessionId) return;
 
     try {
       const { data, error } = await supabase
@@ -101,6 +87,11 @@ const ChatWidget = () => {
         })
         .select()
         .single();
+
+      if (error) {
+        console.error('Error initializing session:', error);
+        return;
+      }
 
       if (data) {
         setDbSessionId(data.id);
@@ -153,12 +144,8 @@ const ChatWidget = () => {
         .eq('id', dbSessionId);
     }
 
-    // Generate new session ID
-    const newSessionId = `session-${Date.now()}`;
-    
-    // Clear old session data
-    localStorage.removeItem(`chat-${sessionId}`);
-    localStorage.setItem('chatSessionId', newSessionId);
+    // Generate new unique session ID
+    const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Reset all state
     setSessionId(newSessionId);
@@ -172,7 +159,6 @@ const ChatWidget = () => {
     setSelectedProduct("");
     setShowFeedback(false);
     setFeedbackGiven(false);
-    setFeedbackComment("");
     
     // Initialize new DB session
     if (profile?.id) {
@@ -187,6 +173,11 @@ const ChatWidget = () => {
           })
           .select()
           .single();
+
+        if (error) {
+          console.error('Error creating new session:', error);
+          return;
+        }
 
         if (data) {
           setDbSessionId(data.id);
@@ -219,7 +210,7 @@ const ChatWidget = () => {
           session_id: dbSessionId,
           profile_id: profile.id,
           feedback_type: rating,
-          comment: feedbackComment || null
+          comment: null
         });
 
       if (feedbackError) throw feedbackError;
@@ -502,7 +493,7 @@ const ChatWidget = () => {
             {/* Feedback Section */}
             {showFeedback && !feedbackGiven && messages.length > 5 && (
               <div className="flex flex-col gap-3 p-4 bg-muted/50 rounded-lg border">
-                <p className="text-sm font-medium">How was your experience?</p>
+                <p className="text-sm font-medium">Was this chat helpful?</p>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -523,13 +514,6 @@ const ChatWidget = () => {
                     Not Helpful
                   </Button>
                 </div>
-                <Textarea
-                  value={feedbackComment}
-                  onChange={(e) => setFeedbackComment(e.target.value)}
-                  placeholder="Additional comments (optional)..."
-                  className="text-sm"
-                  rows={2}
-                />
               </div>
             )}
           </div>
