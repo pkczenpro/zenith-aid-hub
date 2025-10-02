@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, RefreshCw, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -28,20 +29,85 @@ const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const [sessionId] = useState(() => {
+    const stored = localStorage.getItem('chatSessionId');
+    return stored || `session-${Date.now()}`;
+  });
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [currentMessage, setCurrentMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [feedbackComment, setFeedbackComment] = useState("");
+
+  useEffect(() => {
+    fetchProducts();
+    loadPersistedChat();
+  }, []);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      persistChat();
+    }
+  }, [messages]);
+
+  const loadPersistedChat = () => {
+    const stored = localStorage.getItem(`chat-${sessionId}`);
+    if (stored) {
+      const data = JSON.parse(stored);
+      setMessages(data.messages.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
+      setSelectedProduct(data.selectedProduct || "");
+    } else {
+      // Initialize with welcome message
+      setMessages([{
+        id: 1,
+        text: "Hi! I'm Zenithr Assistant, powered by AI. I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. Which product do you need help with?",
+        isBot: true,
+        timestamp: new Date()
+      }]);
+    }
+  };
+
+  const persistChat = () => {
+    localStorage.setItem(`chat-${sessionId}`, JSON.stringify({
+      messages,
+      selectedProduct,
+      timestamp: new Date().toISOString()
+    }));
+    localStorage.setItem('chatSessionId', sessionId);
+  };
+
+  const startNewConversation = () => {
+    const newSessionId = `session-${Date.now()}`;
+    localStorage.removeItem(`chat-${sessionId}`);
+    localStorage.setItem('chatSessionId', newSessionId);
+    setMessages([{
       id: 1,
       text: "Hi! I'm Zenithr Assistant, powered by AI. I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. Which product do you need help with?",
       isBot: true,
       timestamp: new Date()
-    }
-  ]);
-  const [currentMessage, setCurrentMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+    }]);
+    setSelectedProduct("");
+    setShowFeedback(false);
+    setFeedbackGiven(false);
+    setFeedbackComment("");
+    window.location.reload();
+  };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const handleFeedback = async (rating: 'positive' | 'negative') => {
+    setShowFeedback(true);
+  };
+
+  const submitFeedback = async (rating: 'positive' | 'negative') => {
+    setFeedbackGiven(true);
+    toast({
+      title: "Thank you!",
+      description: "Your feedback helps us improve.",
+    });
+    setTimeout(() => {
+      setShowFeedback(false);
+    }, 2000);
+  };
 
   const fetchProducts = async () => {
     const { data } = await supabase
@@ -126,6 +192,11 @@ const ChatWidget = () => {
       };
 
       setMessages(prev => [...prev, botMessage]);
+      
+      // Show feedback after 3+ messages
+      if (messages.length >= 5 && !feedbackGiven) {
+        setTimeout(() => setShowFeedback(true), 1000);
+      }
     } catch (error) {
       console.error("Chat error:", error);
       toast({
@@ -187,6 +258,15 @@ const ChatWidget = () => {
                   </div>
                 </div>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={startNewConversation}
+                className="text-white hover:bg-white/10"
+                title="Start new conversation"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
             
             {/* Product Selection */}
@@ -270,6 +350,40 @@ const ChatWidget = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Feedback Section */}
+            {showFeedback && !feedbackGiven && messages.length > 5 && (
+              <div className="flex flex-col gap-3 p-4 bg-muted/50 rounded-lg border">
+                <p className="text-sm font-medium">How was your experience?</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => submitFeedback('positive')}
+                    className="flex-1"
+                  >
+                    <ThumbsUp className="h-4 w-4 mr-2" />
+                    Helpful
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => submitFeedback('negative')}
+                    className="flex-1"
+                  >
+                    <ThumbsDown className="h-4 w-4 mr-2" />
+                    Not Helpful
+                  </Button>
+                </div>
+                <Textarea
+                  value={feedbackComment}
+                  onChange={(e) => setFeedbackComment(e.target.value)}
+                  placeholder="Additional comments (optional)..."
+                  className="text-sm"
+                  rows={2}
+                />
               </div>
             )}
           </div>
