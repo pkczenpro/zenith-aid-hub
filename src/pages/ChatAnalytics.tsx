@@ -300,27 +300,44 @@ const ChatAnalytics = () => {
                             </DialogDescription>
                           </DialogHeader>
                           
-                          <ScrollArea className="h-[400px] pr-4">
+                          <ScrollArea className="h-[500px] pr-4">
                             <div className="space-y-4">
-                              {sessionMessages.map((msg) => (
-                                <div
-                                  key={msg.id}
-                                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                >
-                                  <div
-                                    className={`max-w-[80%] rounded-lg p-3 ${
-                                      msg.role === 'user'
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted'
-                                    }`}
-                                  >
-                                    <p className="text-sm">{msg.content}</p>
-                                    <p className="text-xs opacity-70 mt-1">
-                                      {format(new Date(msg.created_at), 'HH:mm')}
-                                    </p>
-                                  </div>
+                              {sessionMessages.length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  No messages found for this session
                                 </div>
-                              ))}
+                              ) : (
+                                sessionMessages.map((msg) => (
+                                  <div
+                                    key={msg.id}
+                                    className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                                  >
+                                    <div className="flex items-center gap-2 px-1">
+                                      {msg.role === 'user' ? (
+                                        <>
+                                          <span className="text-xs font-semibold text-muted-foreground">User</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="text-xs font-semibold text-muted-foreground">AI Assistant</span>
+                                        </>
+                                      )}
+                                    </div>
+                                    <div
+                                      className={`max-w-[85%] rounded-lg p-4 ${
+                                        msg.role === 'user'
+                                          ? 'bg-primary text-primary-foreground'
+                                          : 'bg-muted text-foreground border border-border'
+                                      }`}
+                                    >
+                                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                      <p className="text-xs opacity-70 mt-2">
+                                        {format(new Date(msg.created_at), 'MMM d, yyyy HH:mm:ss')}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
                             </div>
                           </ScrollArea>
 
