@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Message {
   id: number;
@@ -26,6 +27,7 @@ interface Product {
 const ChatWidget = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -33,6 +35,7 @@ const ChatWidget = () => {
     const stored = localStorage.getItem('chatSessionId');
     return stored || `session-${Date.now()}`;
   });
+  const [dbSessionId, setDbSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -43,11 +46,13 @@ const ChatWidget = () => {
   useEffect(() => {
     fetchProducts();
     loadPersistedChat();
+    initializeDbSession();
   }, []);
 
   useEffect(() => {
     if (messages.length > 0) {
       persistChat();
+      saveToDatabase();
     }
   }, [messages]);
 
@@ -77,7 +82,72 @@ const ChatWidget = () => {
     localStorage.setItem('chatSessionId', sessionId);
   };
 
-  const startNewConversation = () => {
+  const initializeDbSession = async () => {
+    if (!profile?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_sessions')
+        .insert({
+          session_id: sessionId,
+          profile_id: profile.id,
+          product_id: selectedProduct || null,
+          message_count: 0
+        })
+        .select()
+        .single();
+
+      if (data) {
+        setDbSessionId(data.id);
+      }
+    } catch (error) {
+      console.error('Error initializing session:', error);
+    }
+  };
+
+  const saveToDatabase = async () => {
+    if (!profile?.id || !dbSessionId) return;
+
+    try {
+      // Update session
+      await supabase
+        .from('chat_sessions')
+        .update({
+          message_count: messages.length,
+          product_id: selectedProduct || null,
+          ended_at: new Date().toISOString()
+        })
+        .eq('id', dbSessionId);
+
+      // Save messages
+      const messagesToSave = messages.slice(-2).map(msg => ({
+        session_id: dbSessionId,
+        role: msg.isBot ? 'assistant' : 'user',
+        content: msg.text
+      }));
+
+      if (messagesToSave.length > 0) {
+        await supabase
+          .from('chat_session_messages')
+          .insert(messagesToSave);
+      }
+    } catch (error) {
+      console.error('Error saving to database:', error);
+    }
+  };
+
+  const startNewConversation = async () => {
+    // Mark current session as resolved
+    if (dbSessionId) {
+      await supabase
+        .from('chat_sessions')
+        .update({ 
+          ended_at: new Date().toISOString(),
+          resolved_by_ai: true 
+        })
+        .eq('id', dbSessionId);
+    }
+
     const newSessionId = `session-${Date.now()}`;
     localStorage.removeItem(`chat-${sessionId}`);
     localStorage.setItem('chatSessionId', newSessionId);
@@ -91,6 +161,7 @@ const ChatWidget = () => {
     setShowFeedback(false);
     setFeedbackGiven(false);
     setFeedbackComment("");
+    setDbSessionId(null);
     window.location.reload();
   };
 
@@ -99,14 +170,35 @@ const ChatWidget = () => {
   };
 
   const submitFeedback = async (rating: 'positive' | 'negative') => {
-    setFeedbackGiven(true);
-    toast({
-      title: "Thank you!",
-      description: "Your feedback helps us improve.",
-    });
-    setTimeout(() => {
-      setShowFeedback(false);
-    }, 2000);
+    if (!profile?.id || !dbSessionId) return;
+
+    try {
+      await supabase
+        .from('chat_feedback')
+        .insert({
+          session_id: dbSessionId,
+          profile_id: profile.id,
+          feedback_type: rating,
+          comment: feedbackComment || null
+        });
+
+      // Mark session as resolved by AI
+      await supabase
+        .from('chat_sessions')
+        .update({ resolved_by_ai: rating === 'positive' })
+        .eq('id', dbSessionId);
+
+      setFeedbackGiven(true);
+      toast({
+        title: "Thank you!",
+        description: "Your feedback helps us improve.",
+      });
+      setTimeout(() => {
+        setShowFeedback(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+    }
   };
 
   const fetchProducts = async () => {

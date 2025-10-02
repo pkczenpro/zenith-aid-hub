@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Bell, Settings, User, Menu, Shield, LogOut, Users, Plus, MessageCircle } from "lucide-react";
+import { Bell, Settings, User, Menu, Shield, LogOut, Users, Plus, MessageCircle, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { GlobalSearch } from "@/components/GlobalSearch";
 
@@ -48,6 +48,12 @@ const Header = () => {
                       <Button variant="ghost" size="sm" className="hidden sm:flex">
                         <Plus className="h-4 w-4 mr-2" />
                         Products
+                      </Button>
+                    </Link>
+                    <Link to="/chat-analytics">
+                      <Button variant="ghost" size="sm" className="hidden sm:flex">
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Chat Analytics
                       </Button>
                     </Link>
                     <Link to="/support">

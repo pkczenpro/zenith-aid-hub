@@ -20,6 +20,7 @@ import ArticleOrder from "./pages/ArticleOrder";
 import ClientManagement from "./pages/ClientManagement";
 import ClientDashboard from "./pages/ClientDashboard";
 import ProductDashboard from "./pages/ProductDashboard";
+import ChatAnalytics from "./pages/ChatAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -98,6 +99,11 @@ const App = () => (
             <Route path="/clients" element={
               <ProtectedRoute requireAdmin>
                 <ClientManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat-analytics" element={
+              <ProtectedRoute requireAdmin>
+                <ChatAnalytics />
               </ProtectedRoute>
             } />
             <Route path="/support" element={
