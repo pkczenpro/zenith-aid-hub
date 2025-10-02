@@ -171,19 +171,19 @@ const ChatWidget = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 z-40 w-80 h-96 flex flex-col shadow-2xl border-0 bg-card animate-slide-up">
+        <Card className="fixed bottom-24 right-6 z-40 w-[500px] h-[650px] flex flex-col shadow-2xl border-0 bg-card animate-slide-up">
           {/* Header */}
-          <div className="flex flex-col gap-3 p-4 border-b bg-gradient-hero text-white rounded-t-lg">
+          <div className="flex flex-col gap-3 p-5 border-b bg-gradient-hero text-white rounded-t-lg">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center">
-                  <Bot className="h-4 w-4" />
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <Bot className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm">Zenithr Assistant</h3>
-                  <div className="flex items-center space-x-1">
+                  <h3 className="font-semibold text-base">Zenithr Assistant</h3>
+                  <div className="flex items-center space-x-1.5">
                     <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span className="text-xs opacity-90">AI-Powered</span>
+                    <span className="text-sm opacity-90">AI-Powered</span>
                   </div>
                 </div>
               </div>
@@ -205,21 +205,21 @@ const ChatWidget = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-5 space-y-5">
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}>
-                <div className={`flex items-start space-x-2 max-w-[80%] ${message.isBot ? '' : 'flex-row-reverse space-x-reverse'}`}>
-                  <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                <div className={`flex items-start space-x-3 max-w-[85%] ${message.isBot ? '' : 'flex-row-reverse space-x-reverse'}`}>
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                     message.isBot ? 'bg-primary' : 'bg-accent'
                   }`}>
                     {message.isBot ? (
-                      <Bot className="h-3 w-3 text-white" />
+                      <Bot className="h-4 w-4 text-white" />
                     ) : (
-                      <User className="h-3 w-3 text-white" />
+                      <User className="h-4 w-4 text-white" />
                     )}
                   </div>
                   <div className="flex flex-col gap-2">
-                    <div className={`px-3 py-2 rounded-xl text-sm ${
+                    <div className={`px-4 py-3 rounded-xl text-base leading-relaxed ${
                       message.isBot 
                         ? 'bg-muted text-foreground' 
                         : 'bg-primary text-primary-foreground'
@@ -229,22 +229,24 @@ const ChatWidget = () => {
                     
                     {/* Render clickable links for articles/resources/videos */}
                     {message.links && message.links.length > 0 && (
-                      <div className="flex flex-col gap-1 pl-2">
+                      <div className="flex flex-col gap-2 pl-2">
                         {message.links.map((link, idx) => (
                           <Button
                             key={idx}
                             variant="outline"
                             size="sm"
-                            className="text-xs justify-start h-auto py-2"
+                            className="text-sm justify-start h-auto py-2.5 px-3 hover:bg-accent/10 transition-colors"
                             onClick={() => {
                               setIsOpen(false);
                               navigate(link.url);
                             }}
                           >
-                            {link.type === 'video' && '🎥'}
-                            {link.type === 'article' && '📄'}
-                            {link.type === 'resource' && '📎'}
-                            <span className="ml-2">{link.title}</span>
+                            <span className="text-base mr-2">
+                              {link.type === 'video' && '🎥'}
+                              {link.type === 'article' && '📄'}
+                              {link.type === 'resource' && '📎'}
+                            </span>
+                            <span className="font-medium">{link.title}</span>
                           </Button>
                         ))}
                       </div>
@@ -256,15 +258,15 @@ const ChatWidget = () => {
             
             {isLoading && (
               <div className="flex justify-start">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                    <Bot className="h-3 w-3 text-white" />
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-white" />
                   </div>
-                  <div className="px-3 py-2 rounded-xl text-sm bg-muted text-foreground">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div className="px-4 py-3 rounded-xl text-base bg-muted text-foreground">
+                    <div className="flex space-x-1.5">
+                      <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
                   </div>
                 </div>
@@ -273,25 +275,25 @@ const ChatWidget = () => {
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t">
+          <div className="p-5 border-t">
             <div className="flex space-x-2">
               <Input
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="flex-1 text-sm"
+                className="flex-1 text-base h-11"
               />
               <Button 
                 onClick={handleSendMessage}
-                size="sm"
-                className="bg-gradient-button text-white border-0 px-3"
+                size="default"
+                className="bg-gradient-button text-white border-0 px-4 h-11"
                 disabled={isLoading}
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-5 w-5" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">
+            <p className="text-sm text-muted-foreground mt-3 text-center">
               Powered by AI • Response time: ~30 seconds
             </p>
           </div>
