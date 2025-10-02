@@ -193,8 +193,10 @@ const ChatWidget = () => {
         title: "Thank you!",
         description: "Your feedback helps us improve.",
       });
+      
+      // End session and start new conversation after brief delay
       setTimeout(() => {
-        setShowFeedback(false);
+        startNewConversation();
       }, 2000);
     } catch (error) {
       console.error('Error submitting feedback:', error);
