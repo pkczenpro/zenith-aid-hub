@@ -31,7 +31,7 @@ const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [sessionId] = useState(() => {
+  const [sessionId, setSessionId] = useState(() => {
     const stored = localStorage.getItem('chatSessionId');
     return stored || `session-${Date.now()}`;
   });
@@ -46,8 +46,13 @@ const ChatWidget = () => {
   useEffect(() => {
     fetchProducts();
     loadPersistedChat();
-    initializeDbSession();
   }, []);
+
+  useEffect(() => {
+    if (profile?.id && !dbSessionId) {
+      initializeDbSession();
+    }
+  }, [profile?.id, sessionId]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -148,9 +153,16 @@ const ChatWidget = () => {
         .eq('id', dbSessionId);
     }
 
+    // Generate new session ID
     const newSessionId = `session-${Date.now()}`;
+    
+    // Clear old session data
     localStorage.removeItem(`chat-${sessionId}`);
     localStorage.setItem('chatSessionId', newSessionId);
+    
+    // Reset all state
+    setSessionId(newSessionId);
+    setDbSessionId(null);
     setMessages([{
       id: 1,
       text: "Hi! I'm Zenithr Assistant, powered by AI. I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. Which product do you need help with?",
@@ -161,8 +173,28 @@ const ChatWidget = () => {
     setShowFeedback(false);
     setFeedbackGiven(false);
     setFeedbackComment("");
-    setDbSessionId(null);
-    window.location.reload();
+    
+    // Initialize new DB session
+    if (profile?.id) {
+      try {
+        const { data, error } = await supabase
+          .from('chat_sessions')
+          .insert({
+            session_id: newSessionId,
+            profile_id: profile.id,
+            product_id: selectedProduct || null,
+            message_count: 0
+          })
+          .select()
+          .single();
+
+        if (data) {
+          setDbSessionId(data.id);
+        }
+      } catch (error) {
+        console.error('Error creating new session:', error);
+      }
+    }
   };
 
   const handleFeedback = async (rating: 'positive' | 'negative') => {
