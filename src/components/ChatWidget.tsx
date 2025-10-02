@@ -202,10 +202,18 @@ const ChatWidget = () => {
   };
 
   const submitFeedback = async (rating: 'positive' | 'negative') => {
-    if (!profile?.id || !dbSessionId) return;
+    if (!profile?.id || !dbSessionId) {
+      toast({
+        title: "Error",
+        description: "Unable to submit feedback. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      await supabase
+      // Insert feedback
+      const { error: feedbackError } = await supabase
         .from('chat_feedback')
         .insert({
           session_id: dbSessionId,
@@ -214,24 +222,36 @@ const ChatWidget = () => {
           comment: feedbackComment || null
         });
 
-      // Mark session as resolved by AI
-      await supabase
+      if (feedbackError) throw feedbackError;
+
+      // Mark session as resolved and ended
+      const { error: sessionError } = await supabase
         .from('chat_sessions')
-        .update({ resolved_by_ai: rating === 'positive' })
+        .update({ 
+          resolved_by_ai: rating === 'positive',
+          ended_at: new Date().toISOString()
+        })
         .eq('id', dbSessionId);
+
+      if (sessionError) throw sessionError;
 
       setFeedbackGiven(true);
       toast({
         title: "Thank you!",
-        description: "Your feedback helps us improve.",
+        description: "Your feedback has been submitted. Starting a new session...",
       });
       
       // End session and start new conversation after brief delay
       setTimeout(() => {
         startNewConversation();
-      }, 2000);
+      }, 1500);
     } catch (error) {
       console.error('Error submitting feedback:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit feedback. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MessageCircle, TrendingUp, ThumbsUp, ThumbsDown, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -50,6 +51,9 @@ interface Analytics {
 const ChatAnalytics = () => {
   const { toast } = useToast();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterProduct, setFilterProduct] = useState<string>("all");
   const [analytics, setAnalytics] = useState<Analytics>({
     totalSessions: 0,
     resolvedByAI: 0,
@@ -62,13 +66,33 @@ const ChatAnalytics = () => {
   const [sessionFeedback, setSessionFeedback] = useState<Feedback | null>(null);
 
   useEffect(() => {
+    fetchProducts();
     fetchSessions();
     fetchAnalytics();
   }, []);
 
-  const fetchSessions = async () => {
+  useEffect(() => {
+    fetchSessions();
+  }, [filterStatus, filterProduct]);
+
+  const fetchProducts = async () => {
     try {
       const { data, error } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('status', 'published')
+        .order('name');
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      let query = supabase
         .from('chat_sessions')
         .select(`
           id,
@@ -77,9 +101,26 @@ const ChatAnalytics = () => {
           ended_at,
           message_count,
           resolved_by_ai,
+          product_id,
           profiles(full_name, email),
           products(name)
-        `)
+        `);
+
+      // Apply status filter
+      if (filterStatus === 'resolved') {
+        query = query.eq('resolved_by_ai', true);
+      } else if (filterStatus === 'ended') {
+        query = query.not('ended_at', 'is', null).eq('resolved_by_ai', false);
+      } else if (filterStatus === 'active') {
+        query = query.is('ended_at', null);
+      }
+
+      // Apply product filter
+      if (filterProduct !== 'all') {
+        query = query.eq('product_id', filterProduct);
+      }
+
+      const { data, error } = await query
         .order('started_at', { ascending: false })
         .limit(100);
 
@@ -233,6 +274,39 @@ const ChatAnalytics = () => {
           <CardHeader>
             <CardTitle>Recent Chat Sessions</CardTitle>
             <CardDescription>View and analyze all chat interactions</CardDescription>
+            
+            {/* Filters */}
+            <div className="flex gap-4 mt-4">
+              <div className="flex-1">
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="ended">Ended (Not Resolved)</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex-1">
+                <Select value={filterProduct} onValueChange={setFilterProduct}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
