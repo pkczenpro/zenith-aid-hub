@@ -116,7 +116,9 @@ const ChatAnalytics = () => {
       }
 
       // Apply product filter
-      if (filterProduct !== 'all') {
+      if (filterProduct === 'none') {
+        query = query.is('product_id', null);
+      } else if (filterProduct !== 'all') {
         query = query.eq('product_id', filterProduct);
       }
 
@@ -298,6 +300,7 @@ const ChatAnalytics = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Products</SelectItem>
+                    <SelectItem value="none">No Product Selected</SelectItem>
                     {products.map((product) => (
                       <SelectItem key={product.id} value={product.id}>
                         {product.name}

@@ -59,6 +59,13 @@ const ChatWidget = () => {
     }
   }, [messages]);
 
+  useEffect(() => {
+    // Update session product when product is selected during conversation
+    if (dbSessionId && selectedProduct) {
+      updateSessionProduct();
+    }
+  }, [selectedProduct, dbSessionId]);
+
   const loadPersistedChat = () => {
     // Always start with welcome message for new sessions
     setMessages([{
@@ -98,6 +105,19 @@ const ChatWidget = () => {
       }
     } catch (error) {
       console.error('Error initializing session:', error);
+    }
+  };
+
+  const updateSessionProduct = async () => {
+    if (!dbSessionId || !selectedProduct) return;
+
+    try {
+      await supabase
+        .from('chat_sessions')
+        .update({ product_id: selectedProduct })
+        .eq('id', dbSessionId);
+    } catch (error) {
+      console.error('Error updating session product:', error);
     }
   };
 
