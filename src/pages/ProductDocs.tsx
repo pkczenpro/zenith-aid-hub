@@ -768,7 +768,7 @@ const ProductDocs = () => {
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
             >
-              Resources
+              Sales and Marketing Material
             </button>
             <button
               onClick={() => setActiveTab('videos')}
