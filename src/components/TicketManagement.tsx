@@ -706,14 +706,13 @@ const TicketManagement = () => {
                 <div className="space-y-2">
                   <Label className="flex items-center text-sm">
                     <FileText className="h-4 w-4 mr-2" />
-                    Article
+                    Article (Optional)
                   </Label>
                   <Select value={selectedArticleId} onValueChange={setSelectedArticleId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select an article" />
+                      <SelectValue placeholder="No article selected" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
                       {articles.map((article) => (
                         <SelectItem key={article.id} value={article.id}>
                           {article.title}
@@ -721,19 +720,29 @@ const TicketManagement = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedArticleId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedArticleId('')}
+                      className="text-xs"
+                    >
+                      Clear selection
+                    </Button>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label className="flex items-center text-sm">
                     <Video className="h-4 w-4 mr-2" />
-                    Video Tutorial
+                    Video Tutorial (Optional)
                   </Label>
                   <Select value={selectedVideoId} onValueChange={setSelectedVideoId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a video" />
+                      <SelectValue placeholder="No video selected" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
                       {videos.map((video) => (
                         <SelectItem key={video.id} value={video.id}>
                           {video.title}
@@ -741,19 +750,29 @@ const TicketManagement = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedVideoId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedVideoId('')}
+                      className="text-xs"
+                    >
+                      Clear selection
+                    </Button>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label className="flex items-center text-sm">
                     <Download className="h-4 w-4 mr-2" />
-                    Downloadable Resource
+                    Downloadable Resource (Optional)
                   </Label>
                   <Select value={selectedResourceId} onValueChange={setSelectedResourceId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a resource" />
+                      <SelectValue placeholder="No resource selected" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
                       {resources.map((resource) => (
                         <SelectItem key={resource.id} value={resource.id}>
                           {resource.title}
@@ -761,6 +780,17 @@ const TicketManagement = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedResourceId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedResourceId('')}
+                      className="text-xs"
+                    >
+                      Clear selection
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
