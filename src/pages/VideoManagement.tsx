@@ -3,20 +3,35 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Plus, Trash2, Video } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Video, FolderPlus, Edit2, GripVertical } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import VideoEmbedButton from '@/components/VideoEmbedButton';
+
+interface VideoCategory {
+  id: string;
+  product_id: string;
+  name: string;
+  description?: string;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
 
 interface ProductVideo {
   id: string;
   product_id: string;
   title: string;
   video_content: string;
+  category_id?: string;
   order_index: number;
   created_at: string;
   updated_at: string;
@@ -35,25 +50,33 @@ const VideoManagement = () => {
   const { toast } = useToast();
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [categories, setCategories] = useState<VideoCategory[]>([]);
   const [videos, setVideos] = useState<ProductVideo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<ProductVideo | null>(null);
+  const [editingCategory, setEditingCategory] = useState<VideoCategory | null>(null);
   
-  // Form state
+  // Video form state
   const [title, setTitle] = useState('');
   const [videoContent, setVideoContent] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const quillRef = useRef<any>(null);
 
+  // Category form state
+  const [categoryName, setCategoryName] = useState('');
+  const [categoryDescription, setCategoryDescription] = useState('');
+
   useEffect(() => {
     if (productId) {
-      fetchProductAndVideos();
+      fetchProductData();
     }
   }, [productId, user]);
 
-  const fetchProductAndVideos = async () => {
+  const fetchProductData = async () => {
     try {
       setLoading(true);
 
@@ -67,6 +90,16 @@ const VideoManagement = () => {
       if (productError) throw productError;
       setProduct(productData);
 
+      // Fetch categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('video_categories')
+        .select('*')
+        .eq('product_id', productId)
+        .order('order_index', { ascending: true });
+
+      if (categoriesError) throw categoriesError;
+      setCategories(categoriesData || []);
+
       // Fetch videos
       const { data: videosData, error: videosError } = await supabase
         .from('product_videos')
@@ -75,13 +108,12 @@ const VideoManagement = () => {
         .order('order_index', { ascending: true });
 
       if (videosError) throw videosError;
-      
-      // Cast to our interface type
       setVideos((videosData as any[] || []).map((v: any) => ({
         id: v.id,
         product_id: v.product_id,
         title: v.title,
         video_content: v.video_content || '',
+        category_id: v.category_id,
         order_index: v.order_index,
         created_at: v.created_at,
         updated_at: v.updated_at,
@@ -92,7 +124,7 @@ const VideoManagement = () => {
       console.error('Error fetching data:', error);
       toast({
         title: "Error",
-        description: "Failed to load product videos",
+        description: "Failed to load product data",
         variant: "destructive",
       });
     } finally {
@@ -102,12 +134,9 @@ const VideoManagement = () => {
 
   const handleVideoEmbed = (videoHtml: string) => {
     if (!videoHtml || !quillRef.current) return;
-
     const editor = quillRef.current.getEditor();
     const range = editor.getSelection() || editor.getLength();
     const insertIndex = typeof range === 'number' ? range : range.index || editor.getLength();
-
-    // Insert the video HTML into the editor
     editor.insertEmbed(insertIndex, 'video', videoHtml);
   };
 
@@ -123,32 +152,135 @@ const VideoManagement = () => {
     }
   };
 
-  const handleOpenDialog = (video?: ProductVideo) => {
+  const handleOpenVideoDialog = (video?: ProductVideo) => {
     if (video) {
       setEditingVideo(video);
       setTitle(video.title);
       setVideoContent(video.video_content);
+      setSelectedCategoryId(video.category_id || '');
       setThumbnailPreview(video.thumbnail_url || null);
     } else {
       setEditingVideo(null);
       setTitle('');
       setVideoContent('');
+      setSelectedCategoryId('');
       setThumbnailFile(null);
       setThumbnailPreview(null);
     }
-    setIsDialogOpen(true);
+    setIsVideoDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
+  const handleCloseVideoDialog = () => {
+    setIsVideoDialogOpen(false);
     setEditingVideo(null);
     setTitle('');
     setVideoContent('');
+    setSelectedCategoryId('');
     setThumbnailFile(null);
     setThumbnailPreview(null);
   };
 
-  const handleUpload = async () => {
+  const handleOpenCategoryDialog = (category?: VideoCategory) => {
+    if (category) {
+      setEditingCategory(category);
+      setCategoryName(category.name);
+      setCategoryDescription(category.description || '');
+    } else {
+      setEditingCategory(null);
+      setCategoryName('');
+      setCategoryDescription('');
+    }
+    setIsCategoryDialogOpen(true);
+  };
+
+  const handleCloseCategoryDialog = () => {
+    setIsCategoryDialogOpen(false);
+    setEditingCategory(null);
+    setCategoryName('');
+    setCategoryDescription('');
+  };
+
+  const handleSaveCategory = async () => {
+    if (!categoryName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a category name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!profile?.id) {
+      toast({
+        title: "Error",
+        description: "User profile not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (editingCategory) {
+        const { error } = await supabase
+          .from('video_categories')
+          .update({
+            name: categoryName.trim(),
+            description: categoryDescription.trim() || null,
+          })
+          .eq('id', editingCategory.id);
+
+        if (error) throw error;
+        toast({ title: "Success", description: "Category updated successfully" });
+      } else {
+        const { error } = await supabase
+          .from('video_categories')
+          .insert([{
+            product_id: productId,
+            name: categoryName.trim(),
+            description: categoryDescription.trim() || null,
+            created_by: profile.id,
+            order_index: categories.length,
+          }] as any);
+
+        if (error) throw error;
+        toast({ title: "Success", description: "Category created successfully" });
+      }
+
+      handleCloseCategoryDialog();
+      fetchProductData();
+    } catch (error) {
+      console.error('Error saving category:', error);
+      toast({
+        title: "Error",
+        description: `Failed to ${editingCategory ? 'update' : 'create'} category`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!confirm('Are you sure? Videos in this category will become uncategorized.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('video_categories')
+        .delete()
+        .eq('id', categoryId);
+
+      if (error) throw error;
+      toast({ title: "Success", description: "Category deleted successfully" });
+      fetchProductData();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUploadVideo = async () => {
     if (!title.trim() || !videoContent.trim()) {
       toast({
         title: "Error",
@@ -170,7 +302,6 @@ const VideoManagement = () => {
     try {
       let thumbnailUrl = editingVideo?.thumbnail_url || null;
 
-      // Upload thumbnail if provided
       if (thumbnailFile) {
         const fileExt = thumbnailFile.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
@@ -190,45 +321,37 @@ const VideoManagement = () => {
       }
 
       if (editingVideo) {
-        // Update existing video
         const { error } = await supabase
           .from('product_videos')
           .update({
             title: title.trim(),
             video_content: videoContent,
+            category_id: selectedCategoryId || null,
             thumbnail_url: thumbnailUrl,
           })
           .eq('id', editingVideo.id);
 
         if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Video updated successfully",
-        });
+        toast({ title: "Success", description: "Video updated successfully" });
       } else {
-        // Insert new video
         const { error } = await supabase
           .from('product_videos')
           .insert([{
             product_id: productId,
             title: title.trim(),
             video_content: videoContent,
+            category_id: selectedCategoryId || null,
             created_by: profile.id,
             order_index: videos.length,
             thumbnail_url: thumbnailUrl,
           }] as any);
 
         if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Video added successfully",
-        });
+        toast({ title: "Success", description: "Video added successfully" });
       }
 
-      handleCloseDialog();
-      fetchProductAndVideos();
+      handleCloseVideoDialog();
+      fetchProductData();
     } catch (error) {
       console.error('Error saving video:', error);
       toast({
@@ -239,64 +362,7 @@ const VideoManagement = () => {
     }
   };
 
-  const processVideoContent = (content: string) => {
-    if (!content) return '';
-    
-    // Check for video embed containers and convert them to playable iframes
-    if (content.includes('video-embed-container')) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(content, 'text/html');
-      const videoContainers = doc.querySelectorAll('.video-embed-container');
-      
-      let finalContent = content;
-      
-      videoContainers.forEach((container) => {
-        const videoUrl = container.getAttribute('data-video-url');
-        const videoType = container.getAttribute('data-video-type');
-        const videoId = container.getAttribute('data-video-id');
-        
-        if (videoUrl && videoType) {
-          let playableEmbed = '';
-          
-          if (videoType === 'youtube' && videoId) {
-            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-              <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1" frameBorder="0" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="YouTube Video"></iframe>
-            </div>`;
-          } else if (videoType === 'vimeo' && videoId) {
-            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-              <iframe src="https://player.vimeo.com/video/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Vimeo Video"></iframe>
-            </div>`;
-          } else if (videoType === 'loom' && videoId) {
-            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-              <iframe src="https://www.loom.com/embed/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="Loom Video"></iframe>
-            </div>`;
-          } else if (videoType === 'heygen' && videoId) {
-            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-              <iframe src="https://share-prod.heygen.com/${videoId}" frameBorder="0" allowFullScreen allow="autoplay; fullscreen; picture-in-picture" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" title="HeyGen Video"></iframe>
-            </div>`;
-          } else if (videoType === 'direct') {
-            playableEmbed = `<div class="video-player-wrapper" style="position: relative; width: 100%; margin: 1rem 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background: #000;">
-              <video controls preload="metadata" style="width: 100%; height: auto; display: block; min-height: 300px;" crossorigin="anonymous">
-                <source src="${videoUrl}" type="video/mp4">
-                <source src="${videoUrl}" type="video/webm">
-                <source src="${videoUrl}" type="video/ogg">
-              </video>
-            </div>`;
-          }
-          
-          if (playableEmbed) {
-            finalContent = finalContent.replace(container.outerHTML, playableEmbed);
-          }
-        }
-      });
-      
-      return finalContent;
-    }
-    
-    return content;
-  };
-
-  const handleDelete = async (videoId: string) => {
+  const handleDeleteVideo = async (videoId: string) => {
     if (!confirm('Are you sure you want to delete this video?')) return;
 
     try {
@@ -306,13 +372,8 @@ const VideoManagement = () => {
         .eq('id', videoId);
 
       if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Video deleted successfully",
-      });
-
-      fetchProductAndVideos();
+      toast({ title: "Success", description: "Video deleted successfully" });
+      fetchProductData();
     } catch (error) {
       console.error('Error deleting video:', error);
       toast({
@@ -323,12 +384,54 @@ const VideoManagement = () => {
     }
   };
 
+  const processVideoContent = (content: string) => {
+    if (!content) return '';
+    if (content.includes('video-embed-container')) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const videoContainers = doc.querySelectorAll('.video-embed-container');
+      let finalContent = content;
+      
+      videoContainers.forEach((container) => {
+        const videoUrl = container.getAttribute('data-video-url');
+        const videoType = container.getAttribute('data-video-type');
+        const videoId = container.getAttribute('data-video-id');
+        
+        if (videoUrl && videoType) {
+          let playableEmbed = '';
+          if (videoType === 'youtube' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px;">
+              <iframe src="https://www.youtube.com/embed/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+            </div>`;
+          } else if (videoType === 'vimeo' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px;">
+              <iframe src="https://player.vimeo.com/video/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+            </div>`;
+          } else if (videoType === 'loom' && videoId) {
+            playableEmbed = `<div class="video-player-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; margin: 1rem 0; border-radius: 8px;">
+              <iframe src="https://www.loom.com/embed/${videoId}" frameBorder="0" allowFullScreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+            </div>`;
+          }
+          if (playableEmbed) finalContent = finalContent.replace(container.outerHTML, playableEmbed);
+        }
+      });
+      return finalContent;
+    }
+    return content;
+  };
+
+  const getVideosByCategory = (categoryId?: string) => {
+    return videos.filter(v => v.category_id === categoryId);
+  };
+
+  const uncategorizedVideos = videos.filter(v => !v.category_id);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading videos...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -336,8 +439,7 @@ const VideoManagement = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+      <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-40">
         <div className="container flex h-16 items-center justify-between px-6">
           <div className="flex items-center space-x-4">
             <Button
@@ -346,189 +448,267 @@ const VideoManagement = () => {
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Product</span>
+              <span>Back</span>
             </Button>
-            <div className="h-6 w-px bg-border" />
-            <h1 className="text-xl font-semibold text-foreground">
-              {product?.name} - Videos
-            </h1>
+            <h1 className="text-xl font-bold">{product?.name} - Videos</h1>
           </div>
-
-          <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center space-x-2" onClick={() => handleOpenDialog()}>
-                <Plus className="h-4 w-4" />
-                <span>Add Video</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{editingVideo ? 'Edit Video' : 'Add New Video'}</DialogTitle>
-                <DialogDescription>
-                  {editingVideo ? 'Update the video details and thumbnail.' : 'Add a video to this product by providing a title, caption, and video URL.'}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">
-                    Title <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    placeholder="Enter video title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">
-                    Thumbnail Image
-                  </label>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleThumbnailChange}
-                    className="cursor-pointer"
-                  />
-                  {thumbnailPreview && (
-                    <div className="mt-3 relative w-full aspect-video rounded-lg overflow-hidden border border-border">
-                      <img
-                        src={thumbnailPreview}
-                        alt="Thumbnail preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Upload a custom thumbnail for this video (recommended: 16:9 aspect ratio)
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-foreground">
-                      Video Content <span className="text-destructive">*</span>
-                    </label>
-                    <VideoEmbedButton onVideoEmbed={handleVideoEmbed} />
-                  </div>
-                  <div className="border border-border rounded-lg overflow-hidden">
-                    <ReactQuill
-                      ref={quillRef}
-                      theme="snow"
-                      value={videoContent}
-                      onChange={setVideoContent}
-                      modules={{
-                        toolbar: [
-                          [{ header: [1, 2, 3, false] }],
-                          ['bold', 'italic', 'underline'],
-                          [{ list: 'ordered' }, { list: 'bullet' }],
-                          ['link', 'video'],
-                          ['clean'],
-                        ],
-                      }}
-                      formats={[
-                        'header',
-                        'bold',
-                        'italic',
-                        'underline',
-                        'list',
-                        'bullet',
-                        'link',
-                        'video',
-                      ]}
-                      placeholder="Add description and click 'Embed Video' button to add your video..."
-                      className="bg-background"
+          <div className="flex gap-2">
+            <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => handleOpenCategoryDialog()} variant="outline">
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  New Category
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{editingCategory ? 'Edit' : 'Create'} Category</DialogTitle>
+                  <DialogDescription>
+                    {editingCategory ? 'Update' : 'Add a new'} video category to organize your content
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="cat-name">Category Name</Label>
+                    <Input
+                      id="cat-name"
+                      value={categoryName}
+                      onChange={(e) => setCategoryName(e.target.value)}
+                      placeholder="e.g., Account Setup, Onboarding"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Click "Embed Video" button above to add videos from YouTube, Vimeo, Loom, HeyGen, or direct video files
-                  </p>
+                  <div>
+                    <Label htmlFor="cat-desc">Description (Optional)</Label>
+                    <Textarea
+                      id="cat-desc"
+                      value={categoryDescription}
+                      onChange={(e) => setCategoryDescription(e.target.value)}
+                      placeholder="Brief description of this category"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={handleCloseCategoryDialog}>Cancel</Button>
+                    <Button onClick={handleSaveCategory}>
+                      {editingCategory ? 'Update' : 'Create'}
+                    </Button>
+                  </div>
                 </div>
+              </DialogContent>
+            </Dialog>
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={handleCloseDialog}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpload}>
-                    {editingVideo ? 'Update Video' : 'Add Video'}
-                  </Button>
+            <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => handleOpenVideoDialog()}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Video
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{editingVideo ? 'Edit' : 'Add'} Video</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Video title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="category">Category (Optional)</Label>
+                    <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Category</SelectItem>
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Thumbnail (Optional)</Label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailChange}
+                    />
+                    {thumbnailPreview && (
+                      <img src={thumbnailPreview} alt="Preview" className="mt-2 h-32 rounded" />
+                    )}
+                  </div>
+                  <div>
+                    <Label>Video Content</Label>
+                    <div className="flex gap-2 mb-2">
+                      <VideoEmbedButton onVideoEmbed={handleVideoEmbed} />
+                    </div>
+                    <ReactQuill
+                      ref={quillRef}
+                      value={videoContent}
+                      onChange={setVideoContent}
+                      className="stable-section-editor"
+                      placeholder="Embed a video above or add additional content..."
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={handleCloseVideoDialog}>Cancel</Button>
+                    <Button onClick={handleUploadVideo}>
+                      {editingVideo ? 'Update' : 'Add'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="container mx-auto px-6 py-8">
-        {videos.length === 0 ? (
-          <div className="text-center py-16">
-            <Video className="h-20 w-20 mx-auto mb-4 text-muted-foreground/30" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">No Videos Yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Start building your video library by adding your first video.
-            </p>
-            <Button onClick={() => handleOpenDialog()} size="lg">
-              <Plus className="h-5 w-5 mr-2" />
-              Add Your First Video
-            </Button>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">Video Library</h2>
-                <p className="text-muted-foreground mt-1">{videos.length} video{videos.length !== 1 ? 's' : ''} uploaded</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {videos.map((video) => (
-              <Card key={video.id} className="overflow-hidden hover:shadow-xl transition-shadow">
-                <div className="relative">
-                  {video.thumbnail_url ? (
-                    <div className="relative aspect-video">
-                      <img 
-                        src={video.thumbnail_url} 
-                        alt={video.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div 
-                      dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
-                      className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-t-lg [&_video]:w-full [&_video]:rounded-t-lg [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-t-lg [&_p]:hidden"
-                    />
-                  )}
-                  <div className="absolute top-2 right-2 flex gap-2">
+      <main className="container px-6 py-8">
+        <div className="space-y-8">
+          {/* Categories with videos */}
+          {categories.map(category => {
+            const categoryVideos = getVideosByCategory(category.id);
+            return (
+              <Card key={category.id}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <GripVertical className="h-5 w-5 text-muted-foreground" />
+                      {category.name}
+                    </CardTitle>
+                    {category.description && (
+                      <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenDialog(video)}
-                      className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                      size="icon"
+                      onClick={() => handleOpenCategoryDialog(category)}
                     >
-                      <Video className="h-4 w-4" />
+                      <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(video.id)}
-                      className="bg-background/80 backdrop-blur-sm hover:bg-background/90 text-destructive hover:text-destructive"
+                      size="icon"
+                      onClick={() => handleDeleteCategory(category.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-base line-clamp-2 mb-2">{video.title}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(video.created_at).toLocaleDateString()}
-                  </p>
+                </CardHeader>
+                <CardContent>
+                  {categoryVideos.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No videos in this category yet</p>
+                  ) : (
+                    <div className="grid gap-4">
+                      {categoryVideos.map(video => (
+                        <Card key={video.id} className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-medium mb-2">{video.title}</h4>
+                              <div
+                                className="prose prose-sm"
+                                dangerouslySetInnerHTML={{
+                                  __html: processVideoContent(video.video_content)
+                                }}
+                              />
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenVideoDialog(video)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteVideo(video.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            ))}
-            </div>
-          </>
-        )}
+            );
+          })}
+
+          {/* Uncategorized videos */}
+          {uncategorizedVideos.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Uncategorized Videos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {uncategorizedVideos.map(video => (
+                    <Card key={video.id} className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium mb-2">{video.title}</h4>
+                          <div
+                            className="prose prose-sm"
+                            dangerouslySetInnerHTML={{
+                              __html: processVideoContent(video.video_content)
+                            }}
+                          />
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenVideoDialog(video)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteVideo(video.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {categories.length === 0 && videos.length === 0 && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Video className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">No videos or categories yet</p>
+                <div className="flex gap-2">
+                  <Button onClick={() => handleOpenCategoryDialog()} variant="outline">
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    Create Category
+                  </Button>
+                  <Button onClick={() => handleOpenVideoDialog()}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Video
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </main>
     </div>
   );

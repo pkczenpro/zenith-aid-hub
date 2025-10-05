@@ -88,6 +88,7 @@ const ProductDocs = () => {
   const [activeTab, setActiveTab] = useState<'documentation' | 'resources' | 'videos' | 'releases'>('resources');
   const [resources, setResources] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
+  const [videoCategories, setVideoCategories] = useState<any[]>([]);
   const [releaseNotes, setReleaseNotes] = useState<any[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<any | null>(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
@@ -371,6 +372,17 @@ const ProductDocs = () => {
     if (!productId) return;
     
     try {
+      // Fetch categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('video_categories')
+        .select('*')
+        .eq('product_id', productId)
+        .order('order_index', { ascending: true });
+
+      if (categoriesError) throw categoriesError;
+      setVideoCategories(categoriesData || []);
+
+      // Fetch videos
       const { data, error } = await supabase
         .from('product_videos')
         .select('*')
@@ -1091,7 +1103,8 @@ const ProductDocs = () => {
                   {/* Video Library View */}
                   {videoViewMode === 'library' ? (
                     <VideoLibrary 
-                      videos={videos} 
+                      videos={videos}
+                      categories={videoCategories}
                       onVideoSelect={(index) => {
                         setCurrentVideoIndex(index);
                         setVideoViewMode('player');

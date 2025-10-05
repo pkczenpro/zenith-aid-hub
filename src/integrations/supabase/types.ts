@@ -427,6 +427,7 @@ export type Database = {
       product_videos: {
         Row: {
           caption: string | null
+          category_id: string | null
           created_at: string
           created_by: string
           id: string
@@ -440,6 +441,7 @@ export type Database = {
         }
         Insert: {
           caption?: string | null
+          category_id?: string | null
           created_at?: string
           created_by: string
           id?: string
@@ -453,6 +455,7 @@ export type Database = {
         }
         Update: {
           caption?: string | null
+          category_id?: string | null
           created_at?: string
           created_by?: string
           id?: string
@@ -465,6 +468,13 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_videos_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "video_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_videos_product_id_fkey"
             columns: ["product_id"]
@@ -823,6 +833,54 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "product_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_categories: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          order_index: number | null
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          order_index?: number | null
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_categories_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]

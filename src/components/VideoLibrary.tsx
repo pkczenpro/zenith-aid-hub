@@ -20,17 +20,27 @@ interface Video {
   created_at: string;
   order_index?: number;
   thumbnail_url?: string;
+  category_id?: string;
+}
+
+interface VideoCategory {
+  id: string;
+  name: string;
+  description?: string;
+  order_index: number;
 }
 
 interface VideoLibraryProps {
   videos: Video[];
+  categories?: VideoCategory[];
   onVideoSelect: (videoIndex: number) => void;
 }
 
-const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
+const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("oldest");
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   const extractThumbnail = (videoContent: string): string | null => {
     // Extract video ID from content for thumbnail generation
@@ -75,7 +85,11 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
         ? `${new Date(video.created_at).getFullYear()}-${String(new Date(video.created_at).getMonth() + 1).padStart(2, '0')}` === selectedMonth
         : true;
 
-      return matchesSearch && matchesMonth;
+      const matchesCategory = selectedCategoryId 
+        ? video.category_id === selectedCategoryId
+        : true;
+
+      return matchesSearch && matchesMonth && matchesCategory;
     });
 
     // Sort videos
@@ -90,7 +104,7 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
     });
 
     return filtered;
-  }, [videos, searchQuery, sortBy, selectedMonth]);
+  }, [videos, searchQuery, sortBy, selectedMonth, selectedCategoryId]);
 
   return (
     <div className="flex w-full">
@@ -161,6 +175,37 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
                     onClick={() => setSelectedMonth(month.value)}
                   >
                     {month.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Category Filter */}
+          {categories.length > 0 && (
+            <div className="space-y-3 pt-6 border-t border-border mt-6">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <List className="h-4 w-4" />
+                <span>Filter by Category</span>
+              </div>
+              <div className="space-y-2">
+                <Button
+                  variant={!selectedCategoryId ? "default" : "ghost"}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setSelectedCategoryId(null)}
+                >
+                  All Categories
+                </Button>
+                {categories.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategoryId === category.id ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start text-left"
+                    onClick={() => setSelectedCategoryId(category.id)}
+                  >
+                    {category.name}
                   </Button>
                 ))}
               </div>
