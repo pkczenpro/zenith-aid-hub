@@ -22,6 +22,7 @@ import {
   Plus,
   Trash2,
   GripVertical,
+  Sparkles,
 } from "lucide-react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -742,6 +743,14 @@ const ProductEditor = () => {
                     >
                       <Video className="h-4 w-4 mr-2" />
                       Manage Videos
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => navigate(`/product/${productId}/welcome-message`)}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Welcome Message
                     </Button>
                   </CardContent>
                 </Card>

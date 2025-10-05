@@ -427,6 +427,53 @@ export type Database = {
           },
         ]
       }
+      product_welcome_messages: {
+        Row: {
+          created_at: string
+          created_by: string
+          custom_button_text: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          product_id: string
+          show_features: boolean | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          custom_button_text?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          product_id: string
+          show_features?: boolean | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          custom_button_text?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          product_id?: string
+          show_features?: boolean | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_welcome_messages_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null

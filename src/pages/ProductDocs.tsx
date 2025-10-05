@@ -52,6 +52,15 @@ interface Product {
   icon_url?: string;
 }
 
+interface WelcomeMessage {
+  id: string;
+  title: string | null;
+  description: string | null;
+  show_features: boolean;
+  custom_button_text: string;
+  is_active: boolean;
+}
+
 interface CategoryGroup {
   name: string;
   articles: Article[];
@@ -83,6 +92,7 @@ const ProductDocs = () => {
   const [showCompletion, setShowCompletion] = useState(false);
   const [videoViewMode, setVideoViewMode] = useState<'library' | 'player'>('library');
   const [showWelcome, setShowWelcome] = useState(false);
+  const [welcomeMessage, setWelcomeMessage] = useState<WelcomeMessage | null>(null);
   const highlightTerm = searchParams.get('search') || '';
   const searchType = searchParams.get('type') || '';
   const searchId = searchParams.get('id') || '';
@@ -254,6 +264,18 @@ const ProductDocs = () => {
       }
 
       setProduct(productData);
+
+      // Fetch welcome message for this product
+      const { data: welcomeData } = await supabase
+        .from('product_welcome_messages')
+        .select('*')
+        .eq('product_id', productId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (welcomeData) {
+        setWelcomeMessage(welcomeData);
+      }
 
       // Get published articles for this product
       const { data: articlesData, error: articlesError } = await supabase
@@ -1269,77 +1291,119 @@ const ProductDocs = () => {
 
       {/* Welcome Dialog */}
       <Dialog open={showWelcome} onOpenChange={setShowWelcome}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader className="text-center space-y-4 pb-6">
-            <div className="flex justify-center mb-4">
+        <DialogContent className="max-w-3xl border-0 bg-gradient-to-b from-background to-accent/20 overflow-hidden">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          </div>
+          
+          <DialogHeader className="relative text-center space-y-6 pt-8 pb-4">
+            {/* Product Logo/Icon with enhanced styling */}
+            <div className="flex justify-center mb-2">
               {product.icon_url ? (
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-                  <img 
-                    src={product.icon_url} 
-                    alt={product.name} 
-                    className="relative h-24 w-24 object-contain"
-                  />
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/50 to-primary/30 blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                  <div className="relative p-6 rounded-2xl bg-background/50 backdrop-blur-sm border border-primary/20 shadow-2xl transform group-hover:scale-105 transition-transform duration-300">
+                    <img 
+                      src={product.icon_url} 
+                      alt={product.name} 
+                      className="h-20 w-20 object-contain animate-fade-in"
+                    />
+                  </div>
                 </div>
               ) : (
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-                  <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                    <Sparkles className="h-12 w-12 text-primary-foreground" />
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/50 to-primary/30 blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                  <div className="relative p-6 rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-2xl transform group-hover:scale-105 transition-transform duration-300">
+                    <Sparkles className="h-20 w-20 text-primary-foreground animate-pulse" />
                   </div>
                 </div>
               )}
             </div>
-            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Welcome to {product.name}
+            
+            {/* Dynamic Title */}
+            <DialogTitle className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent animate-fade-in leading-tight">
+              {welcomeMessage?.title || `Welcome to ${product.name}`}
             </DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground max-w-lg mx-auto">
-              {product.description || 
+            
+            {/* Dynamic Description */}
+            <DialogDescription className="text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4 animate-fade-in">
+              {welcomeMessage?.description || product.description || 
                 `Explore comprehensive documentation, resources, and guides to help you get the most out of ${product.name}. Everything you need is organized and ready for you.`
               }
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 py-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-start space-x-3 p-4 rounded-lg bg-accent/50 border border-border">
-                <BookOpen className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Documentation</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Step-by-step guides and tutorials</p>
+          <div className="relative space-y-8 py-6 px-2">
+            {/* Feature Cards - only show if enabled */}
+            {(welcomeMessage?.show_features !== false) && (
+              <div className="grid grid-cols-2 gap-4 px-4">
+                <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-accent/30 p-5 border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 animate-scale-in">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Documentation</h4>
+                      <p className="text-xs text-muted-foreground">Step-by-step guides and tutorials</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-accent/30 p-5 border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 animate-scale-in" style={{ animationDelay: '0.1s' }}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Resources</h4>
+                      <p className="text-xs text-muted-foreground">Downloadable files and materials</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-accent/30 p-5 border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 animate-scale-in" style={{ animationDelay: '0.2s' }}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
+                      <Video className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Video Tutorials</h4>
+                      <p className="text-xs text-muted-foreground">Visual learning content</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-background to-accent/30 p-5 border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 animate-scale-in" style={{ animationDelay: '0.3s' }}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm text-foreground mb-1">Release Notes</h4>
+                      <p className="text-xs text-muted-foreground">Latest updates and features</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start space-x-3 p-4 rounded-lg bg-accent/50 border border-border">
-                <FileText className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Resources</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Downloadable files and materials</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3 p-4 rounded-lg bg-accent/50 border border-border">
-                <Video className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Video Tutorials</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Visual learning content</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3 p-4 rounded-lg bg-accent/50 border border-border">
-                <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-sm text-foreground">Release Notes</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Latest updates and features</p>
-                </div>
-              </div>
-            </div>
+            )}
             
-            <Button 
-              onClick={handleWelcomeClose}
-              className="w-full h-12 text-base font-semibold"
-              size="lg"
-            >
-              <BookOpen className="h-5 w-5 mr-2" />
-              View Documentation
-            </Button>
+            {/* CTA Button */}
+            <div className="px-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              <Button 
+                onClick={handleWelcomeClose}
+                className="w-full h-14 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300 group"
+                size="lg"
+              >
+                <BookOpen className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
+                {welcomeMessage?.custom_button_text || 'View Documentation'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

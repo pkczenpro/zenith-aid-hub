@@ -22,6 +22,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import ProductDashboard from "./pages/ProductDashboard";
 import ChatAnalytics from "./pages/ChatAnalytics";
 import MyTicketsPage from "./pages/MyTicketsPage";
+import WelcomeMessageManager from "./pages/WelcomeMessageManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -85,6 +86,11 @@ const App = () => (
             <Route path="/product/:productId/release-notes/:noteId" element={
               <ProtectedRoute requireAdmin>
                 <ReleaseNotesManager />
+              </ProtectedRoute>
+            } />
+            <Route path="/product/:productId/welcome-message" element={
+              <ProtectedRoute requireAdmin>
+                <WelcomeMessageManager />
               </ProtectedRoute>
             } />
             <Route path="/docs/:productId/:articleId" element={
