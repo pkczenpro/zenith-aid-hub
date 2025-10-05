@@ -240,6 +240,13 @@ const ClientDashboard = () => {
     }
   };
 
+  // Auto-redirect for single product access to "Thomas Assess Accredited"
+  useEffect(() => {
+    if (accessibleProducts.length === 1 && accessibleProducts[0].name === "Thomas Assess Accredited") {
+      navigate(`/product/${accessibleProducts[0].id}/docs`);
+    }
+  }, [accessibleProducts, navigate]);
+
   const filteredAccessibleProducts = accessibleProducts.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
