@@ -66,26 +66,21 @@ const ChatWidget = () => {
     }
   }, [selectedProduct, dbSessionId]);
 
-  useEffect(() => {
-    // Add confirmation message when product is selected
-    if (selectedProduct && products.length > 0) {
-      const selectedProductName = products.find(p => p.id === selectedProduct)?.name;
-      if (selectedProductName && messages.length === 1) {
-        setMessages(prev => [...prev, {
-          id: prev.length + 1,
-          text: `Great! I'm ready to help you with ${selectedProductName}. What would you like to know?`,
-          isBot: true,
-          timestamp: new Date()
-        }]);
-      }
-    }
-  }, [selectedProduct, products]);
+  const handleProductSelect = (productId: string, productName: string) => {
+    setSelectedProduct(productId);
+    setMessages(prev => [...prev, {
+      id: prev.length + 1,
+      text: `Great! I'm ready to help you with ${productName}. What would you like to know?`,
+      isBot: true,
+      timestamp: new Date()
+    }]);
+  };
 
   const loadPersistedChat = () => {
     // Always start with welcome message for new sessions
     setMessages([{
       id: 1,
-      text: "Hi! I'm Zenithr Assistant, powered by AI. Please select a product from the dropdown above to get started. I'll help you troubleshoot issues, answer questions, and recommend relevant articles and resources.",
+      text: "Hi! I'm Zenithr Assistant, powered by AI. Please select a product below to get started. I'll help you troubleshoot issues, answer questions, and recommend relevant articles and resources.",
       isBot: true,
       timestamp: new Date()
     }]);
@@ -187,7 +182,7 @@ const ChatWidget = () => {
     setDbSessionId(null);
     setMessages([{
       id: 1,
-      text: "Hi! I'm Zenithr Assistant, powered by AI. Please select a product from the dropdown above to get started. I'll help you troubleshoot issues, answer questions, and recommend relevant articles and resources.",
+      text: "Hi! I'm Zenithr Assistant, powered by AI. Please select a product below to get started. I'll help you troubleshoot issues, answer questions, and recommend relevant articles and resources.",
       isBot: true,
       timestamp: new Date()
     }]);
@@ -296,14 +291,20 @@ const ChatWidget = () => {
         if (clientData) {
           const { data: accessData } = await supabase
             .from('client_product_access')
-            .select('product_id, products(id, name)')
+            .select('product_id')
             .eq('client_id', clientData.id);
 
-          if (accessData) {
-            const accessibleProducts = accessData
-              .map(item => item.products)
-              .filter(Boolean) as Product[];
-            setProducts(accessibleProducts);
+          if (accessData && accessData.length > 0) {
+            const productIds = accessData.map(item => item.product_id);
+            
+            const { data: productsData } = await supabase
+              .from('products')
+              .select('id, name')
+              .in('id', productIds);
+            
+            if (productsData) {
+              setProducts(productsData);
+            }
           }
         }
       } else {
@@ -471,28 +472,34 @@ const ChatWidget = () => {
               </Button>
             </div>
             
-            {/* Product Selection */}
-            <div className="space-y-2">
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger className={`w-full bg-white text-foreground ${!selectedProduct ? 'border-2 border-yellow-400' : ''}`}>
-                  <SelectValue placeholder="⚠️ Select a product to start chatting..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map(product => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!selectedProduct && (
-                <p className="text-xs text-yellow-100">Choose a product to get accurate, relevant answers</p>
-              )}
-            </div>
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            {/* Product Selection Cards - Show only if no product selected */}
+            {!selectedProduct && products.length > 0 && messages.length === 1 && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground text-center font-medium">Select a product to continue:</p>
+                <div className="grid gap-3">
+                  {products.map((product) => (
+                    <Button
+                      key={product.id}
+                      onClick={() => handleProductSelect(product.id, product.name)}
+                      variant="outline"
+                      className="h-auto py-4 px-4 justify-start text-left hover:bg-primary/10 hover:border-primary transition-all"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xl">📦</span>
+                        </div>
+                        <span className="font-medium text-base">{product.name}</span>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}>
                 <div className={`flex items-start space-x-3 max-w-[85%] ${message.isBot ? '' : 'flex-row-reverse space-x-reverse'}`}>
@@ -595,7 +602,7 @@ const ChatWidget = () => {
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={!selectedProduct ? "Select a product above to start chatting..." : "Type your message..."}
+                placeholder={!selectedProduct ? "Please select a product to start..." : "Type your message..."}
                 className="flex-1 text-base h-11"
                 disabled={!selectedProduct || isLoading}
               />
