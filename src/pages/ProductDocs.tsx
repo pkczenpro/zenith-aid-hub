@@ -903,11 +903,21 @@ const ProductDocs = () => {
                   <p className="text-muted-foreground mb-6">
                     {product.description || 'Select an article from the sidebar to get started'}
                   </p>
-                  {filteredCategoryArticles.length > 0 && (
-                    <Button onClick={() => handleArticleSelect(filteredCategoryArticles[0])}>
-                      Start Reading
-                    </Button>
+                  <div className="flex items-center justify-center gap-3">
+                    {filteredCategoryArticles.length > 0 && (
+                      <Button onClick={() => handleArticleSelect(filteredCategoryArticles[0])}>
+                        Start Reading
+                      </Button>
                     )}
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setActiveTab('resources')}
+                      className="gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      View Resources
+                    </Button>
+                  </div>
                   </div>
                 </div>
               )}
