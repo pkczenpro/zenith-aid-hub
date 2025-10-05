@@ -529,21 +529,10 @@ const ResourceManagement = () => {
                     </div>
                   </CardContent>
                    <CardFooter className="flex gap-2">
-                    {resource.file_type === 'pdf' && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => setViewingResource(resource)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                    )}
                     <Button
                       variant="outline"
                       size="sm"
-                      className={resource.file_type === 'pdf' ? '' : 'flex-1'}
+                      className="flex-1"
                       onClick={async () => {
                         try {
                           await logDownload(resource.id);

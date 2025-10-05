@@ -986,17 +986,6 @@ const ProductDocs = () => {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            {resource.file_type === 'pdf' && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => setViewingResource(resource)}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Preview
-                              </Button>
-                            )}
                             <div className="flex space-x-2">
                               <Button
                                 variant="outline"
