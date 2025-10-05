@@ -106,6 +106,28 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryPr
     return filtered;
   }, [videos, searchQuery, sortBy, selectedMonth, selectedCategoryId]);
 
+  // Group videos by category
+  const groupedVideos = useMemo(() => {
+    const grouped = new Map<string, { category: VideoCategory | null; videos: Video[] }>();
+    
+    filteredVideos.forEach(video => {
+      const categoryId = video.category_id || 'uncategorized';
+      if (!grouped.has(categoryId)) {
+        const category = categories.find(c => c.id === video.category_id) || null;
+        grouped.set(categoryId, { category, videos: [] });
+      }
+      grouped.get(categoryId)!.videos.push(video);
+    });
+
+    // Sort groups by category order_index
+    return Array.from(grouped.entries())
+      .sort(([aId, aData], [bId, bData]) => {
+        if (aId === 'uncategorized') return 1;
+        if (bId === 'uncategorized') return -1;
+        return (aData.category?.order_index || 0) - (bData.category?.order_index || 0);
+      });
+  }, [filteredVideos, categories]);
+
   return (
     <div className="flex w-full">
       {/* Left Sidebar - Video List Navigation */}
@@ -116,38 +138,54 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryPr
             <h2 className="text-lg font-semibold text-foreground">Video List</h2>
           </div>
 
-          {/* Video Title List */}
-          <div className="space-y-2">
-            {filteredVideos.map((video, index) => {
-              const originalIndex = videos.findIndex(v => v.id === video.id);
-              return (
-                <Button
-                  key={video.id}
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start text-left h-auto py-3 px-3 hover:bg-primary/10"
-                  onClick={() => onVideoSelect(originalIndex)}
-                >
-                  <div className="flex gap-3 items-start w-full">
-                    <Badge variant="secondary" className="shrink-0 mt-0.5">
-                      {index + 1}
-                    </Badge>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground line-clamp-2">
-                        {video.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(video.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                </Button>
-              );
-            })}
+          {/* Video Title List Grouped by Category */}
+          <div className="space-y-4">
+            {groupedVideos.map(([categoryId, { category, videos: categoryVideos }]) => (
+              <div key={categoryId} className="space-y-2">
+                {/* Category Header */}
+                <div className="flex items-center gap-2 px-2 py-1">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {category?.name || 'Uncategorized'}
+                  </h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {categoryVideos.length}
+                  </Badge>
+                </div>
+                
+                {/* Videos in Category */}
+                {categoryVideos.map((video) => {
+                  const originalIndex = videos.findIndex(v => v.id === video.id);
+                  const displayIndex = filteredVideos.findIndex(v => v.id === video.id) + 1;
+                  return (
+                    <Button
+                      key={video.id}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-left h-auto py-3 px-3 hover:bg-primary/10"
+                      onClick={() => onVideoSelect(originalIndex)}
+                    >
+                      <div className="flex gap-3 items-start w-full">
+                        <Badge variant="secondary" className="shrink-0 mt-0.5">
+                          {displayIndex}
+                        </Badge>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground line-clamp-2">
+                            {video.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(video.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </Button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
           {/* Date Filter */}
