@@ -110,16 +110,26 @@ const ProductDocs = () => {
     }
   }, [user, productId]);
 
-  // Check if user has seen welcome message for this product
+  // Check if user should see welcome message after data is loaded
   useEffect(() => {
-    if (productId && !loading) {
+    if (productId && !loading && product) {
       const welcomeKey = `welcome-seen-${productId}`;
       const hasSeenWelcome = localStorage.getItem(welcomeKey);
+      
+      console.log('Welcome check:', { 
+        hasSeenWelcome, 
+        hasWelcomeMessage: !!welcomeMessage,
+        hasProductDesc: !!product.description,
+        productId 
+      });
+      
+      // Show welcome if not seen before (will use custom message or default to product info)
       if (!hasSeenWelcome) {
+        console.log('Showing welcome message for product:', productId);
         setShowWelcome(true);
       }
     }
-  }, [productId, loading]);
+  }, [productId, loading, product, welcomeMessage]);
 
   // Handle navigation from chat links after data is loaded
   useEffect(() => {
@@ -266,12 +276,14 @@ const ProductDocs = () => {
       setProduct(productData);
 
       // Fetch welcome message for this product
-      const { data: welcomeData } = await supabase
+      const { data: welcomeData, error: welcomeError } = await supabase
         .from('product_welcome_messages')
         .select('*')
         .eq('product_id', productId)
         .eq('is_active', true)
         .maybeSingle();
+
+      console.log('Welcome message fetch result:', welcomeData, welcomeError);
 
       if (welcomeData) {
         setWelcomeMessage(welcomeData);
@@ -468,6 +480,7 @@ const ProductDocs = () => {
   const handleWelcomeClose = () => {
     if (productId) {
       localStorage.setItem(`welcome-seen-${productId}`, 'true');
+      console.log('Welcome message closed, localStorage updated');
     }
     setShowWelcome(false);
   };
