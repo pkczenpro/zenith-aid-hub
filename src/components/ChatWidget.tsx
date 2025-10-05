@@ -44,12 +44,19 @@ const ChatWidget = () => {
 
   useEffect(() => {
     fetchProducts();
-    loadPersistedChat();
   }, []);
+  
+  useEffect(() => {
+    // Fetch products when profile is loaded
+    if (profile) {
+      fetchProducts();
+    }
+  }, [profile]);
 
   useEffect(() => {
-    // Load persisted chat when widget opens
+    // Load persisted chat when widget opens and refetch products
     if (isOpen) {
+      fetchProducts();
       loadPersistedChat();
     }
   }, [isOpen]);
@@ -237,26 +244,33 @@ const ChatWidget = () => {
     localStorage.removeItem('chatWidget_selectedProduct');
     localStorage.removeItem('chatWidget_feedbackGiven');
     
-    // Reset all state
-    setSessionId(newSessionId);
-    setDbSessionId(null);
-    setMessages([
-      {
-        id: 1,
-        text: "Hi! I'm Zenithr Assistant, powered by AI. 👋",
-        isBot: true,
-        timestamp: new Date()
-      },
-      {
-        id: 2,
-        text: "I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. To get started, please select the product you need help with:",
-        isBot: true,
-        timestamp: new Date()
-      }
-    ]);
+    // Reset all state - IMPORTANT: Reset selectedProduct BEFORE setting messages
     setSelectedProduct("");
     setShowFeedback(false);
     setFeedbackGiven(false);
+    setSessionId(newSessionId);
+    setDbSessionId(null);
+    
+    // Refetch products to ensure they're loaded
+    await fetchProducts();
+    
+    // Set welcome messages after a small delay to ensure state is cleared
+    setTimeout(() => {
+      setMessages([
+        {
+          id: 1,
+          text: "Hi! I'm Zenithr Assistant, powered by AI. 👋",
+          isBot: true,
+          timestamp: new Date()
+        },
+        {
+          id: 2,
+          text: "I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. To get started, please select the product you need help with:",
+          isBot: true,
+          timestamp: new Date()
+        }
+      ]);
+    }, 100);
     
     // Initialize new DB session
     if (profile?.id) {
@@ -266,7 +280,7 @@ const ChatWidget = () => {
           .insert({
             session_id: newSessionId,
             profile_id: profile.id,
-            product_id: selectedProduct || null,
+            product_id: null,
             message_count: 0
           })
           .select()
@@ -346,9 +360,14 @@ const ChatWidget = () => {
   };
 
   const fetchProducts = async () => {
-    if (!profile) return;
+    if (!profile) {
+      console.log('Profile not loaded yet, skipping product fetch');
+      return;
+    }
 
     try {
+      console.log('Fetching products for role:', profile.role);
+      
       if (profile.role === 'client') {
         // For clients, only show products they have access to
         const { data: clientData } = await supabase
@@ -372,8 +391,12 @@ const ChatWidget = () => {
               .in('id', productIds);
             
             if (productsData) {
+              console.log('Client products loaded:', productsData.length);
               setProducts(productsData);
             }
+          } else {
+            console.log('No product access found for client');
+            setProducts([]);
           }
         }
       } else {
@@ -384,6 +407,7 @@ const ChatWidget = () => {
           .eq("status", "published");
         
         if (data) {
+          console.log('Admin products loaded:', data.length);
           setProducts(data);
         }
       }
