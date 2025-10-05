@@ -31,7 +31,8 @@ import {
   Moon,
   Sun,
   Grid3x3,
-  Play
+  Play,
+  Home
 } from 'lucide-react';
 
 interface Article {
@@ -634,6 +635,14 @@ const ProductDocs = () => {
       <header className="border-b border-border bg-background sticky top-0 z-50">
         <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/')}
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Home
+            </Button>
             {userProfile?.role === 'admin' && (
               <Button
                 variant="ghost"
