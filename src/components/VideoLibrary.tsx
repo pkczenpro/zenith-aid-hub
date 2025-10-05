@@ -106,35 +106,6 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryPr
     return filtered;
   }, [videos, searchQuery, sortBy, selectedMonth, selectedCategoryId]);
 
-  // Group videos by category
-  const groupedVideos = useMemo(() => {
-    const groups: Record<string, Video[]> = {};
-    
-    filteredVideos.forEach(video => {
-      const categoryId = video.category_id || 'uncategorized';
-      if (!groups[categoryId]) {
-        groups[categoryId] = [];
-      }
-      groups[categoryId].push(video);
-    });
-
-    // Sort categories: first by order_index (if available), then uncategorized last
-    const sortedGroups = Object.entries(groups).sort((a, b) => {
-      const catA = categories.find(c => c.id === a[0]);
-      const catB = categories.find(c => c.id === b[0]);
-      
-      if (a[0] === 'uncategorized') return 1;
-      if (b[0] === 'uncategorized') return -1;
-      
-      const orderA = catA?.order_index ?? 999;
-      const orderB = catB?.order_index ?? 999;
-      
-      return orderA - orderB;
-    });
-
-    return sortedGroups;
-  }, [filteredVideos, categories]);
-
   return (
     <div className="flex w-full">
       {/* Left Sidebar - Video List Navigation */}
@@ -312,95 +283,75 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryPr
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {groupedVideos.map(([categoryId, categoryVideos]) => {
-              const category = categories.find(c => c.id === categoryId);
-              const categoryName = category?.name || 'Uncategorized';
-              
-              return (
-                <div key={categoryId} className="space-y-4">
-                  {/* Category Header */}
-                  <div className="flex items-center gap-3 pb-2 border-b border-border">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-1 bg-primary rounded-full" />
-                      <h2 className="text-2xl font-bold text-foreground">{categoryName}</h2>
-                    </div>
-                    <Badge variant="secondary" className="ml-auto">
-                      {categoryVideos.length} {categoryVideos.length === 1 ? 'video' : 'videos'}
-                    </Badge>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredVideos.map((video, index) => {
+          // Use uploaded thumbnail first, then fall back to auto-extracted
+          const thumbnail = video.thumbnail_url || extractThumbnail(video.video_content);
+          
+          return (
+            <Card
+              key={video.id}
+              className="group cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden"
+              onClick={() => onVideoSelect(index)}
+            >
+              <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
+                {thumbnail ? (
+                  <img
+                    src={thumbnail}
+                    alt={video.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Play className="h-16 w-16 text-white/60" />
                   </div>
-                  
-                  {category?.description && (
-                    <p className="text-sm text-muted-foreground">{category.description}</p>
-                  )}
-
-                  {/* Videos Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {categoryVideos.map((video) => {
-                      const originalIndex = videos.findIndex(v => v.id === video.id);
-                      const thumbnail = video.thumbnail_url || extractThumbnail(video.video_content);
-                      
-                      return (
-                        <Card
-                          key={video.id}
-                          className="group cursor-pointer hover:shadow-xl transition-all duration-300 overflow-hidden"
-                          onClick={() => onVideoSelect(originalIndex)}
-                        >
-                          <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-accent/20 overflow-hidden">
-                            {thumbnail ? (
-                              <img
-                                src={thumbnail}
-                                alt={video.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Play className="h-16 w-16 text-white/60" />
-                              </div>
-                            )}
-                            
-                            {/* Play Overlay */}
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                              <div className="bg-white rounded-full p-4 transform scale-90 group-hover:scale-100 transition-transform duration-300">
-                                <Play className="h-8 w-8 text-primary fill-primary" />
-                              </div>
-                            </div>
-                          </div>
-
-                          <CardContent className="p-5">
-                            <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                              {video.title}
-                            </h3>
-                            
-                            {video.caption && (
-                              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                                {video.caption}
-                              </p>
-                            )}
-
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span>
-                                  {new Date(video.created_at).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                )}
+                
+                {/* Play Overlay */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <div className="bg-white rounded-full p-4 transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                    <Play className="h-8 w-8 text-primary fill-primary" />
                   </div>
                 </div>
-              );
-            })}
+
+                {/* Video Number Badge */}
+                <div className="absolute top-3 left-3">
+                  <Badge variant="secondary" className="bg-black/60 text-white border-0">
+                    Video {index + 1}
+                  </Badge>
+                </div>
+              </div>
+
+              <CardContent className="p-5">
+                <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                  {video.title}
+                </h3>
+                
+                {video.caption && (
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                    {video.caption}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      {new Date(video.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
           </div>
         )}
       </main>
