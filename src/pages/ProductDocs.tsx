@@ -33,7 +33,8 @@ import {
   Grid3x3,
   Play,
   Home,
-  Sparkles
+  Sparkles,
+  Eye
 } from 'lucide-react';
 
 interface Article {
@@ -93,6 +94,7 @@ const ProductDocs = () => {
   const [videoViewMode, setVideoViewMode] = useState<'library' | 'player'>('library');
   const [showWelcome, setShowWelcome] = useState(false);
   const [welcomeMessage, setWelcomeMessage] = useState<WelcomeMessage | null>(null);
+  const [viewingResource, setViewingResource] = useState<any | null>(null);
   const highlightTerm = searchParams.get('search') || '';
   const searchType = searchParams.get('type') || '';
   const searchId = searchParams.get('id') || '';
@@ -983,6 +985,17 @@ const ProductDocs = () => {
                             </div>
                           </div>
                           <div className="space-y-2">
+                            {resource.file_type === 'pdf' && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => setViewingResource(resource)}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Preview
+                              </Button>
+                            )}
                             <div className="flex space-x-2">
                               <Button
                                 variant="outline"
@@ -1489,6 +1502,27 @@ const ProductDocs = () => {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Viewer Dialog */}
+      <Dialog open={!!viewingResource} onOpenChange={() => setViewingResource(null)}>
+        <DialogContent className="max-w-6xl h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-4">
+            <DialogTitle>{viewingResource?.title}</DialogTitle>
+            <DialogDescription>
+              {viewingResource?.description || 'Preview document'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 px-6 pb-6 overflow-hidden">
+            {viewingResource && (
+              <iframe
+                src={viewingResource.file_url}
+                className="w-full h-full rounded-lg border border-border"
+                title={viewingResource.title}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       
