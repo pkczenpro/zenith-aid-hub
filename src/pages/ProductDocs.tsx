@@ -994,7 +994,7 @@ const ProductDocs = () => {
                 <div className="w-full">
                   {/* View Toggle Bar */}
                   <div className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-[112px] z-40 px-8 py-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-center relative">
                       <div className="flex items-center gap-2">
                         <Button
                           variant={videoViewMode === 'library' ? 'default' : 'outline'}
@@ -1019,7 +1019,7 @@ const ProductDocs = () => {
                           Player View
                         </Button>
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="absolute right-0 text-sm text-muted-foreground">
                         {videos.length} video{videos.length !== 1 ? 's' : ''} available
                       </div>
                     </div>
