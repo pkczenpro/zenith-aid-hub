@@ -272,13 +272,14 @@ const ChatWidget = () => {
     if (!profile?.id || !dbSessionId) return;
 
     try {
-      // Update session
+      // Update session - mark as resolved by default
       await supabase
         .from('chat_sessions')
         .update({
           message_count: messages.length,
           product_id: selectedProduct || null,
-          ended_at: new Date().toISOString()
+          ended_at: new Date().toISOString(),
+          resolved_by_ai: true // Mark as resolved by default
         })
         .eq('id', dbSessionId);
 
@@ -410,11 +411,11 @@ const ChatWidget = () => {
 
       if (feedbackError) throw feedbackError;
 
-      // Mark session as resolved and ended
+      // Mark session - only unresolved if negative feedback (unhelpful)
       const { error: sessionError } = await supabase
         .from('chat_sessions')
         .update({ 
-          resolved_by_ai: rating === 'positive',
+          resolved_by_ai: rating !== 'negative', // Only unresolved if unhelpful
           ended_at: new Date().toISOString()
         })
         .eq('id', dbSessionId);
