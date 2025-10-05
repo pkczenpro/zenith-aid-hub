@@ -20,6 +20,7 @@ interface ProductVideo {
   order_index: number;
   created_at: string;
   updated_at: string;
+  thumbnail_url?: string;
 }
 
 interface Product {
@@ -41,6 +42,8 @@ const VideoManagement = () => {
   // Form state
   const [title, setTitle] = useState('');
   const [videoContent, setVideoContent] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const quillRef = useRef<any>(null);
 
   useEffect(() => {
@@ -81,6 +84,7 @@ const VideoManagement = () => {
         order_index: v.order_index,
         created_at: v.created_at,
         updated_at: v.updated_at,
+        thumbnail_url: v.thumbnail_url,
       })));
 
     } catch (error) {
@@ -106,6 +110,18 @@ const VideoManagement = () => {
     editor.insertEmbed(insertIndex, 'video', videoHtml);
   };
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleUpload = async () => {
     if (!title.trim() || !videoContent.trim()) {
       toast({
@@ -126,6 +142,27 @@ const VideoManagement = () => {
     }
 
     try {
+      let thumbnailUrl = null;
+
+      // Upload thumbnail if provided
+      if (thumbnailFile) {
+        const fileExt = thumbnailFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${productId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('video-thumbnails')
+          .upload(filePath, thumbnailFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('video-thumbnails')
+          .getPublicUrl(filePath);
+
+        thumbnailUrl = publicUrl;
+      }
+
       const { error } = await supabase
         .from('product_videos')
         .insert([{
@@ -134,6 +171,7 @@ const VideoManagement = () => {
           video_content: videoContent,
           created_by: profile.id,
           order_index: videos.length,
+          thumbnail_url: thumbnailUrl,
         }] as any);
 
       if (error) throw error;
@@ -146,6 +184,8 @@ const VideoManagement = () => {
       // Reset form
       setTitle('');
       setVideoContent('');
+      setThumbnailFile(null);
+      setThumbnailPreview(null);
       setIsDialogOpen(false);
 
       // Refresh videos
@@ -302,6 +342,30 @@ const VideoManagement = () => {
                 </div>
 
                 <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">
+                    Thumbnail Image
+                  </label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailChange}
+                    className="cursor-pointer"
+                  />
+                  {thumbnailPreview && (
+                    <div className="mt-3 relative w-full aspect-video rounded-lg overflow-hidden border border-border">
+                      <img
+                        src={thumbnailPreview}
+                        alt="Thumbnail preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Upload a custom thumbnail for this video (recommended: 16:9 aspect ratio)
+                  </p>
+                </div>
+
+                <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-foreground">
                       Video Content <span className="text-destructive">*</span>
@@ -382,10 +446,20 @@ const VideoManagement = () => {
             {videos.map((video) => (
               <Card key={video.id} className="overflow-hidden hover:shadow-xl transition-shadow">
                 <div className="relative">
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
-                    className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-t-lg [&_video]:w-full [&_video]:rounded-t-lg [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-t-lg [&_p]:hidden"
-                  />
+                  {video.thumbnail_url ? (
+                    <div className="relative aspect-video">
+                      <img 
+                        src={video.thumbnail_url} 
+                        alt={video.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: processVideoContent(video.video_content) }}
+                      className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-t-lg [&_video]:w-full [&_video]:rounded-t-lg [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-t-lg [&_p]:hidden"
+                    />
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"

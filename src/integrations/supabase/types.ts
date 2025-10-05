@@ -385,6 +385,7 @@ export type Database = {
           id: string
           order_index: number | null
           product_id: string
+          thumbnail_url: string | null
           title: string
           updated_at: string
           video_content: string
@@ -397,6 +398,7 @@ export type Database = {
           id?: string
           order_index?: number | null
           product_id: string
+          thumbnail_url?: string | null
           title: string
           updated_at?: string
           video_content: string
@@ -409,6 +411,7 @@ export type Database = {
           id?: string
           order_index?: number | null
           product_id?: string
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string
           video_content?: string

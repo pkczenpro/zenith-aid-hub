@@ -19,6 +19,7 @@ interface Video {
   video_content: string;
   created_at: string;
   order_index?: number;
+  thumbnail_url?: string;
 }
 
 interface VideoLibraryProps {
@@ -239,7 +240,8 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredVideos.map((video, index) => {
-          const thumbnail = extractThumbnail(video.video_content);
+          // Use uploaded thumbnail first, then fall back to auto-extracted
+          const thumbnail = video.thumbnail_url || extractThumbnail(video.video_content);
           
           return (
             <Card
