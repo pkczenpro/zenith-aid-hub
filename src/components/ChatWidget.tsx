@@ -17,6 +17,7 @@ interface Message {
   isBot: boolean;
   timestamp: Date;
   links?: Array<{ type: string; id: string; url: string; title: string }>;
+  showProductSwitch?: boolean;
 }
 
 interface Product {
@@ -82,13 +83,25 @@ const ChatWidget = () => {
   }, [selectedProduct, dbSessionId]);
 
   const handleProductSelect = (productId: string, productName: string) => {
+    const previousProduct = selectedProduct;
     setSelectedProduct(productId);
+    
+    // Add confirmation message
+    const confirmationMessage = previousProduct 
+      ? `Switched to ${productName}! How can I help you with this product?`
+      : `Great! I'm ready to help you with ${productName}. What would you like to know?`;
+    
     setMessages(prev => [...prev, {
       id: prev.length + 1,
-      text: `Great! I'm ready to help you with ${productName}. What would you like to know?`,
+      text: confirmationMessage,
       isBot: true,
       timestamp: new Date()
     }]);
+    
+    // Update the database session with new product
+    if (dbSessionId) {
+      updateSessionProduct();
+    }
   };
 
   const loadPersistedChat = () => {
@@ -472,7 +485,11 @@ const ChatWidget = () => {
       if (error) throw error;
 
       const aiResponse = data.choices[0].message.content;
+      const needsProductSwitch = data.needsProductSwitch || false;
+      
       console.log('AI Response:', aiResponse);
+      console.log('Needs product switch:', needsProductSwitch);
+      
       const links = parseLinksFromResponse(aiResponse);
       console.log('Extracted links:', links);
 
@@ -484,7 +501,8 @@ const ChatWidget = () => {
         text: cleanText,
         isBot: true,
         timestamp: new Date(),
-        links: links.length > 0 ? links : undefined
+        links: links.length > 0 ? links : undefined,
+        showProductSwitch: needsProductSwitch
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -615,9 +633,14 @@ const ChatWidget = () => {
                       </div>
                     )}
                     
-                    {/* Product Selection Cards - Show after bot messages if no product selected */}
-                    {message.isBot && !selectedProduct && products.length > 0 && message.id === 2 && (
+                    {/* Product Selection Cards - Show when product switch is suggested OR after initial welcome */}
+                    {message.isBot && products.length > 0 && (message.id === 2 && !selectedProduct || message.showProductSwitch) && (
                       <div className="mt-4 grid gap-3">
+                        {message.showProductSwitch && (
+                          <p className="text-sm text-muted-foreground font-medium mb-2">
+                            Please select a product:
+                          </p>
+                        )}
                         {products.map((product) => (
                           <Button
                             key={product.id}

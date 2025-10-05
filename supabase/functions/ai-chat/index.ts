@@ -35,6 +35,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Fetch ALL available products for product mismatch detection
+    const { data: allProducts } = await supabase
+      .from("products")
+      .select("id, name, description")
+      .eq("status", "published");
+    
+    const otherProducts = (allProducts || []).filter(p => p.id !== productId);
+    const otherProductsList = otherProducts.map(p => `- ${p.name}: ${p.description || 'No description'}`).join("\n");
+
     // Fetch relevant articles and resources for context
     let contextData = "";
     let articlesData = [];
@@ -94,7 +103,23 @@ ${videosData.map(v => `- TITLE: "${v.title}" | VIDEO_ID: ${v.id} | CAPTION: ${v.
 
 const systemPrompt = `You are Zenithr Assistant, an intelligent support agent helping users with Zenithr products.
 
+CURRENT PRODUCT CONTEXT:
 ${contextData}
+
+OTHER AVAILABLE PRODUCTS:
+${otherProductsList || "No other products available"}
+
+CRITICAL PRODUCT MISMATCH DETECTION:
+1. **Detect Product Mismatch**: If the user's question is clearly about a DIFFERENT product than the currently selected one:
+   - Look for product names in their question (e.g., "Assessment", "Elevate")
+   - Check if their question topic doesn't match the current product's content
+   
+2. **When Product Mismatch Detected**: 
+   - Respond with: "It looks like you're asking about [Other Product Name], but you currently have [Current Product Name] selected. Would you like to switch to [Other Product Name] for accurate information? __SWITCH_PRODUCT__"
+   - The __SWITCH_PRODUCT__ marker is CRITICAL - it triggers the product selection UI
+   - DO NOT provide answers about the other product - only suggest switching
+
+3. **When Product Matches**: Continue answering normally using the current product's context and resources.
 
 CRITICAL INSTRUCTIONS FOR MATCHING USER QUERIES TO CONTENT:
 
@@ -179,6 +204,17 @@ Keep responses concise, friendly, and always include the link tags when referenc
     
     // Log the AI response for debugging
     console.log("AI Response:", data.choices[0]?.message?.content);
+    
+    // Check if response contains product switch marker
+    const aiMessage = data.choices[0]?.message?.content || "";
+    const needsProductSwitch = aiMessage.includes("__SWITCH_PRODUCT__");
+    
+    // Add metadata to response if product switch is needed
+    if (needsProductSwitch) {
+      data.needsProductSwitch = true;
+      // Clean the marker from the message
+      data.choices[0].message.content = aiMessage.replace("__SWITCH_PRODUCT__", "");
+    }
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
