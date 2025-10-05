@@ -92,9 +92,9 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
   }, [videos, searchQuery, sortBy, selectedMonth]);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex w-full">
       {/* Left Sidebar - Video List Navigation */}
-      <aside className="w-80 border-r border-border bg-muted/30 p-6 space-y-6 sticky top-0 h-screen overflow-y-auto">
+      <aside className="w-80 border-r border-border bg-muted/30 p-6 space-y-6 h-screen overflow-y-auto sticky top-[160px]">
         <div>
           <div className="flex items-center gap-2 mb-4">
             <List className="h-5 w-5 text-primary" />
@@ -177,7 +177,7 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 px-8 py-6">
+      <main className="flex-1 p-8">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
