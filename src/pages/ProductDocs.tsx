@@ -10,6 +10,7 @@ import { useTheme } from 'next-themes';
 import { highlightSearchTerms, scrollToFirstHighlight } from '@/utils/textHighlight';
 import VideoLibrary from '@/components/VideoLibrary';
 import ChatWidget from '@/components/ChatWidget';
+import PDFViewer from '@/components/PDFViewer';
 import {
   Search, 
   BookOpen, 
@@ -1507,18 +1508,17 @@ const ProductDocs = () => {
 
       {/* PDF Viewer Dialog */}
       <Dialog open={!!viewingResource} onOpenChange={() => setViewingResource(null)}>
-        <DialogContent className="max-w-6xl h-[90vh] p-0">
-          <DialogHeader className="p-6 pb-4">
+        <DialogContent className="max-w-6xl h-[90vh] p-0 flex flex-col">
+          <DialogHeader className="p-6 pb-4 border-b border-border">
             <DialogTitle>{viewingResource?.title}</DialogTitle>
             <DialogDescription>
               {viewingResource?.description || 'Preview document'}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 px-6 pb-6 overflow-hidden">
+          <div className="flex-1 overflow-hidden">
             {viewingResource && (
-              <iframe
-                src={viewingResource.file_url}
-                className="w-full h-full rounded-lg border border-border"
+              <PDFViewer 
+                url={viewingResource.file_url} 
                 title={viewingResource.title}
               />
             )}
