@@ -3,7 +3,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Play, Clock, Search, Filter, Calendar, SortAsc, X } from "lucide-react";
+import { Play, Clock, Search, Calendar, X, List } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Video {
   id: string;
@@ -86,83 +93,77 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Sidebar - Filters */}
-      <aside className="w-72 border-r border-border bg-muted/30 p-6 space-y-6 sticky top-0 h-screen overflow-y-auto">
+      {/* Left Sidebar - Video List Navigation */}
+      <aside className="w-80 border-r border-border bg-muted/30 p-6 space-y-6 sticky top-0 h-screen overflow-y-auto">
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Filters</h2>
+            <List className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Video List</h2>
           </div>
 
-          {/* Sort Options */}
-          <div className="space-y-3 mb-6">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <SortAsc className="h-4 w-4" />
-              <span>Sort By</span>
-            </div>
-            <div className="space-y-2">
-              <Button
-                variant={sortBy === "newest" ? "default" : "ghost"}
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => setSortBy("newest")}
-              >
-                Newest First
-              </Button>
-              <Button
-                variant={sortBy === "oldest" ? "default" : "ghost"}
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => setSortBy("oldest")}
-              >
-                Oldest First
-              </Button>
-              <Button
-                variant={sortBy === "title" ? "default" : "ghost"}
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => setSortBy("title")}
-              >
-                Alphabetical
-              </Button>
-            </div>
+          {/* Video Title List */}
+          <div className="space-y-2">
+            {filteredVideos.map((video, index) => {
+              const originalIndex = videos.findIndex(v => v.id === video.id);
+              return (
+                <Button
+                  key={video.id}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-left h-auto py-3 px-3 hover:bg-primary/10"
+                  onClick={() => onVideoSelect(originalIndex)}
+                >
+                  <div className="flex gap-3 items-start w-full">
+                    <Badge variant="secondary" className="shrink-0 mt-0.5">
+                      {index + 1}
+                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground line-clamp-2">
+                        {video.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(video.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </Button>
+              );
+            })}
           </div>
 
           {/* Date Filter */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>Published Date</span>
-            </div>
-            <div className="space-y-2">
-              {availableMonths.map((month) => (
+          {availableMonths.length > 1 && (
+            <div className="space-y-3 pt-6 border-t border-border mt-6">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Filter by Date</span>
+              </div>
+              <div className="space-y-2">
                 <Button
-                  key={month.value}
-                  variant={selectedMonth === month.value ? "default" : "ghost"}
+                  variant={!selectedMonth ? "default" : "ghost"}
                   size="sm"
-                  className="w-full justify-start text-left"
-                  onClick={() => setSelectedMonth(selectedMonth === month.value ? null : month.value)}
+                  className="w-full justify-start"
+                  onClick={() => setSelectedMonth(null)}
                 >
-                  {month.label}
+                  All Dates
                 </Button>
-              ))}
+                {availableMonths.map((month) => (
+                  <Button
+                    key={month.value}
+                    variant={selectedMonth === month.value ? "default" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start text-left"
+                    onClick={() => setSelectedMonth(month.value)}
+                  >
+                    {month.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Clear Filters */}
-          {(selectedMonth || sortBy !== "newest") && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-4"
-              onClick={() => {
-                setSelectedMonth(null);
-                setSortBy("newest");
-              }}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Clear Filters
-            </Button>
           )}
         </div>
 
@@ -178,10 +179,29 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
       {/* Main Content */}
       <main className="flex-1 px-8 py-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Video Library</h1>
-          <p className="text-muted-foreground mb-6">
-            Browse all training videos and tutorials
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Video Library</h1>
+              <p className="text-muted-foreground">
+                Browse all training videos and tutorials
+              </p>
+            </div>
+
+            {/* Sort Options on Right */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Sort:</span>
+              <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "title") => setSortBy(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="title">Alphabetical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {/* Search Bar */}
           <div className="relative max-w-xl">
