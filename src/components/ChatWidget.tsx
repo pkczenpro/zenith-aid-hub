@@ -22,6 +22,7 @@ interface Message {
 interface Product {
   id: string;
   name: string;
+  icon_url?: string;
 }
 
 const ChatWidget = () => {
@@ -78,12 +79,20 @@ const ChatWidget = () => {
 
   const loadPersistedChat = () => {
     // Always start with welcome message for new sessions
-    setMessages([{
-      id: 1,
-      text: "Hi! I'm Zenithr Assistant, powered by AI. Please select a product below to get started. I'll help you troubleshoot issues, answer questions, and recommend relevant articles and resources.",
-      isBot: true,
-      timestamp: new Date()
-    }]);
+    setMessages([
+      {
+        id: 1,
+        text: "Hi! I'm Zenithr Assistant, powered by AI. 👋",
+        isBot: true,
+        timestamp: new Date()
+      },
+      {
+        id: 2,
+        text: "I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. To get started, please select the product you need help with:",
+        isBot: true,
+        timestamp: new Date()
+      }
+    ]);
   };
 
   const persistChat = () => {
@@ -180,12 +189,20 @@ const ChatWidget = () => {
     // Reset all state
     setSessionId(newSessionId);
     setDbSessionId(null);
-    setMessages([{
-      id: 1,
-      text: "Hi! I'm Zenithr Assistant, powered by AI. Please select a product below to get started. I'll help you troubleshoot issues, answer questions, and recommend relevant articles and resources.",
-      isBot: true,
-      timestamp: new Date()
-    }]);
+    setMessages([
+      {
+        id: 1,
+        text: "Hi! I'm Zenithr Assistant, powered by AI. 👋",
+        isBot: true,
+        timestamp: new Date()
+      },
+      {
+        id: 2,
+        text: "I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. To get started, please select the product you need help with:",
+        isBot: true,
+        timestamp: new Date()
+      }
+    ]);
     setSelectedProduct("");
     setShowFeedback(false);
     setFeedbackGiven(false);
@@ -299,7 +316,7 @@ const ChatWidget = () => {
             
             const { data: productsData } = await supabase
               .from('products')
-              .select('id, name')
+              .select('id, name, icon_url')
               .in('id', productIds);
             
             if (productsData) {
@@ -311,7 +328,7 @@ const ChatWidget = () => {
         // Admin sees all published products
         const { data } = await supabase
           .from("products")
-          .select("id, name")
+          .select("id, name, icon_url")
           .eq("status", "published");
         
         if (data) {
@@ -476,30 +493,6 @@ const ChatWidget = () => {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
-            {/* Product Selection Cards - Show only if no product selected */}
-            {!selectedProduct && products.length > 0 && messages.length === 1 && (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground text-center font-medium">Select a product to continue:</p>
-                <div className="grid gap-3">
-                  {products.map((product) => (
-                    <Button
-                      key={product.id}
-                      onClick={() => handleProductSelect(product.id, product.name)}
-                      variant="outline"
-                      className="h-auto py-4 px-4 justify-start text-left hover:bg-primary/10 hover:border-primary transition-all"
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xl">📦</span>
-                        </div>
-                        <span className="font-medium text-base">{product.name}</span>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-            
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}>
                 <div className={`flex items-start space-x-3 max-w-[85%] ${message.isBot ? '' : 'flex-row-reverse space-x-reverse'}`}>
@@ -541,6 +534,38 @@ const ChatWidget = () => {
                               {link.type === 'resource' && '📎'}
                             </span>
                             <span className="font-medium">{link.title}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Product Selection Cards - Show after bot messages if no product selected */}
+                    {message.isBot && !selectedProduct && products.length > 0 && message.id === 2 && (
+                      <div className="mt-4 grid gap-3">
+                        {products.map((product) => (
+                          <Button
+                            key={product.id}
+                            onClick={() => handleProductSelect(product.id, product.name)}
+                            variant="outline"
+                            className="h-auto py-4 px-4 justify-start text-left hover:bg-primary/10 hover:border-primary transition-all hover-scale group"
+                          >
+                            <div className="flex items-center gap-4 w-full">
+                              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0 border border-primary/10 group-hover:border-primary/30 transition-all">
+                                {product.icon_url ? (
+                                  <img 
+                                    src={product.icon_url} 
+                                    alt={product.name}
+                                    className="h-10 w-10 object-contain"
+                                  />
+                                ) : (
+                                  <span className="text-2xl">📦</span>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <span className="font-semibold text-base text-foreground">{product.name}</span>
+                                <span className="text-xs text-muted-foreground">Click to select this product</span>
+                              </div>
+                            </div>
                           </Button>
                         ))}
                       </div>
