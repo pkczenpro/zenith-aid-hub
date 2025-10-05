@@ -66,11 +66,26 @@ const ChatWidget = () => {
     }
   }, [selectedProduct, dbSessionId]);
 
+  useEffect(() => {
+    // Add confirmation message when product is selected
+    if (selectedProduct && products.length > 0) {
+      const selectedProductName = products.find(p => p.id === selectedProduct)?.name;
+      if (selectedProductName && messages.length === 1) {
+        setMessages(prev => [...prev, {
+          id: prev.length + 1,
+          text: `Great! I'm ready to help you with ${selectedProductName}. What would you like to know?`,
+          isBot: true,
+          timestamp: new Date()
+        }]);
+      }
+    }
+  }, [selectedProduct, products]);
+
   const loadPersistedChat = () => {
     // Always start with welcome message for new sessions
     setMessages([{
       id: 1,
-      text: "Hi! I'm Zenithr Assistant, powered by AI. I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. Which product do you need help with?",
+      text: "Hi! I'm Zenithr Assistant, powered by AI. Please select a product from the dropdown above to get started. I'll help you troubleshoot issues, answer questions, and recommend relevant articles and resources.",
       isBot: true,
       timestamp: new Date()
     }]);
@@ -172,7 +187,7 @@ const ChatWidget = () => {
     setDbSessionId(null);
     setMessages([{
       id: 1,
-      text: "Hi! I'm Zenithr Assistant, powered by AI. I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. Which product do you need help with?",
+      text: "Hi! I'm Zenithr Assistant, powered by AI. Please select a product from the dropdown above to get started. I'll help you troubleshoot issues, answer questions, and recommend relevant articles and resources.",
       isBot: true,
       timestamp: new Date()
     }]);
@@ -267,13 +282,43 @@ const ChatWidget = () => {
   };
 
   const fetchProducts = async () => {
-    const { data } = await supabase
-      .from("products")
-      .select("id, name")
-      .eq("status", "published");
-    
-    if (data) {
-      setProducts(data);
+    if (!profile) return;
+
+    try {
+      if (profile.role === 'client') {
+        // For clients, only show products they have access to
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('profile_id', profile.id)
+          .single();
+
+        if (clientData) {
+          const { data: accessData } = await supabase
+            .from('client_product_access')
+            .select('product_id, products(id, name)')
+            .eq('client_id', clientData.id);
+
+          if (accessData) {
+            const accessibleProducts = accessData
+              .map(item => item.products)
+              .filter(Boolean) as Product[];
+            setProducts(accessibleProducts);
+          }
+        }
+      } else {
+        // Admin sees all published products
+        const { data } = await supabase
+          .from("products")
+          .select("id, name")
+          .eq("status", "published");
+        
+        if (data) {
+          setProducts(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
     }
   };
 
@@ -427,18 +472,23 @@ const ChatWidget = () => {
             </div>
             
             {/* Product Selection */}
-            <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-              <SelectTrigger className="w-full bg-white text-foreground">
-                <SelectValue placeholder="Select a product..." />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map(product => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                <SelectTrigger className={`w-full bg-white text-foreground ${!selectedProduct ? 'border-2 border-yellow-400' : ''}`}>
+                  <SelectValue placeholder="⚠️ Select a product to start chatting..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map(product => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedProduct && (
+                <p className="text-xs text-yellow-100">Choose a product to get accurate, relevant answers</p>
+              )}
+            </div>
           </div>
 
           {/* Messages */}
@@ -545,14 +595,15 @@ const ChatWidget = () => {
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
+                placeholder={!selectedProduct ? "Select a product above to start chatting..." : "Type your message..."}
                 className="flex-1 text-base h-11"
+                disabled={!selectedProduct || isLoading}
               />
               <Button 
                 onClick={handleSendMessage}
                 size="default"
                 className="bg-gradient-button text-white border-0 px-4 h-11"
-                disabled={isLoading}
+                disabled={!selectedProduct || isLoading}
               >
                 <Send className="h-5 w-5" />
               </Button>

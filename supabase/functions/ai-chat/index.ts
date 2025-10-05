@@ -13,6 +13,20 @@ serve(async (req) => {
 
   try {
     const { messages, productId } = await req.json();
+    
+    // Validate that a product is selected
+    if (!productId) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Please select a product before starting the chat." 
+        }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
