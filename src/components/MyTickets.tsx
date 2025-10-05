@@ -313,7 +313,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, getStatusColor, getPrio
                           className="w-full justify-start"
                           asChild
                         >
-                          <Link to={`/docs/${ticket.product_id}/${response.article.id}`} target="_blank">
+                          <Link to={`/docs/${ticket.product_id}/${response.article.id}`}>
                             <FileText className="h-4 w-4 mr-2 text-primary" />
                             <span className="flex-1 text-left">Article: {response.article.title}</span>
                             <ExternalLink className="h-3 w-3 ml-2" />
@@ -327,7 +327,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, getStatusColor, getPrio
                           className="w-full justify-start"
                           asChild
                         >
-                          <Link to={`/product/${ticket.product_id}/docs?video=${response.video.id}`} target="_blank">
+                          <Link to={`/product/${ticket.product_id}/docs?video=${response.video.id}`}>
                             <Video className="h-4 w-4 mr-2 text-primary" />
                             <span className="flex-1 text-left">Video: {response.video.title}</span>
                             <ExternalLink className="h-3 w-3 ml-2" />
