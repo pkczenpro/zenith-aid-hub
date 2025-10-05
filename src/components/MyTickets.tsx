@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -310,11 +311,13 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, getStatusColor, getPrio
                           variant="outline"
                           size="sm"
                           className="w-full justify-start"
-                          onClick={() => window.open(`/docs/${ticket.product_id}/${response.article.id}`, '_blank')}
+                          asChild
                         >
-                          <FileText className="h-4 w-4 mr-2 text-primary" />
-                          <span className="flex-1 text-left">Article: {response.article.title}</span>
-                          <ExternalLink className="h-3 w-3 ml-2" />
+                          <Link to={`/docs/${ticket.product_id}/${response.article.id}`} target="_blank">
+                            <FileText className="h-4 w-4 mr-2 text-primary" />
+                            <span className="flex-1 text-left">Article: {response.article.title}</span>
+                            <ExternalLink className="h-3 w-3 ml-2" />
+                          </Link>
                         </Button>
                       )}
                       {response.video && (
@@ -322,11 +325,13 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, getStatusColor, getPrio
                           variant="outline"
                           size="sm"
                           className="w-full justify-start"
-                          onClick={() => window.open(`/product/${ticket.product_id}/docs?video=${response.video.id}`, '_blank')}
+                          asChild
                         >
-                          <Video className="h-4 w-4 mr-2 text-primary" />
-                          <span className="flex-1 text-left">Video: {response.video.title}</span>
-                          <ExternalLink className="h-3 w-3 ml-2" />
+                          <Link to={`/product/${ticket.product_id}/docs?video=${response.video.id}`} target="_blank">
+                            <Video className="h-4 w-4 mr-2 text-primary" />
+                            <span className="flex-1 text-left">Video: {response.video.title}</span>
+                            <ExternalLink className="h-3 w-3 ml-2" />
+                          </Link>
                         </Button>
                       )}
                       {response.resource && (
