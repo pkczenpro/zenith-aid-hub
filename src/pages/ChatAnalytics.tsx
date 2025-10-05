@@ -102,7 +102,7 @@ const ChatAnalytics = () => {
           message_count,
           resolved_by_ai,
           product_id,
-          profiles(full_name, email),
+          profile_id,
           products(name)
         `);
 
@@ -122,18 +122,39 @@ const ChatAnalytics = () => {
         query = query.eq('product_id', filterProduct);
       }
 
-      const { data, error } = await query
+      const { data: sessionsData, error } = await query
         .order('started_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      setSessions(data || []);
+      
+      // Fetch profile information separately to avoid join issues
+      if (sessionsData && sessionsData.length > 0) {
+        const profileIds = [...new Set(sessionsData.map(s => s.profile_id).filter(Boolean))];
+        
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', profileIds);
+        
+        // Map profile data back to sessions
+        const profileMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+        
+        const enrichedSessions = sessionsData.map(session => ({
+          ...session,
+          profiles: session.profile_id ? profileMap.get(session.profile_id) : null
+        }));
+        
+        setSessions(enrichedSessions);
+      } else {
+        setSessions([]);
+      }
     } catch (error) {
       console.error('Error fetching sessions:', error);
       toast({
         title: "Error",
         description: "Failed to load chat sessions",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };

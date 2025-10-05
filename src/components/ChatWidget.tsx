@@ -58,11 +58,11 @@ const ChatWidget = () => {
 
   useEffect(() => {
     // Load persisted chat when widget opens and refetch products
-    if (isOpen) {
+    if (isOpen && profile) {
       fetchProducts();
       loadPersistedChat();
     }
-  }, [isOpen]);
+  }, [isOpen, profile]);
 
   useEffect(() => {
     if (profile?.id && !dbSessionId && sessionId) {
@@ -167,17 +167,82 @@ const ChatWidget = () => {
     }
   };
 
-  const loadPersistedChat = () => {
-    // Try to load from localStorage
-    const savedSession = localStorage.getItem('chatWidget_session');
-    const savedMessages = localStorage.getItem('chatWidget_messages');
-    const savedProduct = localStorage.getItem('chatWidget_selectedProduct');
-    const savedFeedback = localStorage.getItem('chatWidget_feedbackGiven');
-    
-    if (savedMessages && savedSession) {
-      try {
+  const loadPersistedChat = async () => {
+    if (!profile?.id) {
+      // Show welcome messages if no profile yet
+      setMessages([
+        {
+          id: 1,
+          text: "Hi! I'm Zenithr Assistant, powered by AI. 👋",
+          isBot: true,
+          timestamp: new Date()
+        },
+        {
+          id: 2,
+          text: "I can help you troubleshoot issues, answer questions, and recommend relevant articles and resources. To get started, please select the product you need help with:",
+          isBot: true,
+          timestamp: new Date()
+        }
+      ]);
+      return;
+    }
+
+    try {
+      // First, try to load active session from database
+      const { data: activeSessions, error: sessionError } = await supabase
+        .from('chat_sessions')
+        .select('id, session_id, product_id, message_count')
+        .eq('profile_id', profile.id)
+        .is('ended_at', null)
+        .order('started_at', { ascending: false })
+        .limit(1);
+
+      if (!sessionError && activeSessions && activeSessions.length > 0) {
+        const activeSession = activeSessions[0];
+        
+        // Load messages from database
+        const { data: dbMessages, error: msgError } = await supabase
+          .from('chat_session_messages')
+          .select('*')
+          .eq('session_id', activeSession.id)
+          .order('created_at', { ascending: true });
+
+        if (!msgError && dbMessages && dbMessages.length > 0) {
+          // Convert database messages to UI format
+          const loadedMessages = dbMessages.map((msg, index) => ({
+            id: index + 1,
+            text: msg.content,
+            isBot: msg.role === 'assistant',
+            timestamp: new Date(msg.created_at)
+          }));
+
+          setMessages(loadedMessages);
+          setSessionId(activeSession.session_id);
+          setDbSessionId(activeSession.id);
+          if (activeSession.product_id) {
+            setSelectedProduct(activeSession.product_id);
+          }
+          
+          // Save to localStorage for faster subsequent loads
+          localStorage.setItem('chatWidget_session', activeSession.session_id);
+          localStorage.setItem('chatWidget_messages', JSON.stringify(loadedMessages));
+          if (activeSession.product_id) {
+            localStorage.setItem('chatWidget_selectedProduct', activeSession.product_id);
+          }
+          
+          console.log('Loaded active session from database:', activeSession.id);
+          return;
+        }
+      }
+
+      // Fallback to localStorage if no active database session
+      const savedSession = localStorage.getItem('chatWidget_session');
+      const savedMessages = localStorage.getItem('chatWidget_messages');
+      const savedProduct = localStorage.getItem('chatWidget_selectedProduct');
+      const savedFeedback = localStorage.getItem('chatWidget_feedbackGiven');
+      
+      if (savedMessages && savedSession) {
         const parsedMessages = JSON.parse(savedMessages);
-        // Convert timestamp strings back to Date objects
         const messagesWithDates = parsedMessages.map((msg: any) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
@@ -193,12 +258,12 @@ const ChatWidget = () => {
           setFeedbackGiven(true);
         }
         return;
-      } catch (error) {
-        console.error('Error loading persisted chat:', error);
       }
+    } catch (error) {
+      console.error('Error loading persisted chat:', error);
     }
     
-    // If no saved chat, start with welcome messages
+    // If no saved chat anywhere, start with welcome messages
     setMessages([
       {
         id: 1,
@@ -231,6 +296,29 @@ const ChatWidget = () => {
     if (!profile?.id || dbSessionId) return;
 
     try {
+      // Check if there's already an active session for this user
+      const { data: existingSession, error: checkError } = await supabase
+        .from('chat_sessions')
+        .select('id, session_id')
+        .eq('profile_id', profile.id)
+        .is('ended_at', null)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking for existing session:', checkError);
+      }
+
+      if (existingSession) {
+        // Resume existing session
+        setDbSessionId(existingSession.id);
+        setSessionId(existingSession.session_id);
+        console.log('Resumed existing session:', existingSession.id);
+        return;
+      }
+
+      // Create new session only if none exists
       const { data, error } = await supabase
         .from('chat_sessions')
         .insert({
@@ -249,6 +337,7 @@ const ChatWidget = () => {
 
       if (data) {
         setDbSessionId(data.id);
+        console.log('Created new session:', data.id);
       }
     } catch (error) {
       console.error('Error initializing session:', error);
@@ -283,17 +372,29 @@ const ChatWidget = () => {
         })
         .eq('id', dbSessionId);
 
-      // Save messages
-      const messagesToSave = messages.slice(-2).map(msg => ({
-        session_id: dbSessionId,
-        role: msg.isBot ? 'assistant' : 'user',
-        content: msg.text
-      }));
-
-      if (messagesToSave.length > 0) {
-        await supabase
+      // Save only the last 2 messages to avoid duplicates
+      // Check if they already exist first
+      const messagesToCheck = messages.slice(-2);
+      
+      for (const msg of messagesToCheck) {
+        const { data: existing } = await supabase
           .from('chat_session_messages')
-          .insert(messagesToSave);
+          .select('id')
+          .eq('session_id', dbSessionId)
+          .eq('role', msg.isBot ? 'assistant' : 'user')
+          .eq('content', msg.text)
+          .maybeSingle();
+
+        if (!existing) {
+          // Only insert if message doesn't exist
+          await supabase
+            .from('chat_session_messages')
+            .insert({
+              session_id: dbSessionId,
+              role: msg.isBot ? 'assistant' : 'user',
+              content: msg.text
+            });
+        }
       }
     } catch (error) {
       console.error('Error saving to database:', error);
