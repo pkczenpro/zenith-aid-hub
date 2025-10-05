@@ -778,7 +778,7 @@ const ProductDocs = () => {
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
             >
-              Videos
+              Video tutorials
             </button>
             <button
               onClick={() => setActiveTab('documentation')}
