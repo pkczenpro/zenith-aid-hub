@@ -84,6 +84,13 @@ const ProductDocs = () => {
   const searchType = searchParams.get('type') || '';
   const searchId = searchParams.get('id') || '';
 
+  // Clear videos when productId changes to prevent showing wrong product's videos
+  useEffect(() => {
+    setVideos([]);
+    setCurrentVideoIndex(0);
+    setVideoViewMode('library');
+  }, [productId]);
+
   useEffect(() => {
     if (user && productId) {
       fetchProductAndArticles();

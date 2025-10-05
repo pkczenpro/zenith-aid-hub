@@ -48,6 +48,13 @@ const ChatWidget = () => {
   }, []);
 
   useEffect(() => {
+    // Load persisted chat when widget opens
+    if (isOpen) {
+      loadPersistedChat();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (profile?.id && !dbSessionId && sessionId) {
       initializeDbSession();
     }
@@ -78,7 +85,37 @@ const ChatWidget = () => {
   };
 
   const loadPersistedChat = () => {
-    // Always start with welcome message for new sessions
+    // Try to load from localStorage
+    const savedSession = localStorage.getItem('chatWidget_session');
+    const savedMessages = localStorage.getItem('chatWidget_messages');
+    const savedProduct = localStorage.getItem('chatWidget_selectedProduct');
+    const savedFeedback = localStorage.getItem('chatWidget_feedbackGiven');
+    
+    if (savedMessages && savedSession) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        // Convert timestamp strings back to Date objects
+        const messagesWithDates = parsedMessages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        setMessages(messagesWithDates);
+        setSessionId(savedSession);
+        
+        if (savedProduct) {
+          setSelectedProduct(savedProduct);
+        }
+        
+        if (savedFeedback === 'true') {
+          setFeedbackGiven(true);
+        }
+        return;
+      } catch (error) {
+        console.error('Error loading persisted chat:', error);
+      }
+    }
+    
+    // If no saved chat, start with welcome messages
     setMessages([
       {
         id: 1,
@@ -96,7 +133,15 @@ const ChatWidget = () => {
   };
 
   const persistChat = () => {
-    // Session management handled by state, no localStorage needed
+    // Save to localStorage
+    try {
+      localStorage.setItem('chatWidget_session', sessionId);
+      localStorage.setItem('chatWidget_messages', JSON.stringify(messages));
+      localStorage.setItem('chatWidget_selectedProduct', selectedProduct);
+      localStorage.setItem('chatWidget_feedbackGiven', feedbackGiven.toString());
+    } catch (error) {
+      console.error('Error persisting chat:', error);
+    }
   };
 
   const initializeDbSession = async () => {
@@ -186,6 +231,12 @@ const ChatWidget = () => {
     // Generate new unique session ID
     const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
+    // Clear localStorage
+    localStorage.removeItem('chatWidget_session');
+    localStorage.removeItem('chatWidget_messages');
+    localStorage.removeItem('chatWidget_selectedProduct');
+    localStorage.removeItem('chatWidget_feedbackGiven');
+    
     // Reset all state
     setSessionId(newSessionId);
     setDbSessionId(null);
@@ -274,15 +325,16 @@ const ChatWidget = () => {
       if (sessionError) throw sessionError;
 
       setFeedbackGiven(true);
+      
+      // Save feedback state to localStorage
+      localStorage.setItem('chatWidget_feedbackGiven', 'true');
+      
       toast({
         title: "Thank you!",
-        description: "Your feedback has been submitted. Starting a new session...",
+        description: "Your feedback has been submitted successfully.",
       });
       
-      // End session and start new conversation after brief delay
-      setTimeout(() => {
-        startNewConversation();
-      }, 1500);
+      setShowFeedback(false);
     } catch (error) {
       console.error('Error submitting feedback:', error);
       toast({
