@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Bell, Settings, User, Menu, Shield, LogOut, Users, Plus, MessageCircle, BarChart3 } from "lucide-react";
+import { Bell, Settings, User, Menu, Shield, LogOut, Users, Plus, MessageCircle, BarChart3, Palette } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { GlobalSearch } from "@/components/GlobalSearch";
 
@@ -114,6 +114,14 @@ const Header = () => {
                       <Settings className="mr-2 h-4 w-4" />
                       Settings
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <Link to="/brand-settings">
+                        <DropdownMenuItem>
+                          <Palette className="mr-2 h-4 w-4" />
+                          Brand Settings
+                        </DropdownMenuItem>
+                      </Link>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut} className="text-destructive">
                       <LogOut className="mr-2 h-4 w-4" />

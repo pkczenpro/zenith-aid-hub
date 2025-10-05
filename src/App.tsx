@@ -23,127 +23,143 @@ import ProductDashboard from "./pages/ProductDashboard";
 import ChatAnalytics from "./pages/ChatAnalytics";
 import MyTicketsPage from "./pages/MyTicketsPage";
 import WelcomeMessageManager from "./pages/WelcomeMessageManager";
+import BrandSettings from "./pages/BrandSettings";
 import NotFound from "./pages/NotFound";
+import { useBrandSettings } from "./hooks/useBrandSettings";
 
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  useBrandSettings(); // Load and apply brand settings
+  return (
+    <>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/products" element={
+            <ProtectedRoute requireAdmin>
+              <ProductManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/brand-settings" element={
+            <ProtectedRoute requireAdmin>
+              <BrandSettings />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId" element={
+            <ProtectedRoute requireAdmin>
+              <ProductEditor />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/editor" element={
+            <ProtectedRoute requireAdmin>
+              <ProductEditor />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/articles" element={
+            <ProtectedRoute requireAdmin>
+              <ArticleList />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/articles/order" element={
+            <ProtectedRoute requireAdmin>
+              <ArticleOrder />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/docs" element={
+            <ProtectedRoute>
+              <ProductDocs />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/resources" element={
+            <ProtectedRoute requireAdmin>
+              <ResourceManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/videos" element={
+            <ProtectedRoute requireAdmin>
+              <VideoManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/release-notes/new" element={
+            <ProtectedRoute requireAdmin>
+              <ReleaseNotesManager />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/release-notes/:noteId" element={
+            <ProtectedRoute requireAdmin>
+              <ReleaseNotesManager />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/welcome-message" element={
+            <ProtectedRoute requireAdmin>
+              <WelcomeMessageManager />
+            </ProtectedRoute>
+          } />
+          <Route path="/docs/:productId/:articleId" element={
+            <ProtectedRoute>
+              <ArticleViewer />
+            </ProtectedRoute>
+          } />
+          <Route path="/product/:productId/article/:articleId" element={
+            <ProtectedRoute>
+              <ArticleViewer />
+            </ProtectedRoute>
+          } />
+          <Route path="/clients" element={
+            <ProtectedRoute requireAdmin>
+              <ClientManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat-analytics" element={
+            <ProtectedRoute requireAdmin>
+              <ChatAnalytics />
+            </ProtectedRoute>
+          } />
+          <Route path="/support" element={
+            <ProtectedRoute requireAdmin>
+              <ProductManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/my-tickets" element={
+            <ProtectedRoute>
+              <MyTicketsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/client/:clientId/docs" element={
+            <ProtectedRoute>
+              <ClientDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/client/dashboard" element={
+            <ProtectedRoute>
+              <ClientDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <ClientDashboard />
+            </ProtectedRoute>
+          } />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <AuthProvider>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<Index />} />
-            <Route path="/products" element={
-              <ProtectedRoute requireAdmin>
-                <ProductManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId" element={
-              <ProtectedRoute requireAdmin>
-                <ProductEditor />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/editor" element={
-              <ProtectedRoute requireAdmin>
-                <ProductEditor />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/articles" element={
-              <ProtectedRoute requireAdmin>
-                <ArticleList />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/articles/order" element={
-              <ProtectedRoute requireAdmin>
-                <ArticleOrder />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/docs" element={
-              <ProtectedRoute>
-                <ProductDocs />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/resources" element={
-              <ProtectedRoute requireAdmin>
-                <ResourceManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/videos" element={
-              <ProtectedRoute requireAdmin>
-                <VideoManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/release-notes/new" element={
-              <ProtectedRoute requireAdmin>
-                <ReleaseNotesManager />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/release-notes/:noteId" element={
-              <ProtectedRoute requireAdmin>
-                <ReleaseNotesManager />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/welcome-message" element={
-              <ProtectedRoute requireAdmin>
-                <WelcomeMessageManager />
-              </ProtectedRoute>
-            } />
-            <Route path="/docs/:productId/:articleId" element={
-              <ProtectedRoute>
-                <ArticleViewer />
-              </ProtectedRoute>
-            } />
-            <Route path="/product/:productId/article/:articleId" element={
-              <ProtectedRoute>
-                <ArticleViewer />
-              </ProtectedRoute>
-            } />
-            <Route path="/clients" element={
-              <ProtectedRoute requireAdmin>
-                <ClientManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/chat-analytics" element={
-              <ProtectedRoute requireAdmin>
-                <ChatAnalytics />
-              </ProtectedRoute>
-            } />
-            <Route path="/support" element={
-              <ProtectedRoute requireAdmin>
-                <ProductManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/my-tickets" element={
-              <ProtectedRoute>
-                <MyTicketsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/client/:clientId/docs" element={
-              <ProtectedRoute>
-                <ClientDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/client/dashboard" element={
-              <ProtectedRoute>
-                <ClientDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <ClientDashboard />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+          <AppContent />
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

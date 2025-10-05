@@ -62,6 +62,53 @@ export type Database = {
           },
         ]
       }
+      brand_settings: {
+        Row: {
+          accent_color: string
+          chatbot_brand_color: string
+          chatbot_icon_url: string | null
+          chatbot_name: string
+          created_at: string
+          id: string
+          primary_color: string
+          secondary_color: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          accent_color?: string
+          chatbot_brand_color?: string
+          chatbot_icon_url?: string | null
+          chatbot_name?: string
+          created_at?: string
+          id?: string
+          primary_color?: string
+          secondary_color?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          accent_color?: string
+          chatbot_brand_color?: string
+          chatbot_icon_url?: string | null
+          chatbot_name?: string
+          created_at?: string
+          id?: string
+          primary_color?: string
+          secondary_color?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_feedback: {
         Row: {
           comment: string | null
