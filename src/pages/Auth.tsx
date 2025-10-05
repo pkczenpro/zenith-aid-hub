@@ -22,12 +22,34 @@ const Auth = () => {
       if (user && !loading) {
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, id')
           .eq('user_id', user.id)
           .maybeSingle();
         
         if (profileData?.role === 'client') {
-          navigate('/dashboard');
+          // Check if client has only one product
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('id')
+            .eq('profile_id', profileData.id)
+            .maybeSingle();
+          
+          if (clientData) {
+            const { data: accessData } = await supabase
+              .from('client_product_access')
+              .select('product_id')
+              .eq('client_id', clientData.id);
+            
+            if (accessData && accessData.length === 1) {
+              // Single product - redirect to product docs
+              navigate(`/product/${accessData[0].product_id}/docs`);
+            } else {
+              // Multiple products - redirect to dashboard
+              navigate('/dashboard');
+            }
+          } else {
+            navigate('/dashboard');
+          }
         } else {
           navigate('/');
         }
@@ -50,12 +72,34 @@ const Auth = () => {
         if (session?.session?.user) {
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, id')
             .eq('user_id', session.session.user.id)
             .maybeSingle();
           
           if (profileData?.role === 'client') {
-            navigate('/dashboard');
+            // Check if client has only one product
+            const { data: clientData } = await supabase
+              .from('clients')
+              .select('id')
+              .eq('profile_id', profileData.id)
+              .maybeSingle();
+            
+            if (clientData) {
+              const { data: accessData } = await supabase
+                .from('client_product_access')
+                .select('product_id')
+                .eq('client_id', clientData.id);
+              
+              if (accessData && accessData.length === 1) {
+                // Single product - redirect to product docs
+                navigate(`/product/${accessData[0].product_id}/docs`);
+              } else {
+                // Multiple products - redirect to dashboard
+                navigate('/dashboard');
+              }
+            } else {
+              navigate('/dashboard');
+            }
           } else {
             navigate('/');
           }
