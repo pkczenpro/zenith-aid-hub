@@ -67,19 +67,31 @@ const BrandSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Get current user's profile ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error("User not authenticated");
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("id")
+        .eq("user_id", user.id)
         .single();
 
       if (!profile) throw new Error("Profile not found");
 
       const settingsData = {
-        ...settings,
+        chatbot_name: settings.chatbot_name,
+        chatbot_icon_url: settings.chatbot_icon_url,
+        chatbot_brand_color: settings.chatbot_brand_color,
+        primary_color: settings.primary_color,
+        secondary_color: settings.secondary_color,
+        accent_color: settings.accent_color,
         updated_by: profile.id,
       };
 
       if (settings.id) {
+        // Update existing settings
         const { error } = await supabase
           .from("brand_settings")
           .update(settingsData)
@@ -87,6 +99,7 @@ const BrandSettings = () => {
 
         if (error) throw error;
       } else {
+        // Create new settings
         const { data, error } = await supabase
           .from("brand_settings")
           .insert([settingsData])
@@ -97,10 +110,10 @@ const BrandSettings = () => {
         if (data) setSettings(data);
       }
 
-      // Apply settings to CSS variables
+      // Apply settings to CSS variables immediately
       applySettings(settings);
       
-      toast.success("Brand settings saved successfully");
+      toast.success("Brand settings saved successfully! Changes applied globally.");
     } catch (error) {
       console.error("Error saving brand settings:", error);
       toast.error("Failed to save brand settings");
