@@ -1,6 +1,9 @@
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Play, Clock, Search, Filter, Calendar, SortAsc, X } from "lucide-react";
 
 interface Video {
   id: string;
@@ -17,6 +20,10 @@ interface VideoLibraryProps {
 }
 
 const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("newest");
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+
   const extractThumbnail = (videoContent: string): string | null => {
     // Extract video ID from content for thumbnail generation
     if (videoContent.includes('youtube.com') || videoContent.includes('youtu.be')) {
@@ -34,17 +41,184 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
     return null;
   };
 
-  return (
-    <div className="px-8 py-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Video Library</h1>
-        <p className="text-muted-foreground">
-          Browse all training videos and tutorials
-        </p>
-      </div>
+  // Get unique months from videos
+  const availableMonths = useMemo(() => {
+    const months = videos.map(video => {
+      const date = new Date(video.created_at);
+      return {
+        value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+        label: date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      };
+    });
+    const uniqueMonths = Array.from(
+      new Map(months.map(m => [m.value, m])).values()
+    );
+    return uniqueMonths.sort((a, b) => b.value.localeCompare(a.value));
+  }, [videos]);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {videos.map((video, index) => {
+  // Filter and sort videos
+  const filteredVideos = useMemo(() => {
+    let filtered = videos.filter(video => {
+      const matchesSearch = 
+        video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (video.caption?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+      
+      const matchesMonth = selectedMonth 
+        ? `${new Date(video.created_at).getFullYear()}-${String(new Date(video.created_at).getMonth() + 1).padStart(2, '0')}` === selectedMonth
+        : true;
+
+      return matchesSearch && matchesMonth;
+    });
+
+    // Sort videos
+    filtered.sort((a, b) => {
+      if (sortBy === "newest") {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } else if (sortBy === "oldest") {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      } else {
+        return a.title.localeCompare(b.title);
+      }
+    });
+
+    return filtered;
+  }, [videos, searchQuery, sortBy, selectedMonth]);
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Left Sidebar - Filters */}
+      <aside className="w-72 border-r border-border bg-muted/30 p-6 space-y-6 sticky top-0 h-screen overflow-y-auto">
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Filters</h2>
+          </div>
+
+          {/* Sort Options */}
+          <div className="space-y-3 mb-6">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <SortAsc className="h-4 w-4" />
+              <span>Sort By</span>
+            </div>
+            <div className="space-y-2">
+              <Button
+                variant={sortBy === "newest" ? "default" : "ghost"}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setSortBy("newest")}
+              >
+                Newest First
+              </Button>
+              <Button
+                variant={sortBy === "oldest" ? "default" : "ghost"}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setSortBy("oldest")}
+              >
+                Oldest First
+              </Button>
+              <Button
+                variant={sortBy === "title" ? "default" : "ghost"}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setSortBy("title")}
+              >
+                Alphabetical
+              </Button>
+            </div>
+          </div>
+
+          {/* Date Filter */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>Published Date</span>
+            </div>
+            <div className="space-y-2">
+              {availableMonths.map((month) => (
+                <Button
+                  key={month.value}
+                  variant={selectedMonth === month.value ? "default" : "ghost"}
+                  size="sm"
+                  className="w-full justify-start text-left"
+                  onClick={() => setSelectedMonth(selectedMonth === month.value ? null : month.value)}
+                >
+                  {month.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          {(selectedMonth || sortBy !== "newest") && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full mt-4"
+              onClick={() => {
+                setSelectedMonth(null);
+                setSortBy("newest");
+              }}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Clear Filters
+            </Button>
+          )}
+        </div>
+
+        {/* Video Count */}
+        <div className="pt-6 border-t border-border">
+          <div className="text-sm text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{filteredVideos.length}</span> of{" "}
+            <span className="font-semibold text-foreground">{videos.length}</span> videos
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 px-8 py-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Video Library</h1>
+          <p className="text-muted-foreground mb-6">
+            Browse all training videos and tutorials
+          </p>
+
+          {/* Search Bar */}
+          <div className="relative max-w-xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search videos by title or description..."
+              className="pl-10 h-11 bg-background border-border"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {filteredVideos.length === 0 ? (
+          <div className="text-center py-12">
+            <Play className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">No videos found</h3>
+            <p className="text-muted-foreground">
+              {searchQuery || selectedMonth
+                ? "Try adjusting your filters or search query"
+                : "No videos available at the moment"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredVideos.map((video, index) => {
           const thumbnail = extractThumbnail(video.video_content);
           
           return (
@@ -111,7 +285,9 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
             </Card>
           );
         })}
-      </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 };
