@@ -94,7 +94,7 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
   return (
     <div className="flex w-full">
       {/* Left Sidebar - Video List Navigation */}
-      <aside className="w-80 border-r border-border bg-muted/30 p-6 space-y-6 h-screen overflow-y-auto sticky top-[160px]">
+      <aside className="w-80 border-r border-border bg-muted/30 p-6 space-y-6 h-[calc(100vh-160px)] overflow-y-auto sticky top-[160px]">
         <div>
           <div className="flex items-center gap-2 mb-4">
             <List className="h-5 w-5 text-primary" />
@@ -178,8 +178,8 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
 
       {/* Main Content */}
       <main className="flex-1 p-8">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Video Library</h1>
               <p className="text-muted-foreground">
@@ -195,8 +195,8 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
                   <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="newest">Newest First</SelectItem>
                   <SelectItem value="title">Alphabetical</SelectItem>
                 </SelectContent>
               </Select>
