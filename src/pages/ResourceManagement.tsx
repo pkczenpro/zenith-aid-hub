@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Resource {
@@ -56,6 +56,7 @@ const ResourceManagement = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [viewingResource, setViewingResource] = useState<Resource | null>(null);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -526,11 +527,22 @@ const ResourceManagement = () => {
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="flex space-x-2">
+                   <CardFooter className="flex gap-2">
+                    {resource.file_type === 'pdf' && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setViewingResource(resource)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className={resource.file_type === 'pdf' ? '' : 'flex-1'}
                       onClick={async () => {
                         try {
                           await logDownload(resource.id);
@@ -554,8 +566,7 @@ const ResourceManagement = () => {
                         }
                       }}
                     >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
+                      <Download className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
@@ -583,6 +594,26 @@ const ResourceManagement = () => {
         )}
       </main>
 
+      {/* PDF Viewer Dialog */}
+      <Dialog open={!!viewingResource} onOpenChange={() => setViewingResource(null)}>
+        <DialogContent className="max-w-6xl h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-4">
+            <DialogTitle>{viewingResource?.title}</DialogTitle>
+            <DialogDescription>
+              {viewingResource?.description || 'Preview document'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 px-6 pb-6 overflow-hidden">
+            {viewingResource && (
+              <iframe
+                src={viewingResource.file_url}
+                className="w-full h-full rounded-lg border border-border"
+                title={viewingResource.title}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
