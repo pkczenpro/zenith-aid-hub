@@ -736,10 +736,14 @@ const ChatWidget = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <Bot className="h-5 w-5" />
+                  {brandSettings.chatbot_icon_url ? (
+                    <img src={brandSettings.chatbot_icon_url} alt={brandSettings.chatbot_name} className="h-6 w-6 object-contain" />
+                  ) : (
+                    <Bot className="h-5 w-5" />
+                  )}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-base">Zenithr Assistant</h3>
+                  <h3 className="font-semibold text-base">{brandSettings.chatbot_name}</h3>
                   <div className="flex items-center space-x-1.5">
                     <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                     <span className="text-sm opacity-90">AI-Powered</span>
@@ -914,7 +918,7 @@ const ChatWidget = () => {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-3 text-center">
-              Powered by AI • Response time: ~30 seconds
+              {brandSettings.chatbot_name} • Response time: ~30 seconds
             </p>
           </div>
         </Card>
