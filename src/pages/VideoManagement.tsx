@@ -157,13 +157,14 @@ const VideoManagement = () => {
       setEditingVideo(video);
       setTitle(video.title);
       setVideoContent(video.video_content);
-      setSelectedCategoryId(video.category_id || '');
+      // Convert null to 'uncategorized' for the select component
+      setSelectedCategoryId(video.category_id || 'uncategorized');
       setThumbnailPreview(video.thumbnail_url || null);
     } else {
       setEditingVideo(null);
       setTitle('');
       setVideoContent('');
-      setSelectedCategoryId('');
+      setSelectedCategoryId('uncategorized');
       setThumbnailFile(null);
       setThumbnailPreview(null);
     }
@@ -175,7 +176,7 @@ const VideoManagement = () => {
     setEditingVideo(null);
     setTitle('');
     setVideoContent('');
-    setSelectedCategoryId('');
+    setSelectedCategoryId('uncategorized');
     setThumbnailFile(null);
     setThumbnailPreview(null);
   };
@@ -320,13 +321,16 @@ const VideoManagement = () => {
         thumbnailUrl = publicUrl;
       }
 
+      // Convert "uncategorized" to null for database
+      const categoryIdForDb = selectedCategoryId === 'uncategorized' ? null : selectedCategoryId || null;
+
       if (editingVideo) {
         const { error } = await supabase
           .from('product_videos')
           .update({
             title: title.trim(),
             video_content: videoContent,
-            category_id: selectedCategoryId || null,
+            category_id: categoryIdForDb,
             thumbnail_url: thumbnailUrl,
           })
           .eq('id', editingVideo.id);
@@ -340,7 +344,7 @@ const VideoManagement = () => {
             product_id: productId,
             title: title.trim(),
             video_content: videoContent,
-            category_id: selectedCategoryId || null,
+            category_id: categoryIdForDb,
             created_by: profile.id,
             order_index: videos.length,
             thumbnail_url: thumbnailUrl,
@@ -525,7 +529,7 @@ const VideoManagement = () => {
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Category</SelectItem>
+                        <SelectItem value="uncategorized">No Category</SelectItem>
                         {categories.map(cat => (
                           <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                         ))}
