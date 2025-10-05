@@ -40,6 +40,15 @@ interface Product {
   lastUpdated: string;
 }
 
+interface WelcomeMessage {
+  id: string;
+  product_id: string;
+  title?: string;
+  description?: string;
+  custom_button_text?: string;
+  show_features: boolean;
+}
+
 const ClientDashboard = () => {
   const { clientId } = useParams();
   const navigate = useNavigate();
@@ -48,6 +57,7 @@ const ClientDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [client, setClient] = useState<Client | null>(null);
   const [accessibleProducts, setAccessibleProducts] = useState<Product[]>([]);
+  const [welcomeMessage, setWelcomeMessage] = useState<WelcomeMessage | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'docs' | 'support'>('docs');
 
@@ -219,6 +229,20 @@ const ClientDashboard = () => {
 
       console.log('Final products with counts:', productsWithCounts);
       setAccessibleProducts(productsWithCounts);
+
+      // Fetch welcome message if user has single product access
+      if (productsWithCounts.length === 1) {
+        const { data: welcomeData } = await supabase
+          .from('product_welcome_messages')
+          .select('*')
+          .eq('product_id', productsWithCounts[0].id)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        if (welcomeData) {
+          setWelcomeMessage(welcomeData);
+        }
+      }
     } catch (error) {
       console.error('Error fetching client data:', error);
       toast({
@@ -239,13 +263,6 @@ const ClientDashboard = () => {
       console.error('Sign out error:', error);
     }
   };
-
-  // Auto-redirect for single product access to "Thomas Assess Accredited"
-  useEffect(() => {
-    if (accessibleProducts.length === 1 && accessibleProducts[0].name === "Thomas Assess Accredited") {
-      navigate(`/product/${accessibleProducts[0].id}/docs`);
-    }
-  }, [accessibleProducts, navigate]);
 
   const filteredAccessibleProducts = accessibleProducts.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -341,6 +358,31 @@ const ClientDashboard = () => {
 
           {activeTab === 'docs' && (
             <>
+              {/* Welcome Message Section */}
+              {welcomeMessage && accessibleProducts.length === 1 && (
+                <div className="mb-8">
+                  <Card className="border-0 shadow-lg bg-gradient-to-br from-primary/5 via-background to-background">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-2xl">
+                        {welcomeMessage.title || `Welcome to ${accessibleProducts[0].name}`}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        {welcomeMessage.description || accessibleProducts[0].description}
+                      </p>
+                      <Button 
+                        onClick={() => navigate(`/product/${accessibleProducts[0].id}/docs`)}
+                        className="mt-4"
+                      >
+                        {welcomeMessage.custom_button_text || 'View Documentation'}
+                        <ExternalLink className="h-4 w-4 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
               {/* Welcome Section */}
               <div className="mb-8">
                 <div className="bg-gradient-to-r from-background via-muted/10 to-background border border-border/50 rounded-lg p-6">
