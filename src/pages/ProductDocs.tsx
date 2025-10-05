@@ -1043,7 +1043,7 @@ const ProductDocs = () => {
               ) : (
                 <div className="w-full">
                   {/* View Toggle Bar */}
-                  <div className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-[112px] z-40 px-8 py-4">
+                  <div className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40 px-8 py-3">
                     <div className="flex items-center justify-center relative">
                       <div className="flex items-center gap-2">
                         <Button

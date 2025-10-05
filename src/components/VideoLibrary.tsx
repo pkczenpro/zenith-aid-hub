@@ -95,7 +95,7 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
   return (
     <div className="flex w-full">
       {/* Left Sidebar - Video List Navigation */}
-      <aside className="w-80 border-r border-border bg-muted/30 p-6 space-y-6 h-[calc(100vh-160px)] overflow-y-auto sticky top-[160px]">
+      <aside className="w-80 border-r border-border bg-muted/30 p-4 space-y-4 h-[calc(100vh-80px)] overflow-y-auto sticky top-0">
         <div>
           <div className="flex items-center gap-2 mb-4">
             <List className="h-5 w-5 text-primary" />
@@ -178,12 +178,12 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+      <main className="flex-1 p-6">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Video Library</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl font-bold text-foreground mb-1">Video Library</h1>
+              <p className="text-sm text-muted-foreground">
                 Browse all training videos and tutorials
               </p>
             </div>
@@ -206,11 +206,11 @@ const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
 
           {/* Search Bar */}
           <div className="relative max-w-xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search videos by title or description..."
-              className="pl-10 h-11 bg-background border-border"
+              className="pl-10 h-10 bg-background border-border text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
