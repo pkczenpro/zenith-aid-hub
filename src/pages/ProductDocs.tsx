@@ -117,15 +117,12 @@ const ProductDocs = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }, 100);
         } else {
-          // Video not found - show first video as fallback
+          // Video not found - silently show first video as fallback
+          // (This commonly happens during product switching and will self-correct)
           console.warn('Video ID not found, showing first video');
           setCurrentVideoIndex(0);
           setVideoViewMode('player');
-          toast({
-            title: "Video Not Found",
-            description: "The requested video could not be found. Showing first video instead.",
-            variant: "destructive",
-          });
+          // Toast removed to avoid showing errors during product switches
           setTimeout(() => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }, 100);
