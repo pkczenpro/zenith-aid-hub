@@ -35,6 +35,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Fetch brand settings to get chatbot name
+    const { data: brandSettings } = await supabase
+      .from("brand_settings")
+      .select("chatbot_name")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    const chatbotName = brandSettings?.chatbot_name || "Zenithr Assistant";
+
     // Fetch ALL available products for product mismatch detection
     const { data: allProducts } = await supabase
       .from("products")
@@ -101,7 +111,7 @@ Available Videos (use [video:${productId}:VIDEO_ID] format):
 ${videosData.map(v => `- TITLE: "${v.title}" | VIDEO_ID: ${v.id} | CAPTION: ${v.caption || "No caption"}`).join("\n") || "No videos available"}`;
     }
 
-const systemPrompt = `You are Zenithr Assistant, an intelligent support agent helping users with Zenithr products.
+const systemPrompt = `You are ${chatbotName}, an intelligent support agent helping users with their products.
 
 CURRENT PRODUCT CONTEXT:
 ${contextData}
