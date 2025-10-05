@@ -256,66 +256,37 @@ const HeroSection = () => {
           </div>
 
           {/* Quick Links */}
-          {user && (
+          {user && isAdmin && (
             <div className="flex flex-wrap justify-center gap-3 animate-slide-up">
-              {isAdmin 
-                ? ["Client Management", "Documentation Editor", "Analytics", "Settings"].map((link) => (
-                    <Button key={link} variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur">
-                      {link}
-                    </Button>
-                  ))
-                : ["Getting Started", "My Products", "Support Tickets", "FAQ"].map((link) => (
-                    <Button key={link} variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur">
-                      {link}
-                    </Button>
-                  ))
-              }
+              {["Client Management", "Documentation Editor", "Analytics", "Settings"].map((link) => (
+                <Button key={link} variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur">
+                  {link}
+                </Button>
+              ))}
             </div>
           )}
 
           {/* Actions */}
-          {user ? (
+          {user && isAdmin && (
             <div className="flex justify-center gap-4 mt-8 animate-slide-up">
-              {isAdmin ? (
-                <>
-                  <Link to="/clients">
-                    <Button 
-                      variant="outline" 
-                      className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur"
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      Manage Clients
-                    </Button>
-                  </Link>
-                  <Link to="/products">
-                    <Button 
-                      className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Manage Products
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Button 
-                    variant="outline" 
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur"
-                  >
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Get Support
-                  </Button>
-                  <Button 
-                    className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Browse Documentation
-                  </Button>
-                </>
-              )}
+              <Link to="/clients">
+                <Button 
+                  variant="outline" 
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur"
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Manage Clients
+                </Button>
+              </Link>
+              <Link to="/products">
+                <Button 
+                  className="bg-gradient-button text-white border-0 shadow-lg hover:shadow-xl"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Manage Products
+                </Button>
+              </Link>
             </div>
-          ) : (
-            <></>
           )}
 
         </div>
