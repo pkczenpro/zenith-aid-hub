@@ -297,7 +297,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, getStatusColor, getPrio
               <Card key={response.id} className="bg-muted/30">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="font-medium">{response.responder.full_name}</span>
+                    <span className="font-medium">{response.responder?.full_name || 'Support Team'}</span>
                     <span>{new Date(response.created_at).toLocaleString()}</span>
                   </div>
                   <p className="text-sm">{response.response_text}</p>
