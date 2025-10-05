@@ -306,29 +306,46 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, getStatusColor, getPrio
                     <div className="space-y-2 mt-3 pt-3 border-t">
                       <p className="text-xs font-semibold text-muted-foreground">Helpful Resources:</p>
                       {response.article && (
-                        <div className="flex items-center space-x-2 text-sm">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <span>Article: {response.article.title}</span>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => window.open(`/docs/${ticket.product_id}/${response.article.id}`, '_blank')}
+                        >
+                          <FileText className="h-4 w-4 mr-2 text-primary" />
+                          <span className="flex-1 text-left">Article: {response.article.title}</span>
+                          <ExternalLink className="h-3 w-3 ml-2" />
+                        </Button>
                       )}
                       {response.video && (
-                        <div className="flex items-center space-x-2 text-sm">
-                          <Video className="h-4 w-4 text-primary" />
-                          <span>Video: {response.video.title}</span>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => window.open(`/product/${ticket.product_id}/docs?video=${response.video.id}`, '_blank')}
+                        >
+                          <Video className="h-4 w-4 mr-2 text-primary" />
+                          <span className="flex-1 text-left">Video: {response.video.title}</span>
+                          <ExternalLink className="h-3 w-3 ml-2" />
+                        </Button>
                       )}
                       {response.resource && (
-                        <div className="flex items-center space-x-2">
-                          <Download className="h-4 w-4 text-primary" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          asChild
+                        >
                           <a 
                             href={response.resource.file_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-primary hover:underline"
                           >
-                            {response.resource.title}
+                            <Download className="h-4 w-4 mr-2 text-primary" />
+                            <span className="flex-1 text-left">{response.resource.title}</span>
+                            <ExternalLink className="h-3 w-3 ml-2" />
                           </a>
-                        </div>
+                        </Button>
                       )}
                     </div>
                   )}
