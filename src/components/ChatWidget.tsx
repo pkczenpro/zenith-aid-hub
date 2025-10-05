@@ -42,6 +42,8 @@ const ChatWidget = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [lastMessageTime, setLastMessageTime] = useState<Date | null>(null);
+  const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -72,8 +74,69 @@ const ChatWidget = () => {
     if (messages.length > 0) {
       persistChat();
       saveToDatabase();
+      
+      // Update last message time and reset inactivity timer
+      setLastMessageTime(new Date());
+      resetInactivityTimer();
     }
   }, [messages]);
+
+  // Auto-close session after 5 minutes of inactivity
+  useEffect(() => {
+    return () => {
+      // Cleanup timer on unmount
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+    };
+  }, [inactivityTimer]);
+
+  const resetInactivityTimer = () => {
+    // Clear existing timer
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+
+    // Only set timer if we have a valid session with messages
+    if (dbSessionId && messages.length > 2 && !feedbackGiven) {
+      // Set 5-minute inactivity timer
+      const timer = setTimeout(() => {
+        autoCloseSession();
+      }, 5 * 60 * 1000); // 5 minutes
+      
+      setInactivityTimer(timer);
+    }
+  };
+
+  const autoCloseSession = async () => {
+    if (!dbSessionId || feedbackGiven) return;
+
+    try {
+      // Mark session as resolved and ended due to inactivity
+      await supabase
+        .from('chat_sessions')
+        .update({ 
+          resolved_by_ai: true,
+          ended_at: new Date().toISOString()
+        })
+        .eq('id', dbSessionId);
+
+      console.log('Session auto-closed due to inactivity');
+      
+      // Show feedback prompt
+      setShowFeedback(true);
+      
+      // Add a system message about auto-close
+      setMessages(prev => [...prev, {
+        id: prev.length + 1,
+        text: "This session has been automatically closed due to inactivity. Did I help resolve your question?",
+        isBot: true,
+        timestamp: new Date()
+      }]);
+    } catch (error) {
+      console.error('Error auto-closing session:', error);
+    }
+  };
 
   useEffect(() => {
     // Update session product when product is selected during conversation
@@ -237,6 +300,12 @@ const ChatWidget = () => {
   };
 
   const startNewConversation = async () => {
+    // Clear inactivity timer
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      setInactivityTimer(null);
+    }
+    
     // Mark current session as resolved
     if (dbSessionId) {
       await supabase
@@ -263,6 +332,7 @@ const ChatWidget = () => {
     setFeedbackGiven(false);
     setSessionId(newSessionId);
     setDbSessionId(null);
+    setLastMessageTime(null);
     
     // Refetch products to ensure they're loaded
     await fetchProducts();
