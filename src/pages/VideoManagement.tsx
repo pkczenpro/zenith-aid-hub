@@ -38,6 +38,7 @@ const VideoManagement = () => {
   const [videos, setVideos] = useState<ProductVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<ProductVideo | null>(null);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -122,6 +123,31 @@ const VideoManagement = () => {
     }
   };
 
+  const handleOpenDialog = (video?: ProductVideo) => {
+    if (video) {
+      setEditingVideo(video);
+      setTitle(video.title);
+      setVideoContent(video.video_content);
+      setThumbnailPreview(video.thumbnail_url || null);
+    } else {
+      setEditingVideo(null);
+      setTitle('');
+      setVideoContent('');
+      setThumbnailFile(null);
+      setThumbnailPreview(null);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingVideo(null);
+    setTitle('');
+    setVideoContent('');
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+  };
+
   const handleUpload = async () => {
     if (!title.trim() || !videoContent.trim()) {
       toast({
@@ -142,7 +168,7 @@ const VideoManagement = () => {
     }
 
     try {
-      let thumbnailUrl = null;
+      let thumbnailUrl = editingVideo?.thumbnail_url || null;
 
       // Upload thumbnail if provided
       if (thumbnailFile) {
@@ -163,38 +189,51 @@ const VideoManagement = () => {
         thumbnailUrl = publicUrl;
       }
 
-      const { error } = await supabase
-        .from('product_videos')
-        .insert([{
-          product_id: productId,
-          title: title.trim(),
-          video_content: videoContent,
-          created_by: profile.id,
-          order_index: videos.length,
-          thumbnail_url: thumbnailUrl,
-        }] as any);
+      if (editingVideo) {
+        // Update existing video
+        const { error } = await supabase
+          .from('product_videos')
+          .update({
+            title: title.trim(),
+            video_content: videoContent,
+            thumbnail_url: thumbnailUrl,
+          })
+          .eq('id', editingVideo.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Video added successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Video updated successfully",
+        });
+      } else {
+        // Insert new video
+        const { error } = await supabase
+          .from('product_videos')
+          .insert([{
+            product_id: productId,
+            title: title.trim(),
+            video_content: videoContent,
+            created_by: profile.id,
+            order_index: videos.length,
+            thumbnail_url: thumbnailUrl,
+          }] as any);
 
-      // Reset form
-      setTitle('');
-      setVideoContent('');
-      setThumbnailFile(null);
-      setThumbnailPreview(null);
-      setIsDialogOpen(false);
+        if (error) throw error;
 
-      // Refresh videos
+        toast({
+          title: "Success",
+          description: "Video added successfully",
+        });
+      }
+
+      handleCloseDialog();
       fetchProductAndVideos();
     } catch (error) {
-      console.error('Error uploading video:', error);
+      console.error('Error saving video:', error);
       toast({
         title: "Error",
-        description: "Failed to add video",
+        description: `Failed to ${editingVideo ? 'update' : 'add'} video`,
         variant: "destructive",
       });
     }
@@ -315,18 +354,18 @@ const VideoManagement = () => {
             </h1>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
             <DialogTrigger asChild>
-              <Button className="flex items-center space-x-2">
+              <Button className="flex items-center space-x-2" onClick={() => handleOpenDialog()}>
                 <Plus className="h-4 w-4" />
                 <span>Add Video</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Add New Video</DialogTitle>
+                <DialogTitle>{editingVideo ? 'Edit Video' : 'Add New Video'}</DialogTitle>
                 <DialogDescription>
-                  Add a video to this product by providing a title, caption, and video URL.
+                  {editingVideo ? 'Update the video details and thumbnail.' : 'Add a video to this product by providing a title, caption, and video URL.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-4">
@@ -407,11 +446,11 @@ const VideoManagement = () => {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button variant="outline" onClick={handleCloseDialog}>
                     Cancel
                   </Button>
                   <Button onClick={handleUpload}>
-                    Add Video
+                    {editingVideo ? 'Update Video' : 'Add Video'}
                   </Button>
                 </div>
               </div>
@@ -429,7 +468,7 @@ const VideoManagement = () => {
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Start building your video library by adding your first video.
             </p>
-            <Button onClick={() => setIsDialogOpen(true)} size="lg">
+            <Button onClick={() => handleOpenDialog()} size="lg">
               <Plus className="h-5 w-5 mr-2" />
               Add Your First Video
             </Button>
@@ -460,14 +499,24 @@ const VideoManagement = () => {
                       className="w-full [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-t-lg [&_video]:w-full [&_video]:rounded-t-lg [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-t-lg [&_p]:hidden"
                     />
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(video.id)}
-                    className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background/90 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleOpenDialog(video)}
+                      className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                    >
+                      <Video className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(video.id)}
+                      className="bg-background/80 backdrop-blur-sm hover:bg-background/90 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <CardContent className="p-4">
                   <h3 className="font-semibold text-base line-clamp-2 mb-2">{video.title}</h3>
