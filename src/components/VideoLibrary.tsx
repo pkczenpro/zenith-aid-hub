@@ -28,7 +28,7 @@ interface VideoLibraryProps {
 
 const VideoLibrary = ({ videos, onVideoSelect }: VideoLibraryProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("oldest");
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
   const extractThumbnail = (videoContent: string): string | null => {
