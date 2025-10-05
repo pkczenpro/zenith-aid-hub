@@ -32,7 +32,8 @@ import {
   Sun,
   Grid3x3,
   Play,
-  Home
+  Home,
+  Sparkles
 } from 'lucide-react';
 
 interface Article {
@@ -81,6 +82,7 @@ const ProductDocs = () => {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
   const [videoViewMode, setVideoViewMode] = useState<'library' | 'player'>('library');
+  const [showWelcome, setShowWelcome] = useState(false);
   const highlightTerm = searchParams.get('search') || '';
   const searchType = searchParams.get('type') || '';
   const searchId = searchParams.get('id') || '';
@@ -97,6 +99,17 @@ const ProductDocs = () => {
       fetchProductAndArticles();
     }
   }, [user, productId]);
+
+  // Check if user has seen welcome message for this product
+  useEffect(() => {
+    if (productId && !loading) {
+      const welcomeKey = `welcome-seen-${productId}`;
+      const hasSeenWelcome = localStorage.getItem(welcomeKey);
+      if (!hasSeenWelcome) {
+        setShowWelcome(true);
+      }
+    }
+  }, [productId, loading]);
 
   // Handle navigation from chat links after data is loaded
   useEffect(() => {
@@ -428,6 +441,13 @@ const ProductDocs = () => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  const handleWelcomeClose = () => {
+    if (productId) {
+      localStorage.setItem(`welcome-seen-${productId}`, 'true');
+    }
+    setShowWelcome(false);
   };
 
   const getResourceTypeLabel = (type: string) => {
@@ -1246,6 +1266,83 @@ const ProductDocs = () => {
           </aside>
         )}
       </div>
+
+      {/* Welcome Dialog */}
+      <Dialog open={showWelcome} onOpenChange={setShowWelcome}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader className="text-center space-y-4 pb-6">
+            <div className="flex justify-center mb-4">
+              {product.icon_url ? (
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                  <img 
+                    src={product.icon_url} 
+                    alt={product.name} 
+                    className="relative h-24 w-24 object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                  <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                    <Sparkles className="h-12 w-12 text-primary-foreground" />
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Welcome to {product.name}
+            </DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground max-w-lg mx-auto">
+              {product.description || 
+                `Explore comprehensive documentation, resources, and guides to help you get the most out of ${product.name}. Everything you need is organized and ready for you.`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-start space-x-3 p-4 rounded-lg bg-accent/50 border border-border">
+                <BookOpen className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Documentation</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Step-by-step guides and tutorials</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3 p-4 rounded-lg bg-accent/50 border border-border">
+                <FileText className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Resources</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Downloadable files and materials</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3 p-4 rounded-lg bg-accent/50 border border-border">
+                <Video className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Video Tutorials</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Visual learning content</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3 p-4 rounded-lg bg-accent/50 border border-border">
+                <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Release Notes</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Latest updates and features</p>
+                </div>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleWelcomeClose}
+              className="w-full h-12 text-base font-semibold"
+              size="lg"
+            >
+              <BookOpen className="h-5 w-5 mr-2" />
+              View Documentation
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Release Note Detail Dialog */}
       <Dialog open={!!selectedRelease} onOpenChange={() => setSelectedRelease(null)}>
