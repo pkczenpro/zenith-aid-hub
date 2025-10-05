@@ -472,6 +472,14 @@ const ProductDocs = () => {
     setShowWelcome(false);
   };
 
+  const handleFeatureClick = (tab: 'documentation' | 'resources' | 'videos' | 'releases') => {
+    setActiveTab(tab);
+    setShowWelcome(false);
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
+
   const getResourceTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       sales_deck: 'Sales Deck',
@@ -1323,13 +1331,13 @@ const ProductDocs = () => {
               )}
             </div>
             
-            {/* Dynamic Title */}
-            <DialogTitle className="text-5xl font-extrabold bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent animate-fade-in leading-tight px-4">
+            {/* Dynamic Title - Center Aligned */}
+            <DialogTitle className="text-5xl font-extrabold bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent animate-fade-in leading-tight px-4 text-center">
               {welcomeMessage?.title || `Welcome to ${product.name}`}
             </DialogTitle>
             
-            {/* Dynamic Description */}
-            <DialogDescription className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed px-6 animate-fade-in font-medium">
+            {/* Dynamic Description - Center Aligned */}
+            <DialogDescription className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed px-6 animate-fade-in font-medium text-center">
               {welcomeMessage?.description || product.description || 
                 `Explore comprehensive documentation, resources, and guides to help you get the most out of ${product.name}. Everything you need is organized and ready for you.`
               }
@@ -1340,7 +1348,10 @@ const ProductDocs = () => {
             {/* Feature Cards - only show if enabled */}
             {(welcomeMessage?.show_features !== false) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6">
-                <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1">
+                <button
+                  onClick={() => handleFeatureClick('documentation')}
+                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1 cursor-pointer text-left"
+                >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="relative flex items-start space-x-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-500 shadow-lg">
@@ -1351,9 +1362,13 @@ const ProductDocs = () => {
                       <p className="text-sm text-muted-foreground leading-relaxed">Step-by-step guides and comprehensive tutorials</p>
                     </div>
                   </div>
-                </div>
+                </button>
                 
-                <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1" style={{ animationDelay: '0.1s' }}>
+                <button
+                  onClick={() => handleFeatureClick('resources')}
+                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1 cursor-pointer text-left"
+                  style={{ animationDelay: '0.1s' }}
+                >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="relative flex items-start space-x-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-500 shadow-lg">
@@ -1364,9 +1379,13 @@ const ProductDocs = () => {
                       <p className="text-sm text-muted-foreground leading-relaxed">Downloadable files and essential materials</p>
                     </div>
                   </div>
-                </div>
+                </button>
                 
-                <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1" style={{ animationDelay: '0.2s' }}>
+                <button
+                  onClick={() => handleFeatureClick('videos')}
+                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1 cursor-pointer text-left"
+                  style={{ animationDelay: '0.2s' }}
+                >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="relative flex items-start space-x-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-500 shadow-lg">
@@ -1377,9 +1396,13 @@ const ProductDocs = () => {
                       <p className="text-sm text-muted-foreground leading-relaxed">Engaging visual learning content</p>
                     </div>
                   </div>
-                </div>
+                </button>
                 
-                <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1" style={{ animationDelay: '0.3s' }}>
+                <button
+                  onClick={() => handleFeatureClick('releases')}
+                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1 cursor-pointer text-left"
+                  style={{ animationDelay: '0.3s' }}
+                >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="relative flex items-start space-x-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-500 shadow-lg">
@@ -1390,7 +1413,7 @@ const ProductDocs = () => {
                       <p className="text-sm text-muted-foreground leading-relaxed">Latest updates and new features</p>
                     </div>
                   </div>
-                </div>
+                </button>
               </div>
             )}
             
