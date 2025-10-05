@@ -67,10 +67,14 @@ const Header = () => {
 
                 {/* Chat Support for Clients */}
                 {!isAdmin && (
-                  <Button variant="ghost" size="sm" className="hidden sm:flex">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Chat
-                  </Button>
+                  <>
+                    <Link to="/my-tickets">
+                      <Button variant="ghost" size="sm" className="hidden sm:flex">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        My Tickets
+                      </Button>
+                    </Link>
+                  </>
                 )}
 
                 {/* Notifications */}

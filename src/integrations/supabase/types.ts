@@ -658,6 +658,78 @@ export type Database = {
           },
         ]
       }
+      ticket_responses: {
+        Row: {
+          article_id: string | null
+          created_at: string
+          id: string
+          resource_id: string | null
+          responder_id: string
+          response_text: string
+          ticket_id: string
+          updated_at: string
+          video_id: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          resource_id?: string | null
+          responder_id: string
+          response_text: string
+          ticket_id: string
+          updated_at?: string
+          video_id?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          resource_id?: string | null
+          responder_id?: string
+          response_text?: string
+          ticket_id?: string
+          updated_at?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_responses_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_responses_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "product_resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_responses_responder_id_fkey"
+            columns: ["responder_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_responses_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_responses_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "product_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

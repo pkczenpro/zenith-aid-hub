@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,7 +22,11 @@ import {
   Package,
   User,
   Calendar,
-  Paperclip
+  Paperclip,
+  FileText,
+  Video,
+  Download,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface Ticket {
@@ -36,11 +42,27 @@ interface Ticket {
   client_name?: string;
   client_email?: string;
   product_name?: string;
+  profile_id?: string;
 }
 
 interface Product {
   id: string;
   name: string;
+}
+
+interface Article {
+  id: string;
+  title: string;
+}
+
+interface ProductVideo {
+  id: string;
+  title: string;
+}
+
+interface Resource {
+  id: string;
+  title: string;
 }
 
 const TicketManagement = () => {
@@ -49,10 +71,18 @@ const TicketManagement = () => {
   
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [videos, setVideos] = useState<ProductVideo[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [statusUpdateDialog, setStatusUpdateDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<string>('');
+  const [responseText, setResponseText] = useState<string>('');
+  const [selectedArticleId, setSelectedArticleId] = useState<string>('');
+  const [selectedVideoId, setSelectedVideoId] = useState<string>('');
+  const [selectedResourceId, setSelectedResourceId] = useState<string>('');
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,6 +93,9 @@ const TicketManagement = () => {
   useEffect(() => {
     fetchTickets();
     fetchProducts();
+    fetchArticles();
+    fetchVideos();
+    fetchResources();
 
     // Subscribe to new tickets for admin notifications
     if (isAdmin) {
@@ -154,10 +187,85 @@ const TicketManagement = () => {
     }
   };
 
+  const fetchArticles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('id, title')
+        .eq('status', 'published')
+        .order('title');
+      if (error) throw error;
+      setArticles(data || []);
+    } catch (error) {
+      console.error('Error fetching articles:', error);
+    }
+  };
+
+  const fetchVideos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('product_videos')
+        .select('id, title')
+        .order('title');
+      if (error) throw error;
+      setVideos(data || []);
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    }
+  };
+
+  const fetchResources = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('product_resources')
+        .select('id, title')
+        .order('title');
+      if (error) throw error;
+      setResources(data || []);
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+    }
+  };
+
   const updateTicketStatus = async () => {
     if (!selectedTicket || !newStatus) return;
 
+    // If resolving or closing, require a response
+    if ((newStatus === 'resolved' || newStatus === 'closed') && !responseText.trim()) {
+      toast({
+        title: "Response Required",
+        description: "Please provide a resolution response before closing the ticket.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user!.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      // Add response if provided
+      if (responseText.trim()) {
+        const { error: responseError } = await supabase
+          .from('ticket_responses')
+          .insert({
+            ticket_id: selectedTicket.id,
+            responder_id: profile.id,
+            response_text: responseText,
+            article_id: selectedArticleId || null,
+            video_id: selectedVideoId || null,
+            resource_id: selectedResourceId || null,
+          });
+
+        if (responseError) throw responseError;
+      }
+
+      // Update ticket status
       const { error } = await supabase
         .from('support_tickets')
         .update({ status: newStatus })
@@ -176,15 +284,21 @@ const TicketManagement = () => {
       soundService.playTicketStatusUpdate();
 
       toast({
-        title: "Status Updated",
+        title: "Ticket Updated",
         description: `Ticket status changed to ${newStatus.replace('_', ' ')}.`,
       });
 
+      // Reset form
       setStatusUpdateDialog(false);
       setSelectedTicket(null);
       setNewStatus('');
+      setResponseText('');
+      setSelectedArticleId('');
+      setSelectedVideoId('');
+      setSelectedResourceId('');
+      setAttachmentPreview(null);
     } catch (error) {
-      console.error('Error updating ticket status:', error);
+      console.error('Error updating ticket:', error);
       toast({
         title: "Error",
         description: "Failed to update ticket status.",
@@ -193,9 +307,21 @@ const TicketManagement = () => {
     }
   };
 
-  const openStatusUpdate = (ticket: Ticket) => {
+  const openStatusUpdate = async (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setNewStatus(ticket.status);
+    setResponseText('');
+    setSelectedArticleId('');
+    setSelectedVideoId('');
+    setSelectedResourceId('');
+    
+    // Load attachment preview if it's an image
+    if (ticket.attachment_url && ticket.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      setAttachmentPreview(ticket.attachment_url);
+    } else {
+      setAttachmentPreview(null);
+    }
+    
     setStatusUpdateDialog(true);
   };
 
@@ -498,22 +624,54 @@ const TicketManagement = () => {
 
       {/* Status Update Dialog */}
       <Dialog open={statusUpdateDialog} onOpenChange={setStatusUpdateDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Update Ticket Status</DialogTitle>
+            <DialogTitle>Update Ticket & Add Resolution</DialogTitle>
           </DialogHeader>
           
           {selectedTicket && (
             <div className="space-y-4">
-              <div className="p-3 bg-muted rounded-lg">
+              <div className="p-3 bg-muted rounded-lg space-y-2">
                 <h4 className="font-medium">{selectedTicket.subject}</h4>
                 <p className="text-sm text-muted-foreground">
                   Client: {selectedTicket.client_name}
                 </p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedTicket.description}
+                </p>
               </div>
+
+              {/* Attachment Preview */}
+              {selectedTicket.attachment_url && (
+                <div className="space-y-2">
+                  <Label className="flex items-center">
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    Attachment
+                  </Label>
+                  {attachmentPreview ? (
+                    <div className="border rounded-lg p-2">
+                      <img 
+                        src={attachmentPreview} 
+                        alt="Ticket attachment" 
+                        className="max-w-full h-auto max-h-96 rounded"
+                      />
+                    </div>
+                  ) : (
+                    <a 
+                      href={selectedTicket.attachment_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline inline-flex items-center"
+                    >
+                      <Paperclip className="h-3 w-3 mr-1" />
+                      View Attachment
+                    </a>
+                  )}
+                </div>
+              )}
               
               <div>
-                <label className="text-sm font-medium">New Status</label>
+                <Label>New Status</Label>
                 <Select value={newStatus} onValueChange={setNewStatus}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -526,15 +684,101 @@ const TicketManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Resolution Response */}
+              <div>
+                <Label>
+                  Resolution / Response {(newStatus === 'resolved' || newStatus === 'closed') && <span className="text-destructive">*</span>}
+                </Label>
+                <Textarea
+                  value={responseText}
+                  onChange={(e) => setResponseText(e.target.value)}
+                  placeholder="Describe the resolution or provide a response to the client..."
+                  rows={4}
+                  className="mt-1"
+                />
+              </div>
+
+              {/* Attach Resources */}
+              <div className="space-y-3 border-t pt-4">
+                <Label className="text-base font-semibold">Attach Helpful Resources (Optional)</Label>
+                
+                <div className="space-y-2">
+                  <Label className="flex items-center text-sm">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Article
+                  </Label>
+                  <Select value={selectedArticleId} onValueChange={setSelectedArticleId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an article" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {articles.map((article) => (
+                        <SelectItem key={article.id} value={article.id}>
+                          {article.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center text-sm">
+                    <Video className="h-4 w-4 mr-2" />
+                    Video Tutorial
+                  </Label>
+                  <Select value={selectedVideoId} onValueChange={setSelectedVideoId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a video" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {videos.map((video) => (
+                        <SelectItem key={video.id} value={video.id}>
+                          {video.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center text-sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Downloadable Resource
+                  </Label>
+                  <Select value={selectedResourceId} onValueChange={setSelectedResourceId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a resource" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {resources.map((resource) => (
+                        <SelectItem key={resource.id} value={resource.id}>
+                          {resource.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           )}
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setStatusUpdateDialog(false)}>
+            <Button variant="outline" onClick={() => {
+              setStatusUpdateDialog(false);
+              setResponseText('');
+              setSelectedArticleId('');
+              setSelectedVideoId('');
+              setSelectedResourceId('');
+              setAttachmentPreview(null);
+            }}>
               Cancel
             </Button>
             <Button onClick={updateTicketStatus} disabled={!newStatus}>
-              Update Status
+              Update Ticket
             </Button>
           </DialogFooter>
         </DialogContent>

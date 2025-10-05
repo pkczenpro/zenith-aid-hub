@@ -21,6 +21,7 @@ import ClientManagement from "./pages/ClientManagement";
 import ClientDashboard from "./pages/ClientDashboard";
 import ProductDashboard from "./pages/ProductDashboard";
 import ChatAnalytics from "./pages/ChatAnalytics";
+import MyTicketsPage from "./pages/MyTicketsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -109,6 +110,11 @@ const App = () => (
             <Route path="/support" element={
               <ProtectedRoute requireAdmin>
                 <ProductManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-tickets" element={
+              <ProtectedRoute>
+                <MyTicketsPage />
               </ProtectedRoute>
             } />
             <Route path="/client/:clientId/docs" element={
