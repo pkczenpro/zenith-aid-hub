@@ -788,7 +788,7 @@ const ProductDocs = () => {
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
               }`}
             >
-              Documentation
+              User Manual
             </button>
             <button
               onClick={() => setActiveTab('releases')}
