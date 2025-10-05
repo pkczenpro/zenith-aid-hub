@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useBrandSettings } from "@/hooks/useBrandSettings";
 
 interface Message {
   id: number;
@@ -30,6 +31,7 @@ const ChatWidget = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { settings: brandSettings } = useBrandSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -173,7 +175,7 @@ const ChatWidget = () => {
       setMessages([
         {
           id: 1,
-          text: "Hi! I'm Zenithr Assistant, powered by AI. 👋",
+          text: `Hi! I'm ${brandSettings.chatbot_name}, powered by AI. 👋`,
           isBot: true,
           timestamp: new Date()
         },
@@ -267,7 +269,7 @@ const ChatWidget = () => {
     setMessages([
       {
         id: 1,
-        text: "Hi! I'm Zenithr Assistant, powered by AI. 👋",
+        text: `Hi! I'm ${brandSettings.chatbot_name}, powered by AI. 👋`,
         isBot: true,
         timestamp: new Date()
       },
@@ -444,7 +446,7 @@ const ChatWidget = () => {
       setMessages([
         {
           id: 1,
-          text: "Hi! I'm Zenithr Assistant, powered by AI. 👋",
+          text: `Hi! I'm ${brandSettings.chatbot_name}, powered by AI. 👋`,
           isBot: true,
           timestamp: new Date()
         },
