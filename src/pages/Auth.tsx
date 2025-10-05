@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Shield, Users, FileText, ArrowLeft } from 'lucide-react';
 
 const Auth = () => {
@@ -17,9 +18,23 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user && !loading) {
-      navigate('/');
-    }
+    const checkAndRedirect = async () => {
+      if (user && !loading) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (profileData?.role === 'client') {
+          navigate('/dashboard');
+        } else {
+          navigate('/');
+        }
+      }
+    };
+    
+    checkAndRedirect();
   }, [user, loading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -29,7 +44,23 @@ const Auth = () => {
     const { error } = await signIn(signInData.email, signInData.password);
     
     if (!error) {
-      navigate('/');
+      // Wait briefly for the profile to be fetched
+      setTimeout(async () => {
+        const { data: session } = await supabase.auth.getSession();
+        if (session?.session?.user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('user_id', session.session.user.id)
+            .maybeSingle();
+          
+          if (profileData?.role === 'client') {
+            navigate('/dashboard');
+          } else {
+            navigate('/');
+          }
+        }
+      }, 500);
     }
     
     setIsLoading(false);
