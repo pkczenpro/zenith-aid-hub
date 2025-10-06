@@ -6,13 +6,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowRight, BookOpen, Users, MessageCircle, Plus, FileText, Package, Megaphone, Loader2 } from "lucide-react";
+import { Search, ArrowRight, BookOpen, Users, MessageCircle, Plus, FileText, Package, Megaphone, Loader2, Video } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchResult {
   id: string;
-  type: 'article' | 'resource' | 'release';
+  type: 'article' | 'resource' | 'release' | 'video';
   title: string;
   description?: string;
   productId: string;
@@ -83,6 +83,19 @@ const HeroSection = () => {
           .or(`title.ilike.${searchTerm},version.ilike.${searchTerm}`)
           .limit(20);
 
+        // Search videos
+        const { data: videos } = await supabase
+          .from('videos' as any)
+          .select(`
+            id,
+            title,
+            caption,
+            product_id,
+            products (name, category)
+          `)
+          .or(`title.ilike.${searchTerm},caption.ilike.${searchTerm}`)
+          .limit(10);
+
         const allResults: SearchResult[] = [];
 
         if (articles) {
@@ -139,6 +152,20 @@ const HeroSection = () => {
           });
         }
 
+        if (videos) {
+          videos.forEach((video: any) => {
+            allResults.push({
+              id: video.id,
+              type: 'video',
+              title: video.title,
+              description: video.caption,
+              productId: video.product_id,
+              productName: video.products?.name,
+              category: video.products?.category,
+            });
+          });
+        }
+
         setResults(allResults);
       } catch (error) {
         console.error('Search error:', error);
@@ -167,6 +194,9 @@ const HeroSection = () => {
       case 'release':
         navigate(`/product/${result.productId}/docs?search=${encodeURIComponent(query)}&type=release&id=${result.id}`);
         break;
+      case 'video':
+        navigate(`/product/${result.productId}/docs?search=${encodeURIComponent(query)}&type=video&id=${result.id}`);
+        break;
     }
   };
 
@@ -184,6 +214,8 @@ const HeroSection = () => {
         return <Package className="h-4 w-4" />;
       case 'release':
         return <Megaphone className="h-4 w-4" />;
+      case 'video':
+        return <Video className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -197,6 +229,8 @@ const HeroSection = () => {
         return 'Resource';
       case 'release':
         return 'Release Note';
+      case 'video':
+        return 'Video';
       default:
         return type;
     }
