@@ -571,8 +571,8 @@ const ResourceManagement = () => {
       <main className="container mx-auto px-6 py-8">
         {/* Filters and Sort */}
         {resources.length > 0 && (
-          <div className="mb-6 flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:justify-end">
+            <div>
               <Label htmlFor="filter-type" className="text-sm mb-2 block">Filter by Type</Label>
               <Select value={filterByType} onValueChange={setFilterByType}>
                 <SelectTrigger id="filter-type" className="w-full sm:w-[250px]">
@@ -591,7 +591,7 @@ const ResourceManagement = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1">
+            <div>
               <Label htmlFor="sort-by" className="text-sm mb-2 block">Sort By</Label>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger id="sort-by" className="w-full sm:w-[250px]">
