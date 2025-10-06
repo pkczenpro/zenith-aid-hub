@@ -34,13 +34,17 @@ interface VideoLibraryProps {
   videos: Video[];
   categories?: VideoCategory[];
   onVideoSelect: (videoIndex: number) => void;
+  searchQuery?: string; // Add search query from parent
 }
 
-const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryProps) => {
+const VideoLibrary = ({ videos, categories = [], onVideoSelect, searchQuery: parentSearchQuery }: VideoLibraryProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("oldest");
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  // Use parent search query if provided, otherwise use internal
+  const activeSearchQuery = parentSearchQuery ?? searchQuery;
 
   const extractThumbnail = (videoContent: string): string | null => {
     // Extract video ID from content for thumbnail generation
@@ -77,9 +81,11 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryPr
   // Filter and sort videos
   const filteredVideos = useMemo(() => {
     let filtered = videos.filter(video => {
-      const matchesSearch = 
+      // Only apply internal search if no parent search is active
+      const matchesSearch = parentSearchQuery !== undefined ? true : (
         video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (video.caption?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+        (video.caption?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+      );
       
       const matchesMonth = selectedMonth 
         ? `${new Date(video.created_at).getFullYear()}-${String(new Date(video.created_at).getMonth() + 1).padStart(2, '0')}` === selectedMonth
@@ -104,7 +110,7 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryPr
     });
 
     return filtered;
-  }, [videos, searchQuery, sortBy, selectedMonth, selectedCategoryId]);
+  }, [videos, searchQuery, sortBy, selectedMonth, selectedCategoryId, parentSearchQuery]);
 
   // Group videos by category
   const groupedVideos = useMemo(() => {
@@ -287,27 +293,33 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect }: VideoLibraryPr
             </div>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative max-w-xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search videos by title or description..."
-              className="pl-10 h-10 bg-background border-border text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                onClick={() => setSearchQuery("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          {/* Search Bar - Only show if parent search is not active */}
+          {parentSearchQuery === undefined ? (
+            <div className="relative max-w-xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search videos by title or description..."
+                className="pl-10 h-10 bg-background border-border text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="px-4 py-2 bg-primary/10 text-primary rounded-md text-sm max-w-xl">
+              Searching for: "{parentSearchQuery}"
+            </div>
+          )}
         </div>
 
         {filteredVideos.length === 0 ? (
