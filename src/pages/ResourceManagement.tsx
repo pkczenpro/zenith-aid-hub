@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen, Eye, Pencil, FileBarChart } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen, Eye, Pencil, FileBarChart, Filter } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import PDFViewer from '@/components/PDFViewer';
 
@@ -60,6 +60,8 @@ const ResourceManagement = () => {
   const [viewingResource, setViewingResource] = useState<Resource | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [sortBy, setSortBy] = useState<string>('date_desc');
+  const [filterByType, setFilterByType] = useState<string>('all');
   
   // Form state
   const [title, setTitle] = useState('');
@@ -284,6 +286,7 @@ const ResourceManagement = () => {
         .update({
           title,
           description: description || null,
+          resource_type: resourceType,
         })
         .eq('id', editingResource.id);
 
@@ -298,6 +301,7 @@ const ResourceManagement = () => {
       setEditingResource(null);
       setTitle('');
       setDescription('');
+      setResourceType('sales_deck');
       
       fetchProductAndResources();
     } catch (error) {
@@ -389,6 +393,41 @@ const ResourceManagement = () => {
         return FileText;
     }
   };
+
+  const filteredAndSortedResources = useMemo(() => {
+    let filtered = [...resources];
+    
+    // Apply type filter
+    if (filterByType !== 'all') {
+      filtered = filtered.filter(r => r.resource_type === filterByType);
+    }
+    
+    // Apply sorting
+    switch (sortBy) {
+      case 'date_asc':
+        filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        break;
+      case 'date_desc':
+        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'name_asc':
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'name_desc':
+        filtered.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      case 'downloads_desc':
+        filtered.sort((a, b) => (b.download_count || 0) - (a.download_count || 0));
+        break;
+      case 'downloads_asc':
+        filtered.sort((a, b) => (a.download_count || 0) - (b.download_count || 0));
+        break;
+      default:
+        break;
+    }
+    
+    return filtered;
+  }, [resources, sortBy, filterByType]);
 
   if (loading) {
     return (
@@ -530,6 +569,47 @@ const ResourceManagement = () => {
       </header>
 
       <main className="container mx-auto px-6 py-8">
+        {/* Filters and Sort */}
+        {resources.length > 0 && (
+          <div className="mb-6 flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <Label htmlFor="filter-type" className="text-sm mb-2 block">Filter by Type</Label>
+              <Select value={filterByType} onValueChange={setFilterByType}>
+                <SelectTrigger id="filter-type" className="w-full sm:w-[250px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="sales_deck">Sales Deck</SelectItem>
+                  <SelectItem value="factsheet">Product Factsheet</SelectItem>
+                  <SelectItem value="case_study">Case Study</SelectItem>
+                  <SelectItem value="brochure">Product Brochure</SelectItem>
+                  <SelectItem value="tutorial">Tutorial</SelectItem>
+                  <SelectItem value="sample_report">Sample Report</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="sort-by" className="text-sm mb-2 block">Sort By</Label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger id="sort-by" className="w-full sm:w-[250px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date_desc">Newest First</SelectItem>
+                  <SelectItem value="date_asc">Oldest First</SelectItem>
+                  <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name_desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="downloads_desc">Most Downloads</SelectItem>
+                  <SelectItem value="downloads_asc">Least Downloads</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+        
         {resources.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
@@ -540,9 +620,19 @@ const ResourceManagement = () => {
               </p>
             </CardContent>
           </Card>
+        ) : filteredAndSortedResources.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
+              <p className="text-lg text-muted-foreground mb-2">No resources match your filters</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Try adjusting your filter settings
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resources.map((resource) => {
+            {filteredAndSortedResources.map((resource) => {
               const ResourceIcon = getResourceIcon(resource.resource_type);
               return (
                 <Card key={resource.id} className="hover:shadow-lg transition-shadow">
@@ -610,19 +700,20 @@ const ResourceManagement = () => {
                     >
                       <Download className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingResource(resource);
-                        setTitle(resource.title);
-                        setDescription(resource.description || '');
-                        setIsEditDialogOpen(true);
-                      }}
-                      title="Edit Resource"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => {
+                         setEditingResource(resource);
+                         setTitle(resource.title);
+                         setDescription(resource.description || '');
+                         setResourceType(resource.resource_type);
+                         setIsEditDialogOpen(true);
+                       }}
+                       title="Edit Resource"
+                     >
+                       <Pencil className="h-4 w-4" />
+                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -655,7 +746,7 @@ const ResourceManagement = () => {
           <DialogHeader>
             <DialogTitle>Edit Resource</DialogTitle>
             <DialogDescription>
-              Update the name and description for this resource.
+              Update the details for this resource.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -680,6 +771,24 @@ const ResourceManagement = () => {
               />
             </div>
 
+            <div>
+              <Label htmlFor="edit-resourceType">Resource Type *</Label>
+              <Select value={resourceType} onValueChange={setResourceType}>
+                <SelectTrigger id="edit-resourceType">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sales_deck">Sales Deck</SelectItem>
+                  <SelectItem value="factsheet">Product Factsheet</SelectItem>
+                  <SelectItem value="case_study">Case Study</SelectItem>
+                  <SelectItem value="brochure">Product Brochure</SelectItem>
+                  <SelectItem value="tutorial">Tutorial</SelectItem>
+                  <SelectItem value="sample_report">Sample Report</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -688,6 +797,7 @@ const ResourceManagement = () => {
                   setEditingResource(null);
                   setTitle('');
                   setDescription('');
+                  setResourceType('sales_deck');
                 }}
                 className="flex-1"
               >
