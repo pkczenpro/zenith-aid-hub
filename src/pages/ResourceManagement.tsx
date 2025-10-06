@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen, Eye } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen, Eye, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import PDFViewer from '@/components/PDFViewer';
 
@@ -58,6 +58,8 @@ const ResourceManagement = () => {
   const [uploading, setUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewingResource, setViewingResource] = useState<Resource | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -261,6 +263,52 @@ const ResourceManagement = () => {
       fetchProductAndResources();
     } catch (error) {
       console.error('Error logging download:', error);
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!editingResource || !title) {
+      toast({
+        title: "Missing Information",
+        description: "Title is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      const { error } = await supabase
+        .from('product_resources')
+        .update({
+          title,
+          description: description || null,
+        })
+        .eq('id', editingResource.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Resource updated successfully.",
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingResource(null);
+      setTitle('');
+      setDescription('');
+      
+      fetchProductAndResources();
+    } catch (error) {
+      console.error('Error updating resource:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update resource.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -562,6 +610,19 @@ const ResourceManagement = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
+                        setEditingResource(resource);
+                        setTitle(resource.title);
+                        setDescription(resource.description || '');
+                        setIsEditDialogOpen(true);
+                      }}
+                      title="Edit Resource"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
                         fetchDownloadLogs(resource.id);
                         setShowActivityLog(true);
                       }}
@@ -583,6 +644,69 @@ const ResourceManagement = () => {
           </div>
         )}
       </main>
+
+      {/* Edit Resource Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Resource</DialogTitle>
+            <DialogDescription>
+              Update the name and description for this resource.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-title">Title *</Label>
+              <Input
+                id="edit-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Resource title"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Brief description of the resource"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingResource(null);
+                  setTitle('');
+                  setDescription('');
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleEdit}
+                disabled={uploading}
+                className="flex-1"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* PDF Viewer Dialog */}
       <Dialog open={!!viewingResource} onOpenChange={() => setViewingResource(null)}>
