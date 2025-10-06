@@ -1384,7 +1384,7 @@ const ProductDocs = () => {
                       <BookOpen className="h-6 w-6 text-primary group-hover:scale-110 transition-transform duration-300" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-bold text-base text-foreground mb-2 group-hover:text-primary transition-colors duration-300">User Mannual</h4>
+                      <h4 className="font-bold text-base text-foreground mb-2 group-hover:text-primary transition-colors duration-300">User Manual</h4>
                       <p className="text-sm text-muted-foreground leading-relaxed">Step-by-step guides and comprehensive tutorials</p>
                     </div>
                   </div>
