@@ -114,17 +114,22 @@ const ProductDocs = () => {
     }
   }, [user, productId]);
 
-  // Show welcome message every time for clients when product loads
+  // Show welcome message every time for clients when product loads, unless coming from a chatbot link
   useEffect(() => {
     if (productId && !loading && product && userProfile?.role === 'client') {
-      console.log('Showing welcome message for client:', { 
-        hasWelcomeMessage: !!welcomeMessage,
-        hasProductDesc: !!product.description,
-        productId 
-      });
-      setShowWelcome(true);
+      // Skip welcome message if navigating directly to content from chatbot
+      const hasDirectNavigation = searchType && searchId;
+      
+      if (!hasDirectNavigation) {
+        console.log('Showing welcome message for client:', { 
+          hasWelcomeMessage: !!welcomeMessage,
+          hasProductDesc: !!product.description,
+          productId 
+        });
+        setShowWelcome(true);
+      }
     }
-  }, [productId, loading, product, userProfile, welcomeMessage]);
+  }, [productId, loading, product, userProfile, welcomeMessage, searchType, searchId]);
 
   // Handle navigation from chat links after data is loaded
   useEffect(() => {
