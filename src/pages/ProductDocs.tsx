@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -589,11 +589,102 @@ const ProductDocs = () => {
     return content;
   };
 
-  const currentCategoryArticles = categories.find(cat => cat.name === selectedCategory)?.articles || [];
+  // Helper function to extract text from article content
+  const extractTextFromContent = (content: any): string => {
+    if (!content) return '';
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+      return content.map(section => {
+        let text = section.title || '';
+        if (section.content) {
+          if (typeof section.content === 'string') {
+            // Remove HTML tags for searching
+            text += ' ' + section.content.replace(/<[^>]*>/g, ' ');
+          } else {
+            text += ' ' + JSON.stringify(section.content);
+          }
+        }
+        return text;
+      }).join(' ');
+    }
+    return JSON.stringify(content);
+  };
+
+  // Filter articles with full-text search
+  const filteredArticles = useMemo(() => {
+    if (!searchQuery.trim()) return articles;
+    
+    const query = searchQuery.toLowerCase();
+    return articles.filter(article => {
+      // Search in title
+      if (article.title.toLowerCase().includes(query)) return true;
+      
+      // Search in content
+      const contentText = extractTextFromContent(article.content).toLowerCase();
+      return contentText.includes(query);
+    });
+  }, [articles, searchQuery]);
+
+  // Filter resources
+  const filteredResources = useMemo(() => {
+    if (!searchQuery.trim()) return resources;
+    
+    const query = searchQuery.toLowerCase();
+    return resources.filter(resource => {
+      return (
+        resource.title?.toLowerCase().includes(query) ||
+        resource.description?.toLowerCase().includes(query) ||
+        resource.file_name?.toLowerCase().includes(query) ||
+        resource.resource_type?.toLowerCase().includes(query)
+      );
+    });
+  }, [resources, searchQuery]);
+
+  // Filter videos
+  const filteredVideos = useMemo(() => {
+    if (!searchQuery.trim()) return videos;
+    
+    const query = searchQuery.toLowerCase();
+    return videos.filter(video => {
+      return (
+        video.title?.toLowerCase().includes(query) ||
+        video.caption?.toLowerCase().includes(query)
+      );
+    });
+  }, [videos, searchQuery]);
+
+  // Filter release notes with full-text search
+  const filteredReleaseNotes = useMemo(() => {
+    if (!searchQuery.trim()) return releaseNotes;
+    
+    const query = searchQuery.toLowerCase();
+    return releaseNotes.filter(release => {
+      // Search in title and version
+      if (release.title?.toLowerCase().includes(query)) return true;
+      if (release.version?.toLowerCase().includes(query)) return true;
+      
+      // Search in content
+      const contentText = extractTextFromContent(release.content).toLowerCase();
+      return contentText.includes(query);
+    });
+  }, [releaseNotes, searchQuery]);
+
+  // Update categories to use filtered articles
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return categories;
+    
+    return categories.map(category => ({
+      ...category,
+      articles: category.articles.filter(article =>
+        filteredArticles.some(fa => fa.id === article.id)
+      )
+    })).filter(category => category.articles.length > 0);
+  }, [categories, filteredArticles, searchQuery]);
+
+  const currentCategoryArticles = (searchQuery.trim() ? filteredCategories : categories)
+    .find(cat => cat.name === selectedCategory)?.articles || [];
   
-  const filteredCategoryArticles = currentCategoryArticles.filter(article =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCategoryArticles = currentCategoryArticles;
 
   const renderArticleContent = (content: any) => {
     if (!content) return <p className="text-muted-foreground">No content available.</p>;
@@ -824,7 +915,7 @@ const ProductDocs = () => {
         {activeTab === 'documentation' && (
           <aside className="w-72 border-r border-border bg-background overflow-y-auto">
             <div className="p-4">
-            {categories.map((category) => (
+            {filteredCategories.map((category) => (
               <div key={category.name} className="mb-4">
                 <button
                   onClick={() => toggleCategoryExpanded(category.name)}
@@ -866,7 +957,7 @@ const ProductDocs = () => {
               </div>
             ))}
             
-              {categories.length === 0 && (
+              {filteredCategories.length === 0 && (
                 <div className="text-center py-12">
                   <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
                   <p className="text-sm text-muted-foreground">No articles available</p>
@@ -939,14 +1030,16 @@ const ProductDocs = () => {
             </div>
           ) : activeTab === 'resources' ? (
             <div className="container mx-auto px-8 py-8">
-              {resources.length === 0 ? (
+              {filteredResources.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
                   <h2 className="text-2xl font-semibold text-foreground mb-2">
-                    No Resources Available
+                    {searchQuery.trim() ? 'No Resources Found' : 'No Resources Available'}
                   </h2>
                   <p className="text-muted-foreground">
-                    Document resources like product factsheets, sales materials, and tutorials will appear here once they are uploaded.
+                    {searchQuery.trim() 
+                      ? `No resources match "${searchQuery}"`
+                      : 'Document resources like product factsheets, sales materials, and tutorials will appear here once they are uploaded.'}
                   </p>
                 </div>
               ) : (
@@ -954,12 +1047,14 @@ const ProductDocs = () => {
                   <div className="mb-6">
                     <h1 className="text-3xl font-bold text-foreground mb-2">Document Resources</h1>
                     <p className="text-muted-foreground">
-                      Download product factsheets, sales materials, brochures, and other documents
+                      {searchQuery.trim() 
+                        ? `Showing ${filteredResources.length} resource${filteredResources.length !== 1 ? 's' : ''} matching "${searchQuery}"`
+                        : 'Download product factsheets, sales materials, brochures, and other documents'}
                     </p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {resources.map((resource) => {
+                    {filteredResources.map((resource) => {
                       const ResourceIcon = getResourceIcon(resource.resource_type);
                       return (
                         <div
@@ -1055,14 +1150,16 @@ const ProductDocs = () => {
             </div>
           ) : activeTab === 'videos' ? (
             <div className="w-full">
-              {videos.length === 0 ? (
+              {filteredVideos.length === 0 ? (
                 <div className="text-center py-12">
                   <Video className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
                   <h2 className="text-2xl font-semibold text-foreground mb-2">
-                    No Videos Available
+                    {searchQuery.trim() ? 'No Videos Found' : 'No Videos Available'}
                   </h2>
                   <p className="text-muted-foreground">
-                    Video resources will appear here once they are uploaded.
+                    {searchQuery.trim()
+                      ? `No videos match "${searchQuery}"`
+                      : 'Video resources will appear here once they are uploaded.'}
                   </p>
                 </div>
               ) : (
@@ -1095,7 +1192,7 @@ const ProductDocs = () => {
                         </Button>
                       </div>
                       <div className="absolute right-0 text-sm text-muted-foreground">
-                        {videos.length} video{videos.length !== 1 ? 's' : ''} available
+                        {filteredVideos.length} video{filteredVideos.length !== 1 ? 's' : ''} {searchQuery.trim() && `matching "${searchQuery}"`}
                       </div>
                     </div>
                   </div>
@@ -1103,7 +1200,7 @@ const ProductDocs = () => {
                   {/* Video Library View */}
                   {videoViewMode === 'library' ? (
                     <VideoLibrary 
-                      videos={videos}
+                      videos={filteredVideos}
                       categories={videoCategories}
                       onVideoSelect={(index) => {
                         setCurrentVideoIndex(index);
@@ -1118,16 +1215,16 @@ const ProductDocs = () => {
                       <div className="mb-6">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-foreground">
-                            Video {currentVideoIndex + 1} of {videos.length}
+                            Video {currentVideoIndex + 1} of {filteredVideos.length}
                           </span>
                           <span className="text-sm text-muted-foreground">
-                            {Math.round(((currentVideoIndex + 1) / videos.length) * 100)}%
+                            {Math.round(((currentVideoIndex + 1) / filteredVideos.length) * 100)}%
                           </span>
                         </div>
                         <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
                           <div 
                             className="bg-primary h-full transition-all duration-300 ease-in-out"
-                            style={{ width: `${((currentVideoIndex + 1) / videos.length) * 100}%` }}
+                            style={{ width: `${((currentVideoIndex + 1) / filteredVideos.length) * 100}%` }}
                           />
                         </div>
                       </div>
@@ -1135,13 +1232,13 @@ const ProductDocs = () => {
                       {/* Current Video */}
                       <div className="w-full mb-6">
                         <div 
-                          dangerouslySetInnerHTML={{ __html: processVideoContent(videos[currentVideoIndex].video_content) }}
+                          dangerouslySetInnerHTML={{ __html: processVideoContent(filteredVideos[currentVideoIndex].video_content) }}
                           className="w-full [&_iframe]:w-full [&_iframe]:h-[80vh] [&_iframe]:border-0 [&_video]:w-full [&_video]:h-auto [&_.video-player-wrapper]:my-0 [&_.video-player-wrapper]:rounded-none [&_p]:hidden"
                         />
                         <div className="p-6 bg-card">
-                          <h2 className="text-2xl font-bold text-foreground mb-2">{videos[currentVideoIndex].title}</h2>
+                          <h2 className="text-2xl font-bold text-foreground mb-2">{filteredVideos[currentVideoIndex].title}</h2>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(videos[currentVideoIndex].created_at).toLocaleDateString()}
+                            {new Date(filteredVideos[currentVideoIndex].created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -1165,13 +1262,13 @@ const ProductDocs = () => {
                           variant="outline"
                           size="lg"
                           onClick={() => {
-                            const nextIndex = Math.min(videos.length - 1, currentVideoIndex + 1);
+                            const nextIndex = Math.min(filteredVideos.length - 1, currentVideoIndex + 1);
                             setCurrentVideoIndex(nextIndex);
-                            if (nextIndex === videos.length - 1) {
+                            if (nextIndex === filteredVideos.length - 1) {
                               setTimeout(() => setShowCompletion(true), 1000);
                             }
                           }}
-                          disabled={currentVideoIndex === videos.length - 1}
+                          disabled={currentVideoIndex === filteredVideos.length - 1}
                           className="flex-1"
                         >
                           Next Video
@@ -1180,7 +1277,7 @@ const ProductDocs = () => {
                       </div>
 
                       {/* Completion Animation */}
-                      {showCompletion && currentVideoIndex === videos.length - 1 && (
+                      {showCompletion && currentVideoIndex === filteredVideos.length - 1 && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
                           <div className="bg-card border-2 border-primary rounded-2xl p-12 text-center max-w-2xl mx-4 animate-scale-in shadow-2xl">
                             <div className="mb-6 text-6xl animate-pulse">🎉</div>
@@ -1228,7 +1325,9 @@ const ProductDocs = () => {
                   <div>
                     <h2 className="text-3xl font-bold text-foreground mb-2">Release Notes</h2>
                     <p className="text-muted-foreground">
-                      View product updates, new features, and improvements
+                      {searchQuery.trim()
+                        ? `Showing ${filteredReleaseNotes.length} release note${filteredReleaseNotes.length !== 1 ? 's' : ''} matching "${searchQuery}"`
+                        : 'View product updates, new features, and improvements'}
                     </p>
                   </div>
                   {userProfile?.role === 'admin' && (
@@ -1239,17 +1338,19 @@ const ProductDocs = () => {
                   )}
                 </div>
 
-                {releaseNotes.length === 0 ? (
+                {filteredReleaseNotes.length === 0 ? (
                   <div className="text-center py-16 border border-dashed border-border rounded-lg">
                     <FileText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                    <p className="text-lg text-muted-foreground mb-2">No release notes yet</p>
+                    <p className="text-lg text-muted-foreground mb-2">
+                      {searchQuery.trim() ? `No release notes matching "${searchQuery}"` : 'No release notes yet'}
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      Release notes will appear here when published
+                      {searchQuery.trim() ? 'Try a different search term' : 'Release notes will appear here when published'}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {releaseNotes.map((release: any) => (
+                    {filteredReleaseNotes.map((release: any) => (
                       <div
                         key={release.id}
                         className="border border-border rounded-lg p-6 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
