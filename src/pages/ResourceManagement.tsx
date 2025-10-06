@@ -665,7 +665,7 @@ const ResourceManagement = () => {
           </Card>
         ) : (
           <div className="space-y-6">
-            <Accordion type="multiple" defaultValue={Array.from(resourcesByFolder.keys())} className="space-y-4">
+            <Accordion type="single" collapsible defaultValue="General" className="space-y-4">
               {Array.from(resourcesByFolder.entries()).map(([folderName, folderResources]) => (
                 <AccordionItem key={folderName} value={folderName} className="border rounded-lg bg-card">
                   <AccordionTrigger className="px-6 py-4 hover:no-underline">
