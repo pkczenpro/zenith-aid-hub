@@ -39,7 +39,7 @@ interface Product {
   icon_url: string | null;
   created_at: string;
   updated_at: string;
-  articles_count: number;
+  total_content_count: number;
 }
 
 const ProductCategories = () => {
@@ -122,7 +122,9 @@ const ProductCategories = () => {
         .from('products')
         .select(`
           *,
-          articles:articles(count)
+          articles:articles(count),
+          videos:product_videos(count),
+          resources:product_resources(count)
         `);
 
       // If not admin, only show products the client has access to
@@ -232,7 +234,7 @@ const ProductCategories = () => {
             status: 'published',
             created_at: '',
             updated_at: '',
-            articles_count: 0
+            total_content_count: 0
           })));
         }
         setLoading(false);
@@ -255,7 +257,9 @@ const ProductCategories = () => {
 
       const productsWithCount = (data || []).map(item => ({
         ...item,
-        articles_count: item.articles?.[0]?.count || 0
+        total_content_count: (item.articles?.[0]?.count || 0) + 
+                            (item.videos?.[0]?.count || 0) + 
+                            (item.resources?.[0]?.count || 0)
       }));
 
       console.log('Products with article counts:', productsWithCount);
@@ -406,7 +410,7 @@ const ProductCategories = () => {
                           <BookOpen className="h-4 w-4 mr-2" />
                           View Documentation
                           <Badge variant="secondary" className="ml-auto text-xs">
-                            {product.articles_count}
+                            {product.total_content_count}
                           </Badge>
                         </>
                       ) : (
