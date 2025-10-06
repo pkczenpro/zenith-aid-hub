@@ -263,7 +263,7 @@ const HeroSection = () => {
             <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto">
               {user 
                 ? `${isAdmin ? 'Manage your help center and support your clients' : 'Find answers and get the support you need'}`
-                : 'Find answers, get support, and discover everything you need to succeed with our products powered by Zenithr'
+                : 'Find answers, get support, and discover everything you need to succeed with our products'
               }
             </p>
           </div>
