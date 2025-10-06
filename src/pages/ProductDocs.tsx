@@ -1375,25 +1375,8 @@ const ProductDocs = () => {
             {(welcomeMessage?.show_features !== false) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6">
                 <button
-                  onClick={() => handleFeatureClick('documentation')}
-                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1 cursor-pointer text-left"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative flex items-start space-x-4">
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-500 shadow-lg">
-                      <BookOpen className="h-6 w-6 text-primary group-hover:scale-110 transition-transform duration-300" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-base text-foreground mb-2 group-hover:text-primary transition-colors duration-300">User Manual</h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed">Step-by-step guides and comprehensive tutorials</p>
-                    </div>
-                  </div>
-                </button>
-                
-                <button
                   onClick={() => handleFeatureClick('resources')}
                   className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1 cursor-pointer text-left"
-                  style={{ animationDelay: '0.1s' }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="relative flex items-start space-x-4">
@@ -1410,7 +1393,7 @@ const ProductDocs = () => {
                 <button
                   onClick={() => handleFeatureClick('videos')}
                   className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1 cursor-pointer text-left"
-                  style={{ animationDelay: '0.2s' }}
+                  style={{ animationDelay: '0.1s' }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="relative flex items-start space-x-4">
@@ -1420,6 +1403,23 @@ const ProductDocs = () => {
                     <div className="flex-1">
                       <h4 className="font-bold text-base text-foreground mb-2 group-hover:text-primary transition-colors duration-300">Video Tutorials</h4>
                       <p className="text-sm text-muted-foreground leading-relaxed">Engaging visual learning content</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => handleFeatureClick('documentation')}
+                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-background/80 via-background/60 to-primary/5 p-6 border-2 border-border/50 hover:border-primary/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 animate-scale-in hover:-translate-y-1 cursor-pointer text-left"
+                  style={{ animationDelay: '0.2s' }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative flex items-start space-x-4">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 transition-all duration-500 shadow-lg">
+                      <BookOpen className="h-6 w-6 text-primary group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-base text-foreground mb-2 group-hover:text-primary transition-colors duration-300">User Manual</h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed">Step-by-step guides and comprehensive tutorials</p>
                     </div>
                   </div>
                 </button>
