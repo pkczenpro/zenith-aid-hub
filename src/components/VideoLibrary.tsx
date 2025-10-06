@@ -11,6 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface Video {
   id: string;
@@ -145,54 +151,57 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect, searchQuery: par
           </div>
 
           {/* Video Title List Grouped by Category */}
-          <div className="space-y-4">
+          <Accordion type="multiple" defaultValue={groupedVideos.map(([categoryId]) => categoryId)} className="space-y-2">
             {groupedVideos.map(([categoryId, { category, videos: categoryVideos }]) => (
-              <div key={categoryId} className="space-y-2">
-                {/* Category Header */}
-                <div className="flex items-center gap-2 px-2 py-1">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {category?.name || 'Uncategorized'}
-                  </h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {categoryVideos.length}
-                  </Badge>
-                </div>
+              <AccordionItem key={categoryId} value={categoryId} className="border-0">
+                <AccordionTrigger className="hover:no-underline py-2 px-2 hover:bg-muted/50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {category?.name || 'Uncategorized'}
+                    </h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {categoryVideos.length}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
                 
-                {/* Videos in Category */}
-                {categoryVideos.map((video) => {
-                  const originalIndex = videos.findIndex(v => v.id === video.id);
-                  const displayIndex = filteredVideos.findIndex(v => v.id === video.id) + 1;
-                  return (
-                    <Button
-                      key={video.id}
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start text-left h-auto py-3 px-3 hover:bg-primary/10"
-                      onClick={() => onVideoSelect(originalIndex)}
-                    >
-                      <div className="flex gap-3 items-start w-full">
-                        <Badge variant="secondary" className="shrink-0 mt-0.5">
-                          {displayIndex}
-                        </Badge>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground line-clamp-2">
-                            {video.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(video.created_at).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </p>
+                <AccordionContent className="space-y-2 pt-2">
+                  {/* Videos in Category */}
+                  {categoryVideos.map((video) => {
+                    const originalIndex = videos.findIndex(v => v.id === video.id);
+                    const displayIndex = filteredVideos.findIndex(v => v.id === video.id) + 1;
+                    return (
+                      <Button
+                        key={video.id}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-left h-auto py-3 px-3 hover:bg-primary/10"
+                        onClick={() => onVideoSelect(originalIndex)}
+                      >
+                        <div className="flex gap-3 items-start w-full">
+                          <Badge variant="secondary" className="shrink-0 mt-0.5">
+                            {displayIndex}
+                          </Badge>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground line-clamp-2">
+                              {video.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(video.created_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </Button>
-                  );
-                })}
-              </div>
+                      </Button>
+                    );
+                  })}
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
 
           {/* Date Filter */}
           {availableMonths.length > 1 && (
