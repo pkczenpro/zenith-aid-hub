@@ -379,6 +379,7 @@ export type Database = {
           file_size: number | null
           file_type: string | null
           file_url: string
+          folder: string | null
           id: string
           product_id: string
           resource_type: string
@@ -393,6 +394,7 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           file_url: string
+          folder?: string | null
           id?: string
           product_id: string
           resource_type: string
@@ -407,6 +409,7 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           file_url?: string
+          folder?: string | null
           id?: string
           product_id?: string
           resource_type?: string
