@@ -234,36 +234,6 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect, searchQuery: par
             </div>
           )}
 
-          {/* Category Filter */}
-          {categories.length > 0 && (
-            <div className="space-y-3 pt-6 border-t border-border mt-6">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <List className="h-4 w-4" />
-                <span>Filter by Category</span>
-              </div>
-              <div className="space-y-2">
-                <Button
-                  variant={!selectedCategoryId ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => setSelectedCategoryId(null)}
-                >
-                  All Categories
-                </Button>
-                {categories.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategoryId === category.id ? "default" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start text-left"
-                    onClick={() => setSelectedCategoryId(category.id)}
-                  >
-                    {category.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Video Count */}
@@ -286,19 +256,45 @@ const VideoLibrary = ({ videos, categories = [], onVideoSelect, searchQuery: par
               </p>
             </div>
 
-            {/* Sort Options on Right */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort:</span>
-              <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "title") => setSortBy(value)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="title">Alphabetical</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Sort and Filter Options on Right */}
+            <div className="flex items-center gap-4">
+              {/* Category Filter */}
+              {categories.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Category:</span>
+                  <Select 
+                    value={selectedCategoryId || "all"} 
+                    onValueChange={(value) => setSelectedCategoryId(value === "all" ? null : value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Sort Options */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Sort:</span>
+                <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "title") => setSortBy(value)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="oldest">Oldest First</SelectItem>
+                    <SelectItem value="newest">Newest First</SelectItem>
+                    <SelectItem value="title">Alphabetical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
