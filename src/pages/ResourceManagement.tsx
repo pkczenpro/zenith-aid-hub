@@ -591,7 +591,7 @@ const ResourceManagement = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="hidden">
               <Label htmlFor="sort-by" className="text-sm mb-2 block">Sort By</Label>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger id="sort-by" className="w-full sm:w-[250px]">
