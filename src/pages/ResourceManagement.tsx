@@ -96,7 +96,7 @@ const ResourceManagement = () => {
           resource_downloads(count)
         `)
         .eq('product_id', productId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (resourcesError) throw resourcesError;
       
