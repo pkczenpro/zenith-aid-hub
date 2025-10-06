@@ -9,8 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen, Eye, Pencil, FolderOpen, ChevronDown } from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ArrowLeft, Upload, FileText, Trash2, Download, Loader2, Video, FileSpreadsheet, Briefcase, BookOpen, Eye, Pencil, FileBarChart } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import PDFViewer from '@/components/PDFViewer';
 
@@ -385,7 +384,7 @@ const ResourceManagement = () => {
       case 'tutorial':
         return BookOpen;
       case 'sample_report':
-        return FolderOpen;
+        return FileBarChart;
       default:
         return FileText;
     }
@@ -542,246 +541,110 @@ const ResourceManagement = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
-            {/* Sample Reports Folder */}
-            {resources.filter(r => r.resource_type === 'sample_report').length > 0 && (
-              <Accordion type="multiple" defaultValue={['sample_reports']} className="w-full">
-                <AccordionItem value="sample_reports" className="border rounded-lg px-4">
-                  <AccordionTrigger className="hover:no-underline py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <FolderOpen className="h-5 w-5 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {resources.map((resource) => {
+              const ResourceIcon = getResourceIcon(resource.resource_type);
+              return (
+                <Card key={resource.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-3 bg-primary/10 rounded-lg">
+                        <ResourceIcon className="h-8 w-8 text-primary" />
                       </div>
-                      <div className="text-left">
-                        <h3 className="text-lg font-semibold">Sample Reports</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {resources.filter(r => r.resource_type === 'sample_report').length} {resources.filter(r => r.resource_type === 'sample_report').length === 1 ? 'report' : 'reports'}
-                        </p>
+                      <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-medium">
+                        {getResourceTypeLabel(resource.resource_type)}
+                      </span>
+                    </div>
+                    <CardTitle className="text-lg">{resource.title}</CardTitle>
+                    {resource.description && (
+                      <CardDescription className="line-clamp-2">{resource.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center justify-between">
+                        <span>Type:</span>
+                        <span className="font-medium">{resource.file_type.toUpperCase()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Size:</span>
+                        <span className="font-medium">{formatFileSize(resource.file_size)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                       <span>Product:</span>
+                        <span className="font-medium truncate ml-2">{product?.name}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <span>Downloads:</span>
+                        <span className="font-medium text-primary">{resource.download_count || 0}</span>
                       </div>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 pb-2">
-                      {resources.filter(r => r.resource_type === 'sample_report').map((resource) => {
-                        const ResourceIcon = getResourceIcon(resource.resource_type);
-                        return (
-                          <Card key={resource.id} className="hover:shadow-lg transition-shadow">
-                            <CardHeader>
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="p-3 bg-primary/10 rounded-lg">
-                                  <ResourceIcon className="h-8 w-8 text-primary" />
-                                </div>
-                                <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-medium">
-                                  {getResourceTypeLabel(resource.resource_type)}
-                                </span>
-                              </div>
-                              <CardTitle className="text-lg">{resource.title}</CardTitle>
-                              {resource.description && (
-                                <CardDescription className="line-clamp-2">{resource.description}</CardDescription>
-                              )}
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-2 text-sm text-muted-foreground">
-                                <div className="flex items-center justify-between">
-                                  <span>Type:</span>
-                                  <span className="font-medium">{resource.file_type.toUpperCase()}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span>Size:</span>
-                                  <span className="font-medium">{formatFileSize(resource.file_size)}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span>Product:</span>
-                                  <span className="font-medium truncate ml-2">{product?.name}</span>
-                                </div>
-                                <div className="flex items-center justify-between pt-2 border-t border-border">
-                                  <span>Downloads:</span>
-                                  <span className="font-medium text-primary">{resource.download_count || 0}</span>
-                                </div>
-                              </div>
-                            </CardContent>
-                            <CardFooter className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1"
-                                onClick={async () => {
-                                  try {
-                                    await logDownload(resource.id);
-                                    const response = await fetch(resource.file_url);
-                                    const blob = await response.blob();
-                                    const url = window.URL.createObjectURL(blob);
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.download = resource.file_name;
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                    window.URL.revokeObjectURL(url);
-                                  } catch (error) {
-                                    console.error('Download error:', error);
-                                    toast({
-                                      title: "Download Failed",
-                                      description: "Failed to download the file.",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingResource(resource);
-                                  setTitle(resource.title);
-                                  setDescription(resource.description || '');
-                                  setIsEditDialogOpen(true);
-                                }}
-                                title="Edit Resource"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  fetchDownloadLogs(resource.id);
-                                  setShowActivityLog(true);
-                                }}
-                                title="View Activity Log"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDelete(resource)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </CardFooter>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            )}
-
-            {/* Other Resources */}
-            {resources.filter(r => r.resource_type !== 'sample_report').length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Other Resources</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {resources.filter(r => r.resource_type !== 'sample_report').map((resource) => {
-                    const ResourceIcon = getResourceIcon(resource.resource_type);
-                    return (
-                      <Card key={resource.id} className="hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="p-3 bg-primary/10 rounded-lg">
-                              <ResourceIcon className="h-8 w-8 text-primary" />
-                            </div>
-                            <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-medium">
-                              {getResourceTypeLabel(resource.resource_type)}
-                            </span>
-                          </div>
-                          <CardTitle className="text-lg">{resource.title}</CardTitle>
-                          {resource.description && (
-                            <CardDescription className="line-clamp-2">{resource.description}</CardDescription>
-                          )}
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 text-sm text-muted-foreground">
-                            <div className="flex items-center justify-between">
-                              <span>Type:</span>
-                              <span className="font-medium">{resource.file_type.toUpperCase()}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>Size:</span>
-                              <span className="font-medium">{formatFileSize(resource.file_size)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>Product:</span>
-                              <span className="font-medium truncate ml-2">{product?.name}</span>
-                            </div>
-                            <div className="flex items-center justify-between pt-2 border-t border-border">
-                              <span>Downloads:</span>
-                              <span className="font-medium text-primary">{resource.download_count || 0}</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={async () => {
-                              try {
-                                await logDownload(resource.id);
-                                const response = await fetch(resource.file_url);
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = resource.file_name;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                window.URL.revokeObjectURL(url);
-                              } catch (error) {
-                                console.error('Download error:', error);
-                                toast({
-                                  title: "Download Failed",
-                                  description: "Failed to download the file.",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditingResource(resource);
-                              setTitle(resource.title);
-                              setDescription(resource.description || '');
-                              setIsEditDialogOpen(true);
-                            }}
-                            title="Edit Resource"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              fetchDownloadLogs(resource.id);
-                              setShowActivityLog(true);
-                            }}
-                            title="View Activity Log"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(resource)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+                  </CardContent>
+                   <CardFooter className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={async () => {
+                        try {
+                          await logDownload(resource.id);
+                          const response = await fetch(resource.file_url);
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = resource.file_name;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          window.URL.revokeObjectURL(url);
+                        } catch (error) {
+                          console.error('Download error:', error);
+                          toast({
+                            title: "Download Failed",
+                            description: "Failed to download the file.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingResource(resource);
+                        setTitle(resource.title);
+                        setDescription(resource.description || '');
+                        setIsEditDialogOpen(true);
+                      }}
+                      title="Edit Resource"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        fetchDownloadLogs(resource.id);
+                        setShowActivityLog(true);
+                      }}
+                      title="View Activity Log"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(resource)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
         )}
       </main>
