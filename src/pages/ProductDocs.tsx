@@ -35,8 +35,15 @@ import {
   Play,
   Home,
   Sparkles,
-  Eye
+  Eye,
+  Folder
 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface Article {
   id: string;
@@ -645,6 +652,21 @@ const ProductDocs = () => {
     });
   }, [resources, searchQuery]);
 
+  // Group resources by folder
+  const resourcesByFolder = useMemo(() => {
+    const folderMap = new Map<string, any[]>();
+    
+    filteredResources.forEach(resource => {
+      const folder = resource.folder || 'General';
+      if (!folderMap.has(folder)) {
+        folderMap.set(folder, []);
+      }
+      folderMap.get(folder)?.push(resource);
+    });
+    
+    return folderMap;
+  }, [filteredResources]);
+
   // Filter videos
   const filteredVideos = useMemo(() => {
     if (!searchQuery.trim()) return videos;
@@ -1058,8 +1080,19 @@ const ProductDocs = () => {
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredResources.map((resource) => {
+                  <Accordion type="single" collapsible defaultValue="General" className="space-y-4">
+                    {Array.from(resourcesByFolder.entries()).map(([folderName, folderResources]) => (
+                      <AccordionItem key={folderName} value={folderName} className="border rounded-lg bg-card">
+                        <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                          <div className="flex items-center gap-3">
+                            <Folder className="h-5 w-5 text-primary" />
+                            <span className="font-semibold text-lg">{folderName}</span>
+                            <span className="text-sm text-muted-foreground">({folderResources.length} {folderResources.length === 1 ? 'resource' : 'resources'})</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-6 pb-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {folderResources.map((resource) => {
                       const ResourceIcon = getResourceIcon(resource.resource_type);
                       return (
                         <div
@@ -1146,10 +1179,14 @@ const ProductDocs = () => {
                               </Button>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                          </div>
+                        );
+                      })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                 </div>
               )}
             </div>
