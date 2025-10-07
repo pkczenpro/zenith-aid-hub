@@ -1083,11 +1083,11 @@ const ProductDocs = () => {
                   <Accordion type="single" collapsible defaultValue="General" className="space-y-4">
                     {Array.from(resourcesByFolder.entries()).map(([folderName, folderResources]) => (
                       <AccordionItem key={folderName} value={folderName} className="border rounded-lg bg-card">
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                          <div className="flex items-center gap-3">
-                            <Folder className="h-5 w-5 text-primary" />
-                            <span className="font-semibold text-lg">{folderName}</span>
-                            <span className="text-sm text-muted-foreground">({folderResources.length} {folderResources.length === 1 ? 'resource' : 'resources'})</span>
+                        <AccordionTrigger className="px-8 py-6 hover:no-underline">
+                          <div className="flex items-center gap-4">
+                            <Folder className="h-7 w-7 text-primary" />
+                            <span className="font-bold text-2xl">{folderName}</span>
+                            <span className="text-base text-muted-foreground">({folderResources.length} {folderResources.length === 1 ? 'resource' : 'resources'})</span>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="px-6 pb-6">
