@@ -1468,7 +1468,7 @@ const ProductDocs = () => {
 
       {/* Welcome Dialog */}
       <Dialog open={showWelcome} onOpenChange={setShowWelcome}>
-        <DialogContent className="max-w-4xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden backdrop-blur-xl">
+        <DialogContent className="max-w-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden backdrop-blur-xl">
           {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-full blur-3xl animate-pulse" />
